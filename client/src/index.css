@@ -1,0 +1,33 @@
+html, body, #root {
+height: 100%;
+margin: 0;
+font-family: Inter, system-ui, Arial, sans-serif;
+}
+
+
+canvas { display: block; }
+
+
+.app-shell {
+height: 100%;
+display: grid;
+grid-template-columns: 1fr;
+}
+
+
+.ui-overlay {
+position: absolute;
+top: 16px;
+left: 16px;
+z-index: 10;
+background: rgba(255,255,255,0.85);
+padding: 8px 12px;
+border-radius: 8px;
+box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+
+
+.dialogue-box { max-width: 320px; }
+
+
+.button { cursor: pointer; padding: 6px 10px; border-radius: 6px; border: none; }
