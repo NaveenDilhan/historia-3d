@@ -1,222 +1,275 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
+
+// --- Configuration Constants ---
+const PHASES = {
+  VOID: 0,
+  FORMATION: 1,
+  HADEAN: 2,
+  COOLING: 3,
+  OCEANS: 4
+};
+
+const TEXT_CONTENT = {
+  [PHASES.VOID]: {
+    title: "Chapter 1 – The Beginning",
+    text: "Welcome, traveler. Over 4.6 billion years ago, there was only silence and stardust. Watch as gravity weaves chaos into a world."
+  },
+  [PHASES.FORMATION]: {
+    title: "Accretion",
+    text: "Dust and primordial gas collide, fusing together in a violent dance. The newborn Earth is forming from the debris of dead stars."
+  },
+  [PHASES.HADEAN]: {
+    title: "The Hadean Eon",
+    text: "A hellscape of molten rock. Temperatures exceed 2,000°C. Comets bombard the surface, delivering the very water that will one day sustain us."
+  },
+  [PHASES.COOLING]: {
+    title: "The Great Cooling",
+    text: "The bombardment slows. The crust begins to harden. Steam rises from the cooling rocks, forming thick clouds that will rain for centuries."
+  },
+  [PHASES.OCEANS]: {
+    title: "The Blue Planet",
+    text: "The deluge has ended. The first global oceans have formed. Hidden within these waters, the first spark of life is about to ignite."
+  }
+};
 
 const Scene1 = () => {
   const mountRef = useRef(null);
-  const [phase, setPhase] = useState(0); // 0: void, 1: formation, 2: hadean, 3: cooling, 4: oceans
+  
+  // React State for UI
+  const [phase, setPhase] = useState(PHASES.VOID);
   const [interactionReady, setInteractionReady] = useState(false);
+
+  // Refs for Three.js objects (to manipulate them without re-renders)
   const sceneRef = useRef(null);
+  const rendererRef = useRef(null);
+  const earthRef = useRef(null);
+  const oceanRef = useRef(null);
+  const atmosRef = useRef(null);
   const animationRef = useRef(null);
+  
+  // We use a ref for phase inside the loop to avoid dependency staleness
+  const phaseRef = useRef(PHASES.VOID);
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
 
   useEffect(() => {
     if (!mountRef.current) return;
 
-    // Scene setup
+    // 1. Scene & Camera Setup
     const scene = new THREE.Scene();
+    // Add simple fog for depth
+    scene.fog = new THREE.FogExp2(0x000000, 0.02);
     sceneRef.current = scene;
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 8);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000);
     mountRef.current.appendChild(renderer.domElement);
+    rendererRef.current = renderer;
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+    // 2. Lighting
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.5); // Soft white light
     scene.add(ambientLight);
 
-    const sunLight = new THREE.PointLight(0xffaa00, 1, 100);
-    sunLight.position.set(-20, 10, -10);
+    const sunLight = new THREE.PointLight(0xffaa00, 1.5, 100);
+    sunLight.position.set(-15, 10, 5);
     scene.add(sunLight);
-
-    // Sun
-    const sunGeometry = new THREE.SphereGeometry(3, 8, 8);
-    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
-    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-    sun.position.set(-20, 10, -10);
-    scene.add(sun);
-
-    // Earth
-    const earthGeometry = new THREE.SphereGeometry(2, 12, 12);
-    const earthMaterial = new THREE.MeshPhongMaterial({ 
-      color: 0xff4400,
-      emissive: 0xff2200,
-      emissiveIntensity: 0.5,
-      flatShading: true
-    });
-    const earth = new THREE.Mesh(earthGeometry, earthMaterial);
-    scene.add(earth);
-
-    // Dust particles
-    const dustParticles = [];
-    const dustGeometry = new THREE.SphereGeometry(0.05, 4, 4);
-    const dustMaterial = new THREE.MeshBasicMaterial({ color: 0x888888 });
     
-    for (let i = 0; i < 50; i++) {
-      const particle = new THREE.Mesh(dustGeometry, dustMaterial);
-      const angle = Math.random() * Math.PI * 2;
-      const radius = 5 + Math.random() * 3;
-      particle.position.set(
-        Math.cos(angle) * radius,
-        (Math.random() - 0.5) * 2,
-        Math.sin(angle) * radius
-      );
-      particle.userData = { angle, radius, speed: 0.001 + Math.random() * 0.002 };
-      scene.add(particle);
-      dustParticles.push(particle);
-    }
+    // Rim light for dramatic effect
+    const rimLight = new THREE.SpotLight(0x4455ff, 2);
+    rimLight.position.set(10, 0, 5);
+    rimLight.lookAt(0,0,0);
+    scene.add(rimLight);
 
-    // Asteroids
-    const asteroids = [];
-    const asteroidGeometry = new THREE.DodecahedronGeometry(0.2, 0);
-    const asteroidMaterial = new THREE.MeshPhongMaterial({ 
-      color: 0x666666,
-      flatShading: true
+    // 3. Objects Construction
+    
+    // Starfield Background
+    const starsGeometry = new THREE.BufferGeometry();
+    const starCount = 2000;
+    const posArray = new Float32Array(starCount * 3);
+    for(let i = 0; i < starCount * 3; i++) {
+      posArray[i] = (Math.random() - 0.5) * 100;
+    }
+    starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    const starsMaterial = new THREE.PointsMaterial({ size: 0.05, color: 0xffffff, transparent: true, opacity: 0.8 });
+    const starMesh = new THREE.Points(starsGeometry, starsMaterial);
+    scene.add(starMesh);
+
+    // Earth Group
+    const earthGroup = new THREE.Group();
+    scene.add(earthGroup);
+
+    // Earth Core
+    const earthGeo = new THREE.IcosahedronGeometry(2, 4); // High poly for aesthetics
+    const earthMat = new THREE.MeshPhongMaterial({
+      color: 0xff2200,      // Start red
+      emissive: 0xaa0000,   // Glowing hot
+      emissiveIntensity: 0.8,
+      flatShading: true,
+      shininess: 5
     });
+    const earth = new THREE.Mesh(earthGeo, earthMat);
+    earthGroup.add(earth);
+    earthRef.current = earth;
 
-    for (let i = 0; i < 15; i++) {
-      const asteroid = new THREE.Mesh(asteroidGeometry, asteroidMaterial);
-      asteroid.position.set(
-        (Math.random() - 0.5) * 20,
-        (Math.random() - 0.5) * 20,
-        (Math.random() - 0.5) * 20
-      );
-      asteroid.userData = { 
-        velocity: new THREE.Vector3(
-          (Math.random() - 0.5) * 0.1,
-          (Math.random() - 0.5) * 0.1,
-          (Math.random() - 0.5) * 0.1
-        ),
-        visible: false
-      };
-      asteroid.visible = false;
-      scene.add(asteroid);
-      asteroids.push(asteroid);
-    }
-
-    // Steam/Cloud particles
-    const steamParticles = [];
-    const steamGeometry = new THREE.SphereGeometry(0.15, 6, 6);
-    const steamMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0xaaaaaa,
-      transparent: true,
-      opacity: 0.6
-    });
-
-    for (let i = 0; i < 30; i++) {
-      const steam = new THREE.Mesh(steamGeometry, steamMaterial.clone());
-      steam.position.set(
-        (Math.random() - 0.5) * 5,
-        2 + Math.random() * 2,
-        (Math.random() - 0.5) * 5
-      );
-      steam.userData = { rising: true, speed: 0.02 + Math.random() * 0.02 };
-      steam.visible = false;
-      scene.add(steam);
-      steamParticles.push(steam);
-    }
-
-    // Ocean layer
-    const oceanGeometry = new THREE.SphereGeometry(2.05, 12, 12);
-    const oceanMaterial = new THREE.MeshPhongMaterial({ 
+    // Ocean Layer (Initially invisible)
+    const oceanGeo = new THREE.IcosahedronGeometry(2.05, 4);
+    const oceanMat = new THREE.MeshPhongMaterial({
       color: 0x1166aa,
+      emissive: 0x002244,
       transparent: true,
       opacity: 0,
-      flatShading: true
+      shininess: 80
     });
-    const ocean = new THREE.Mesh(oceanGeometry, oceanMaterial);
-    scene.add(ocean);
+    const ocean = new THREE.Mesh(oceanGeo, oceanMat);
+    earthGroup.add(ocean);
+    oceanRef.current = ocean;
 
-    camera.position.z = 8;
+    // Atmosphere Glow (Simple backside mesh)
+    const atmosGeo = new THREE.SphereGeometry(2.2, 32, 32);
+    const atmosMat = new THREE.MeshBasicMaterial({
+      color: 0x4488ff,
+      transparent: true,
+      opacity: 0,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending
+    });
+    const atmos = new THREE.Mesh(atmosGeo, atmosMat);
+    earthGroup.add(atmos);
+    atmosRef.current = atmos;
 
-    // Animation loop
+    // Particles: Dust/Debris
+    const dustCount = 100;
+    const dustGroup = new THREE.Group();
+    const dustGeo = new THREE.TetrahedronGeometry(0.08, 0);
+    const dustMat = new THREE.MeshLambertMaterial({ color: 0x885522 });
+    
+    const dustParticles = [];
+    for (let i = 0; i < dustCount; i++) {
+      const mesh = new THREE.Mesh(dustGeo, dustMat);
+      const dist = 3.5 + Math.random() * 4;
+      const angle = Math.random() * Math.PI * 2;
+      const y = (Math.random() - 0.5) * 2;
+      
+      mesh.position.set(Math.cos(angle) * dist, y, Math.sin(angle) * dist);
+      mesh.userData = { 
+        angle, 
+        dist, 
+        speed: 0.005 + Math.random() * 0.01,
+        wobble: Math.random() * 0.02
+      };
+      dustGroup.add(mesh);
+      dustParticles.push(mesh);
+    }
+    scene.add(dustGroup);
+
+    // Particles: Steam/Clouds
+    const steamParticles = [];
+    const steamGeo = new THREE.SphereGeometry(0.1, 4, 4);
+    const steamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+    for(let i=0; i<40; i++) {
+        const p = new THREE.Mesh(steamGeo, steamMat);
+        p.position.set((Math.random()-0.5)*3, (Math.random()-0.5)*3, (Math.random()-0.5)*3);
+        p.userData = { speed: 0.01 + Math.random() * 0.02, initialY: p.position.y };
+        earthGroup.add(p);
+        steamParticles.push(p);
+    }
+
+    // 4. Animation Loop
     let time = 0;
+    const clock = new THREE.Clock();
+
     const animate = () => {
       animationRef.current = requestAnimationFrame(animate);
-      time += 0.01;
+      const delta = clock.getDelta();
+      time += delta;
+      const currentPhase = phaseRef.current;
 
-      // Rotate earth
-      earth.rotation.y += 0.005;
-      ocean.rotation.y += 0.005;
+      // Global Rotation
+      earthGroup.rotation.y += 0.05 * delta;
+      starMesh.rotation.y -= 0.01 * delta;
 
-      // Phase 0-1: Dust swirling
-      if (phase <= 1) {
-        dustParticles.forEach(particle => {
-          particle.userData.angle += particle.userData.speed;
-          particle.position.x = Math.cos(particle.userData.angle) * particle.userData.radius;
-          particle.position.z = Math.sin(particle.userData.angle) * particle.userData.radius;
-          
-          if (phase === 1) {
-            particle.userData.radius -= 0.02;
-            if (particle.userData.radius < 2.5) {
-              particle.visible = false;
-            }
+      // Gentle Camera Drift
+      camera.position.x = Math.sin(time * 0.1) * 0.5;
+      camera.position.y = Math.cos(time * 0.1) * 0.5;
+      camera.lookAt(0,0,0);
+
+      // --- PHASE LOGIC ---
+
+      // Phase 1: Dust Swirling (Formation)
+      if (currentPhase === PHASES.FORMATION || currentPhase === PHASES.VOID) {
+        dustGroup.visible = true;
+        dustParticles.forEach(p => {
+          p.userData.angle += p.userData.speed;
+          // Spiral in logic
+          if (currentPhase === PHASES.FORMATION) {
+             p.userData.dist = THREE.MathUtils.lerp(p.userData.dist, 2, delta * 0.5);
+             if(p.userData.dist < 2.2) p.visible = false; // "Absorbed"
           }
+          p.position.x = Math.cos(p.userData.angle) * p.userData.dist;
+          p.position.z = Math.sin(p.userData.angle) * p.userData.dist;
+          p.rotation.x += p.userData.wobble;
         });
+      } else {
+        dustGroup.visible = false;
       }
 
-      // Phase 2: Hadean bombardment
-      if (phase === 2) {
-        asteroids.forEach(asteroid => {
-          if (asteroid.userData.visible) {
-            asteroid.position.add(asteroid.userData.velocity);
-            asteroid.rotation.x += 0.05;
-            asteroid.rotation.y += 0.05;
-
-            const distToEarth = asteroid.position.distanceTo(earth.position);
-            if (distToEarth < 2.5) {
-              asteroid.position.set(
-                (Math.random() - 0.5) * 20,
-                (Math.random() - 0.5) * 20,
-                (Math.random() - 0.5) * 20
-              );
-              asteroid.userData.velocity.set(
-                (Math.random() - 0.5) * 0.1,
-                (Math.random() - 0.5) * 0.1,
-                (Math.random() - 0.5) * 0.1
-              ).normalize().multiplyScalar(0.1);
-            }
-          }
-        });
-
-        // Pulse earth emissive
-        earthMaterial.emissiveIntensity = 0.5 + Math.sin(time * 2) * 0.2;
-      }
-
-      // Phase 3: Steam rising
-      if (phase === 3) {
-        steamParticles.forEach(steam => {
-          if (steam.visible) {
-            if (steam.userData.rising) {
-              steam.position.y += steam.userData.speed;
-              if (steam.position.y > 6) {
-                steam.position.y = 2;
-              }
-            }
-          }
-        });
-      }
-
-      // Phase 4: Ocean forming
-      if (phase === 4) {
-        if (oceanMaterial.opacity < 0.8) {
-          oceanMaterial.opacity += 0.01;
+      // Phase 2: Hadean (Magma Pulse)
+      if (currentPhase >= PHASES.HADEAN) {
+        // Pulse the emissive heat
+        const pulse = 0.8 + Math.sin(time * 3) * 0.2;
+        
+        // If we are NOT in the cooling/ocean phase yet, keep it hot red
+        if (currentPhase === PHASES.HADEAN) {
+            earth.material.emissive.setHex(0xaa0000);
+            earth.material.color.setHex(0xff2200);
+            earth.material.emissiveIntensity = pulse;
         }
-        steamParticles.forEach(steam => {
-          if (steam.visible && steam.userData.rising) {
-            steam.position.y -= steam.userData.speed * 2;
-            steam.material.opacity -= 0.01;
-            if (steam.material.opacity <= 0) {
-              steam.visible = false;
+      }
+
+      // Phase 3 & 4: Cooling and Oceans (Material Transition)
+      if (currentPhase >= PHASES.COOLING) {
+        // 1. Cool down the Earth color (Interpolate from Red to Brownish/Grey)
+        const targetColor = new THREE.Color(currentPhase === PHASES.OCEANS ? 0x4b3621 : 0x553311); // Dark earth color
+        const targetEmissive = new THREE.Color(0x000000); // No glow
+        
+        earth.material.color.lerp(targetColor, delta * 0.5);
+        earth.material.emissive.lerp(targetEmissive, delta * 0.5);
+        earth.material.emissiveIntensity = THREE.MathUtils.lerp(earth.material.emissiveIntensity, 0, delta);
+
+        // 2. Handle Steam
+        steamParticles.forEach(p => {
+            p.material.opacity = THREE.MathUtils.lerp(p.material.opacity, currentPhase === PHASES.OCEANS ? 0 : 0.4, delta);
+            p.position.y += p.userData.speed;
+            if(p.position.length() > 3.5) {
+                p.position.setLength(2.1); // Recycle
             }
-          }
         });
+      }
+
+      // Phase 4: Oceans rising
+      if (currentPhase === PHASES.OCEANS) {
+        // Raise opacity of water
+        ocean.material.opacity = THREE.MathUtils.lerp(ocean.material.opacity, 0.85, delta * 0.5);
+        // Show Atmosphere
+        atmos.material.opacity = THREE.MathUtils.lerp(atmos.material.opacity, 0.3, delta * 0.5);
+        // Spin clouds separately
+        steamParticles.forEach(p => p.visible = false); // Hide steam, maybe enable clouds later
       }
 
       renderer.render(scene, camera);
     };
+
     animate();
 
-    // Handle resize
+    // 5. Cleanup
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -224,144 +277,138 @@ const Scene1 = () => {
     };
     window.addEventListener('resize', handleResize);
 
-    // Phase progression
-    const phaseTimings = [2000, 5000, 8000, 11000];
-    const timers = [];
-
-    timers.push(setTimeout(() => setPhase(1), phaseTimings[0]));
-    timers.push(setTimeout(() => {
-      setPhase(2);
-      dustParticles.forEach(p => p.visible = false);
-      asteroids.forEach(a => {
-        a.visible = true;
-        a.userData.visible = true;
-      });
-      earthMaterial.color.setHex(0xff2200);
-      earthMaterial.emissive.setHex(0xff4400);
-    }, phaseTimings[1]));
-    
-    timers.push(setTimeout(() => {
-      setPhase(3);
-      asteroids.forEach(a => a.visible = false);
-      steamParticles.forEach(s => s.visible = true);
-      earthMaterial.emissiveIntensity = 0.3;
-      setInteractionReady(true);
-    }, phaseTimings[2]));
-
-    // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
-      timers.forEach(t => clearTimeout(t));
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      cancelAnimationFrame(animationRef.current);
       if (mountRef.current && renderer.domElement) {
         mountRef.current.removeChild(renderer.domElement);
       }
+      
+      // Dispose Resources
       renderer.dispose();
+      earthGeo.dispose(); earthMat.dispose();
+      oceanGeo.dispose(); oceanMat.dispose();
+      dustGeo.dispose(); dustMat.dispose();
+      atmosGeo.dispose(); atmosMat.dispose();
+      starsGeometry.dispose(); starsMaterial.dispose();
     };
-  }, [phase]);
+  }, []); // Run once on mount
+
+  // --- Logic Timer ---
+  useEffect(() => {
+    // Automated sequencing
+    const timings = [
+      { p: PHASES.FORMATION, t: 1500 },
+      { p: PHASES.HADEAN, t: 6000 },
+      { p: PHASES.COOLING, t: 11000 },
+    ];
+
+    const timers = timings.map(step => 
+      setTimeout(() => setPhase(step.p), step.t)
+    );
+
+    // Enable button interaction after cooling starts
+    const interactTimer = setTimeout(() => {
+        setInteractionReady(true);
+    }, 12000);
+
+    return () => {
+      timers.forEach(clearTimeout);
+      clearTimeout(interactTimer);
+    };
+  }, []);
 
   const handleCoolEarth = () => {
-    if (interactionReady && phase === 3) {
-      setPhase(4);
-      setInteractionReady(false);
-      
-      if (sceneRef.current) {
-        const earth = sceneRef.current.children.find(c => c.geometry?.type === 'SphereGeometry' && c.material?.emissive);
-        if (earth) {
-          earth.material.color.setHex(0x4488ff);
-          earth.material.emissive.setHex(0x002244);
-          earth.material.emissiveIntensity = 0.1;
-        }
-      }
-    }
+    setInteractionReady(false);
+    setPhase(PHASES.OCEANS);
   };
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden', background: 'black' }}>
       <div ref={mountRef} style={{ width: '100%', height: '100%' }} />
       
-      {/* Narration overlay */}
+      {/* UI Overlay - Glassmorphism Style */}
       <div style={{
         position: 'absolute',
-        top: 20,
-        left: 20,
-        right: 20,
-        background: 'rgba(0, 0, 0, 0.7)',
-        color: 'white',
-        padding: '20px',
-        borderRadius: '10px',
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '16px',
-        lineHeight: '1.6',
-        maxWidth: '600px'
+        top: '10%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        textAlign: 'center',
+        width: '90%',
+        maxWidth: '600px',
+        pointerEvents: 'none' // Let clicks pass through to 3D scene if needed
       }}>
-        {phase === 0 && (
-          <div>
-            <h2 style={{ margin: '0 0 10px 0', color: '#ffaa00' }}>Chapter 1 – The Beginning</h2>
-            <p>"Welcome, traveler… to the very beginning of our planet's story. Over 4.6 billion years ago, the Earth was born — not from peace, but from chaos."</p>
-          </div>
-        )}
-        {phase === 1 && (
-          <p>"Dust and gas swirling around the young Sun collided and fused, forming a newborn world of fire and fury."</p>
-        )}
-        {phase === 2 && (
-          <div>
-            <p>"In this era, called the Hadean, the surface was a molten wasteland, hammered by asteroids day and night."</p>
-            <p style={{ marginTop: '10px' }}>"The air was thick with carbon dioxide, methane, and ammonia. No oxygen. No life. Yet… something was changing."</p>
-          </div>
-        )}
-        {phase === 3 && (
-          <p>"As the planet cooled, rain fell for centuries, forming the first oceans — the cradle of all future life."</p>
-        )}
-        {phase === 4 && (
-          <div>
-            <p style={{ color: '#4488ff' }}>"The first oceans have formed. Life's journey is about to begin..."</p>
-          </div>
-        )}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(10px)',
+          padding: '30px',
+          borderRadius: '20px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          transition: 'all 0.5s ease'
+        }}>
+           <h2 style={{ 
+             margin: '0 0 15px 0', 
+             color: '#ffaa00', 
+             fontSize: '2rem',
+             textShadow: '0 2px 10px rgba(255, 170, 0, 0.3)',
+             fontFamily: "'Orbitron', sans-serif" // Assuming standard font, but nice fallback
+           }}>
+             {TEXT_CONTENT[phase].title}
+           </h2>
+           <p style={{ 
+             color: '#e0e0e0', 
+             fontSize: '1.1rem', 
+             lineHeight: '1.6', 
+             fontFamily: 'sans-serif' 
+           }}>
+             {TEXT_CONTENT[phase].text}
+           </p>
+        </div>
       </div>
 
-      {/* Interactive button */}
-      {interactionReady && (
+      {/* Interactive Button */}
+      <div style={{
+        position: 'absolute',
+        bottom: '10%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        transition: 'opacity 1s ease',
+        opacity: interactionReady && phase === PHASES.COOLING ? 1 : 0,
+        pointerEvents: interactionReady && phase === PHASES.COOLING ? 'auto' : 'none'
+      }}>
         <button
           onClick={handleCoolEarth}
           style={{
-            position: 'absolute',
-            bottom: '40px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            padding: '15px 30px',
+            padding: '18px 40px',
             fontSize: '18px',
             fontWeight: 'bold',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)',
             color: 'white',
             border: 'none',
             borderRadius: '50px',
             cursor: 'pointer',
-            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
-            transition: 'all 0.3s ease',
-            animation: 'pulse 2s infinite'
+            boxShadow: '0 0 20px rgba(0, 114, 255, 0.6)',
+            transition: 'transform 0.2s',
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
           }}
-          onMouseEnter={(e) => {
-            e.target.style.transform = 'translateX(-50%) scale(1.05)';
-            e.target.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.4)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'translateX(-50%) scale(1)';
-            e.target.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.3)';
-          }}
+          onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
         >
-          🌧️ Tap to Cool the Earth
+          🌧️ Trigger Rain Age
         </button>
-      )}
+      </div>
 
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.8; }
-        }
-      `}</style>
+      {/* Phase Indicator (Bottom Right) */}
+      <div style={{
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        color: 'rgba(255,255,255,0.3)',
+        fontFamily: 'monospace'
+      }}>
+        PHASE: {Object.keys(PHASES)[phase]}
+      </div>
     </div>
   );
 };

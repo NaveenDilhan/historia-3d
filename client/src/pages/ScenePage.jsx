@@ -1,5 +1,5 @@
 import React from 'react'
-import Scene from '../components/Scene'
+import Scene from '../components/Jurrasic'
 import DialogueBox from '../components/UI/DialogueBox'
 
 export default function ScenePage() {
