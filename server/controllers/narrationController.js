@@ -1,37 +1,30 @@
-import { openai } from '../utils/openaiClient.js'
+import { openai } from '../utils/openaiClient.js';
+import Narration from '../models/Narration.js'; // New import
 
 export const getNarration = async (req, res) => {
   try {
-    const { userAction, context, era } = req.body || {}
-
-    const system = `
-You are an engaging and knowledgeable narrator for an interactive 3D history learning platform.
-Your job is to describe scenes and actions from any historical era in a short, immersive, and educational way.
-Keep it concise (1–3 sentences), vivid, and age-appropriate for general audiences.
-Adjust your tone and vocabulary depending on the historical context.
-`
-
-    const userPrompt = `
-User action: "${userAction || 'nothing specified'}"
-Era: "${era || 'Unspecified era'}"
-Context: ${context || 'The player is exploring a historical environment.'}
-
-Generate a brief narration that fits the situation and era.
-`
+    const { userAction, context } = req.body;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: "gpt-3.5-turbo",
       messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: userPrompt }
+        { role: "system", content: "You are a historical narrator." },
+        { role: "user", content: `Action: ${userAction}, Context: ${context}` }
       ],
-      max_tokens: 120
-    })
+    });
 
-    const narration = response.choices?.[0]?.message?.content?.trim() || ''
-    res.json({ narration })
-  } catch (err) {
-    console.error('OpenAI error:', err)
-    res.status(500).json({ error: 'Failed to generate narration' })
+    const aiContent = response.choices[0].message.content;
+
+    // Save to MongoDB
+    const newEntry = new Narration({
+      userAction,
+      context,
+      aiResponse: aiContent
+    });
+    await newEntry.save();
+
+    res.json({ narration: aiContent });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-}
+};
