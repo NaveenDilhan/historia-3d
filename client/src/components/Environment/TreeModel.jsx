@@ -1,14 +1,10 @@
 import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
+import { RigidBody, CuboidCollider } from '@react-three/rapier';
 
-export default function TreeForest({ 
-  genericCount = 50, 
-  forestCount = 200, 
-  areaSize = 200, 
-  terrainGeo 
-}) {
-  // Original generic trees (keep 5 models)
+export default function TreeForest({ genericCount = 50, forestCount = 200, areaSize = 200, terrainGeo }) {
+  // Load tree models
   const genericModels = [
     useGLTF('/models/tree1.glb'),
     useGLTF('/models/tree2.glb'),
@@ -17,7 +13,6 @@ export default function TreeForest({
     useGLTF('/models/tree5.glb'),
   ];
 
-  // Forest trees
   const pineModels = [
     useGLTF('/models/pine1.glb'),
     useGLTF('/models/pine2.glb'),
@@ -41,7 +36,7 @@ export default function TreeForest({
     useGLTF('/models/dead5.glb'),
   ];
 
-  // Function to get terrain height at (x, z)
+  // Terrain height lookup
   const getHeight = (x, z) => {
     if (!terrainGeo) return 0;
     const size = 200;
@@ -52,25 +47,22 @@ export default function TreeForest({
     return terrainGeo.attributes.position.getZ(idx) || 0;
   };
 
-  // Generate generic trees
+  // Generic trees
   const genericTrees = useMemo(() => {
-    const data = [];
-    for (let i = 0; i < genericCount; i++) {
+    return Array.from({ length: genericCount }, () => {
       const x = Math.random() * areaSize - areaSize / 2;
       const z = Math.random() * areaSize - areaSize / 2;
       const y = getHeight(x, z);
-      const scale = 1.5 + Math.random() * 0.7; // increased scale for bigger generic trees
+      const scale = 1.5 + Math.random() * 0.7;
       const windOffset = Math.random() * Math.PI * 2;
       const modelIndex = Math.floor(Math.random() * genericModels.length);
-      data.push({ x, y, z, scale, windOffset, modelIndex });
-    }
-    return data;
+      return { x, y, z, scale, windOffset, modelIndex };
+    });
   }, [genericCount, areaSize, terrainGeo]);
 
-  // Generate forest trees
+  // Forest trees
   const forestTrees = useMemo(() => {
-    const data = [];
-    for (let i = 0; i < forestCount; i++) {
+    return Array.from({ length: forestCount }, () => {
       const x = Math.random() * areaSize - areaSize / 2;
       const z = Math.random() * areaSize - areaSize / 2;
       const y = getHeight(x, z);
@@ -90,13 +82,11 @@ export default function TreeForest({
 
       const modelIndex = Math.floor(Math.random() * models.length);
       let scale = 0.8 + Math.random() * 0.7;
-      if (type === 'pine') scale = 1.5 + Math.random() * 0.8; // bigger pine trees
-
+      if (type === 'pine') scale = 1.5 + Math.random() * 0.8;
       const windOffset = Math.random() * Math.PI * 2;
 
-      data.push({ x, y, z, scale, windOffset, modelIndex, type });
-    }
-    return data;
+      return { x, y, z, scale, windOffset, modelIndex, type };
+    });
   }, [forestCount, areaSize, terrainGeo]);
 
   const treeRefs = useRef([]);
@@ -128,15 +118,25 @@ export default function TreeForest({
         else if (t.type === 'dead') modelList = deadModels;
         else modelList = genericModels;
 
+        const model = modelList[t.modelIndex].scene.clone();
+
+        const colliderHeight = t.scale * 5;
+        const colliderRadius = t.scale * 0.5;
+
         return (
-          <primitive
+          <RigidBody
             key={i}
-            ref={(el) => (treeRefs.current[i] = el)}
-            object={modelList[t.modelIndex].scene.clone()}
+            type="fixed"
             position={[t.x, t.y, t.z]}
-            scale={t.scale}
-            rotation={[0, Math.random() * Math.PI * 2, 0]}
-          />
+          >
+            <CuboidCollider args={[colliderRadius, colliderHeight / 2, colliderRadius]} />
+            <primitive
+              ref={(el) => (treeRefs.current[i] = el)}
+              object={model}
+              scale={t.scale}
+              rotation={[0, Math.random() * Math.PI * 2, 0]}
+            />
+          </RigidBody>
         );
       })}
     </>
