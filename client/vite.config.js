@@ -12,4 +12,14 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    proxy: {
+      // This redirects any request starting with /api to your Express server
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })

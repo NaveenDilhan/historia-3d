@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { collection, getDocs } from 'firebase/firestore'
-import { db } from '../firebase'
 import { Compass, Scroll, ChevronLeft, Star, PlayCircle, Clock } from 'lucide-react'
 import LessonPopup from '../components/UI/LessonPopup'
 
@@ -10,22 +8,28 @@ export default function ExplorePage() {
   const [lessons, setLessons] = useState([])
   const [selectedLesson, setSelectedLesson] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const navigate = useNavigate()
 
-  // --- Mock Auth State (Mirroring Homepage) ---
-  const [isLoggedIn] = useState(true); // Assuming logged in for this view
+  // --- Mock Auth State ---
+  const [isLoggedIn] = useState(true); 
 
   useEffect(() => {
     const fetchLessons = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'lessons'))
-        const lessonData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
+        setLoading(true)
+        // Replace with your actual backend URL (e.g., http://localhost:5000/api/lessons)
+        const response = await fetch('/api/lessons') 
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch from the Great Library')
+        }
+
+        const lessonData = await response.json()
         setLessons(lessonData)
-      } catch (error) {
-        console.error('Error fetching lessons:', error)
+      } catch (err) {
+        console.error('Error fetching lessons:', err)
+        setError(err.message)
       } finally {
         setLoading(false)
       }
@@ -36,7 +40,7 @@ export default function ExplorePage() {
   return (
     <div className="min-h-screen text-amber-50 font-body overflow-x-hidden selection:bg-amber-500/30 relative">
       
-      {/* ---------------- GLOBAL STYLES (Sync with Homepage) ---------------- */}
+      {/* ---------------- GLOBAL STYLES ---------------- */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Lato:wght@400;700&display=swap');
         .font-heading { font-family: 'Cinzel', serif; }
@@ -80,7 +84,6 @@ export default function ExplorePage() {
       {/* ---------------- MAIN CONTENT ---------------- */}
       <main className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-10">
         
-        {/* Header Section */}
         <header className="mb-16 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -102,6 +105,11 @@ export default function ExplorePage() {
             <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
             <p className="mt-4 font-heading text-amber-500 tracking-widest">Consulting Archives...</p>
           </div>
+        ) : error ? (
+            <div className="text-center py-20">
+                <p className="text-red-400 font-heading tracking-widest mb-4">The scrolls are missing: {error}</p>
+                <button onClick={() => window.location.reload()} className="text-amber-500 underline">Try again</button>
+            </div>
         ) : (
           <motion.div 
             initial="hidden"
@@ -113,7 +121,7 @@ export default function ExplorePage() {
           >
             {lessons.map((lesson) => (
               <motion.div
-                key={lesson.id}
+                key={lesson._id} // MongoDB uses _id by default
                 variants={{
                   hidden: { opacity: 0, scale: 0.9 },
                   visible: { opacity: 1, scale: 1 }
@@ -122,7 +130,6 @@ export default function ExplorePage() {
                 onClick={() => setSelectedLesson(lesson)}
                 className="group cursor-pointer relative bg-[#1a130e]/60 backdrop-blur-sm border border-amber-900/40 rounded-2xl overflow-hidden hover:border-amber-500/50 transition-all duration-300 shadow-xl"
               >
-                {/* Visual Accent */}
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-700 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
 
                 <div className="p-8">
@@ -141,7 +148,6 @@ export default function ExplorePage() {
                     {lesson.description}
                   </p>
 
-                  {/* Progress Section */}
                   <div className="space-y-3">
                     <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-amber-700">
                       <span>Scholarly Progress</span>
@@ -157,11 +163,10 @@ export default function ExplorePage() {
                   </div>
                 </div>
 
-                {/* Footer of Card */}
                 <div className="px-8 py-4 bg-amber-950/20 border-t border-amber-900/30 flex items-center justify-between group-hover:bg-amber-900/30 transition-colors">
                   <div className="flex items-center gap-2 text-amber-200/40 text-xs">
                     <Clock size={12} />
-                    <span>15 min read</span>
+                    <span>{lesson.readTime || '15 min read'}</span>
                   </div>
                   <PlayCircle className="text-amber-500 group-hover:scale-110 transition-transform" size={24} />
                 </div>
@@ -171,7 +176,6 @@ export default function ExplorePage() {
         )}
       </main>
 
-      {/* ---------------- FOOTER ---------------- */}
       <footer className="bg-[#120c08] text-amber-200/40 py-12 border-t border-amber-900/30 relative z-10">
         <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
@@ -182,7 +186,6 @@ export default function ExplorePage() {
         </div>
       </footer>
 
-      {/* Lesson Popup Integration */}
       <AnimatePresence>
         {selectedLesson && (
           <LessonPopup
