@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Scroll, Mail, Lock, LogIn, Github } from "lucide-react";
+import { Mail, Lock, LogIn, Github } from "lucide-react";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -49,8 +49,9 @@ export default function LoginPage() {
         className="w-full max-w-md relative z-10"
       >
         <div className="text-center mb-8 cursor-pointer" onClick={() => navigate("/")}>
-          <div className="inline-block bg-amber-900/50 p-3 rounded-xl border border-amber-700/50 mb-4">
-            <Scroll className="w-8 h-8 text-amber-400" />
+          <div className="flex items-center justify-center mb-4">
+            {/* Replaced Icon with custom scroll.png image without the brown wrapper block */}
+            <img src="assets/scroll.png" alt="Scroll Icon" className="w-14 h-14 object-contain drop-shadow-xl rounded-xl" />
           </div>
           <h1 className="text-3xl font-heading font-bold text-amber-100 tracking-widest">HISTORIA</h1>
           <p className="text-amber-200/50 text-sm mt-2 font-body uppercase tracking-tighter">Enter the Halls of Time</p>

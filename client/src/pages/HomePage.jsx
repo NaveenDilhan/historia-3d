@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Compass, Users, User, Scroll, Globe, BookOpen, ChevronRight, Star, Map, LogIn } from "lucide-react";
+import { Compass, Users, User, Globe, BookOpen, ChevronRight, Star, Map, LogIn } from "lucide-react";
 
-import humanWalk from "../assets/animations/Ancient_Man.json";
-import dinoRoar from "../assets/animations/T-Rex.json";
-import rocketBg from "../assets/animations/Rocket_Webpage.json";
+import humanWalk from "../../public/animations/Ancient_Man.json";
+import dinoRoar from "../../public/animations/T-Rex.json";
+import rocketBg from "../../public/animations/Rocket_Webpage.json";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -77,8 +77,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto bg-[#1a120b]/70 backdrop-blur-md border border-amber-900/30 shadow-lg rounded-2xl px-6 py-3 flex justify-between items-center">
           
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate("/")}>
-            <div className="bg-amber-900/50 p-2 rounded-lg border border-amber-700/50 group-hover:rotate-6 transition-transform">
-              <Scroll className="w-5 h-5 text-amber-400" />
+            <div className="group-hover:rotate-6 transition-transform flex items-center justify-center">
+              {/* Removed brown background wrapper classes, resized image slightly */}
+              <img src="assets/scroll.png" alt="Scroll Icon" className="w-9 h-9 object-contain drop-shadow-md rounded-lg" />
             </div>
             <h1 className="text-xl font-heading font-bold text-amber-100 tracking-widest drop-shadow-md">HISTORIA</h1>
           </div>
@@ -247,9 +248,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="col-span-1 md:col-span-2 space-y-4">
               <div className="flex items-center gap-3 text-amber-100">
-                <div className="bg-amber-900/30 p-1.5 rounded border border-amber-800/50">
-                  <Scroll className="w-5 h-5" />
-                </div>
+                <img src="assets/scroll.png" alt="Scroll Icon" className="w-8 h-8 object-contain opacity-90 rounded-lg" />
                 <span className="font-heading font-bold text-lg tracking-wide">HISTORIA</span>
               </div>
               <p className="text-sm max-w-xs leading-relaxed">

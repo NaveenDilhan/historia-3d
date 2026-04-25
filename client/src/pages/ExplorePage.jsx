@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Compass, Scroll, ChevronLeft, Star, PlayCircle, Clock, LogIn } from 'lucide-react'
+import { Compass, ChevronLeft, Star, PlayCircle, Clock, LogIn } from 'lucide-react'
 import LessonPopup from '../components/UI/LessonPopup'
 
 export default function ExplorePage() {
@@ -85,8 +85,8 @@ export default function ExplorePage() {
           
           {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate("/")}>
-            <div className="bg-amber-900/50 p-2 rounded-lg border border-amber-700/50">
-              <Scroll className="w-5 h-5 text-amber-400" />
+            <div className="group-hover:rotate-6 transition-transform flex items-center justify-center">
+               <img src="assets/scroll.png" alt="Scroll Icon" className="w-9 h-9 object-contain rounded-lg" />
             </div>
             <h1 className="text-xl font-heading font-bold text-amber-100 tracking-widest">HISTORIA</h1>
           </div>
@@ -219,7 +219,7 @@ export default function ExplorePage() {
       <footer className="bg-[#120c08] text-amber-200/40 py-12 border-t border-amber-900/30 relative z-10">
         <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
-            <Scroll className="w-5 h-5" />
+             <img src="assets/scroll.png" alt="Scroll Icon" className="w-8 h-8 object-contain opacity-90 rounded-lg" />
             <span className="font-heading font-bold tracking-widest">HISTORIA</span>
           </div>
           <p className="text-xs">© {new Date().getFullYear()} Preservation Society. No rights reserved—history belongs to all.</p>
