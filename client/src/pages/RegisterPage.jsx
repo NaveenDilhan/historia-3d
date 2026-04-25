@@ -1,14 +1,52 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Scroll, User, Mail, Lock, UserPlus, ChevronLeft } from "lucide-react";
+import { User, Mail, Lock, UserPlus, ChevronLeft } from "lucide-react";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: ""
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem("userInfo", JSON.stringify(data));
+        navigate("/explore");
+      } else {
+        setError(data.message || "Registration failed");
+      }
+    } catch (err) {
+      setError("Failed to document your existence.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen ancient-wall-bg flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-amber-600/5 rounded-full blur-[120px] pointer-events-none"></div>
 
       <motion.div 
@@ -29,20 +67,43 @@ export default function RegisterPage() {
             <p className="text-amber-200/50 mt-1">Become a documented scholar of human history.</p>
           </div>
 
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={handleRegister}>
+            
+            {error && (
+              <div className="p-3 bg-red-900/30 border border-red-800 rounded text-red-200 text-xs text-center uppercase tracking-wide">
+                {error}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80">Full Name</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700" />
-                  <input type="text" placeholder="Leonidas" className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 pl-10 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all" />
+                  <input 
+                    type="text" 
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Leonidas" 
+                    required
+                    className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 pl-10 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all" 
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80">Email</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700" />
-                  <input type="email" placeholder="leo@sparta.com" className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 pl-10 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all" />
+                  <input 
+                    type="email" 
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="leo@sparta.com" 
+                    required
+                    className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 pl-10 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all" 
+                  />
                 </div>
               </div>
             </div>
@@ -51,20 +112,31 @@ export default function RegisterPage() {
               <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80">Secret Key (Password)</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700" />
-                <input type="password" placeholder="••••••••••••" className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 pl-10 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all" />
+                <input 
+                  type="password" 
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••••••" 
+                  required
+                  className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 pl-10 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all" 
+                />
               </div>
             </div>
 
             <div className="flex items-start gap-3 py-2">
-              <input type="checkbox" className="mt-1 accent-amber-600" id="terms" />
+              <input type="checkbox" required className="mt-1 accent-amber-600" id="terms" />
               <label htmlFor="terms" className="text-xs text-amber-200/40 leading-relaxed">
                 I agree to the <span className="text-amber-500">Ancient Treaties</span> and the Preservation of Truth within the Historia archives.
               </label>
             </div>
 
-            <button className="w-full group relative overflow-hidden bg-amber-100 text-amber-950 font-bold py-4 rounded-xl shadow-xl hover:bg-white transition-all flex items-center justify-center gap-2">
+            <button 
+              disabled={isLoading}
+              className="w-full group relative overflow-hidden bg-amber-100 text-amber-950 font-bold py-4 rounded-xl shadow-xl hover:bg-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
               <UserPlus size={18} />
-              <span>Forge Account</span>
+              <span>{isLoading ? "Forging Account..." : "Forge Account"}</span>
               <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-amber-900/10 to-transparent skew-x-12"></div>
             </button>
           </form>

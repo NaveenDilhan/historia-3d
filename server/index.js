@@ -1,21 +1,32 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import cookieParser from 'cookie-parser'; // ✅ Import cookie-parser
 import connectDB from './config/db.js';
 import narrationRoutes from './routes/narrationRoutes.js';
-import lessonRoutes from './routes/lessonRoutes.js'; // 1. Import new routes
+import lessonRoutes from './routes/lessonRoutes.js';
+import authRoutes from './routes/authRoutes.js'; // ✅ Import Auth Routes
+import userRoutes from './routes/userRoutes.js'; // ✅ Import User Routes
 
 dotenv.config();
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// ---------------- MIDDLEWARE ----------------
+// ✅ FIX: Strict CORS to allow cookies
+app.use(cors({
+  origin: 'http://localhost:5173', // Must match your Frontend URL
+  credentials: true // Allows the secure cookie to pass through
+}));
+
 app.use(express.json());
+app.use(cookieParser()); // ✅ Parse cookies
 
 // ---------------- ROUTES ----------------
 app.use('/api/narration', narrationRoutes);
-app.use('/api/lessons', lessonRoutes); // 2. Register Lesson API
+app.use('/api/lessons', lessonRoutes);
+app.use('/api/auth', authRoutes); // ✅ Register Auth
+app.use('/api/users', userRoutes); // ✅ Register User Profile
 
 // ---------------- HEALTH CHECK ----------------
 app.get('/', (req, res) => {
@@ -23,12 +34,10 @@ app.get('/', (req, res) => {
 });
 
 // ---------------- ERROR HANDLING ----------------
-// Catch-all for 404s
 app.use((req, res, next) => {
   res.status(404).json({ message: "The scroll you seek does not exist." });
 });
 
-// Global error middleware
 app.use((err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   res.status(statusCode).json({
@@ -41,15 +50,14 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    await connectDB(); 
-    
+    await connectDB();
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log('📜 The Great Library archives are open');
     });
   } catch (error) {
     console.error('❌ Server failed to start due to DB error:', error.message);
-    process.exit(1); // Exit process with failure
+    process.exit(1);
   }
 };
 

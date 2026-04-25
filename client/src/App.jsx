@@ -9,6 +9,7 @@ import ScenePage from './pages/ScenePage';
 // New Auth & Profile Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ProfilePage from './pages/ProfilePage'; // ✅ Imported ProfilePage
 
 export default function App() {
   return (
@@ -25,7 +26,8 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
 
           {/* User Routes */}
-          <Route path="/profile" element={<div className="text-amber-50 p-20">Profile Page (Coming Soon)</div>} />
+          {/* ✅ Connected the actual Profile Page component */}
+          <Route path="/profile" element={<ProfilePage />} />
           
           {/* Optional: Community Route mentioned in your Nav */}
           <Route path="/community" element={<div className="text-amber-50 p-20">Community Forum (Coming Soon)</div>} />

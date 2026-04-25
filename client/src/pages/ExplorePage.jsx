@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Compass, Scroll, ChevronLeft, Star, PlayCircle, Clock } from 'lucide-react'
+import { Compass, Scroll, ChevronLeft, Star, PlayCircle, Clock, LogIn } from 'lucide-react'
 import LessonPopup from '../components/UI/LessonPopup'
 
 export default function ExplorePage() {
@@ -11,15 +11,34 @@ export default function ExplorePage() {
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
-  // --- Mock Auth State ---
-  const [isLoggedIn] = useState(true); 
+  // --- AUTH STATE ---
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState({
+    name: "",
+    avatar: ""
+  });
 
+  // 1. Check Local Storage for User on Mount
+  useEffect(() => {
+    const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+
+    if (userInfo) {
+      setIsLoggedIn(true);
+      setUser({
+        name: userInfo.name,
+        // Generate consistent avatar based on name
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.name}`
+      });
+    }
+  }, []);
+
+  // 2. Fetch Lessons
   useEffect(() => {
     const fetchLessons = async () => {
       try {
         setLoading(true)
-        // Replace with your actual backend URL (e.g., http://localhost:5000/api/lessons)
-        const response = await fetch('/api/lessons') 
+        // Ensure this matches your backend route
+        const response = await fetch('http://localhost:5000/api/lessons') 
         
         if (!response.ok) {
           throw new Error('Failed to fetch from the Great Library')
@@ -63,6 +82,8 @@ export default function ExplorePage() {
       {/* ---------------- NAVIGATION ---------------- */}
       <nav className="sticky top-0 w-full z-50 px-6 py-4">
         <div className="max-w-7xl mx-auto bg-[#1a120b]/80 backdrop-blur-xl border border-amber-900/30 shadow-2xl rounded-2xl px-6 py-3 flex justify-between items-center">
+          
+          {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate("/")}>
             <div className="bg-amber-900/50 p-2 rounded-lg border border-amber-700/50">
               <Scroll className="w-5 h-5 text-amber-400" />
@@ -70,13 +91,32 @@ export default function ExplorePage() {
             <h1 className="text-xl font-heading font-bold text-amber-100 tracking-widest">HISTORIA</h1>
           </div>
 
+          {/* Right Actions */}
           <div className="hidden md:flex items-center space-x-8">
             <button onClick={() => navigate("/")} className="text-amber-200/70 hover:text-amber-100 flex items-center gap-2 transition-colors">
               <ChevronLeft size={16} /> Back
             </button>
-            <div className="w-8 h-8 rounded-full border-2 border-amber-500 overflow-hidden cursor-pointer" onClick={() => navigate("/profile")}>
-              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Profile" />
-            </div>
+            
+            {/* Dynamic Profile Button */}
+            {isLoggedIn ? (
+              <button 
+                onClick={() => navigate("/profile")}
+                className="flex items-center gap-3 p-1 pr-4 bg-amber-950/40 border border-amber-500/30 rounded-full hover:bg-amber-900/50 transition-all active:scale-95 group"
+              >
+                <div className="w-8 h-8 rounded-full border-2 border-amber-500 overflow-hidden group-hover:border-amber-400 transition-colors bg-amber-900">
+                  <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                </div>
+                <span className="text-sm font-medium text-amber-100 max-w-[100px] truncate">{user.name}</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate("/login")}
+                className="flex items-center gap-2 bg-gradient-to-r from-amber-700 to-amber-900 text-amber-50 px-5 py-2 rounded-lg font-medium text-sm hover:brightness-110 shadow-lg border border-amber-600/30 transition-all active:scale-95"
+              >
+                <LogIn size={16} />
+                <span>Login</span>
+              </button>
+            )}
           </div>
         </div>
       </nav>
@@ -121,7 +161,7 @@ export default function ExplorePage() {
           >
             {lessons.map((lesson) => (
               <motion.div
-                key={lesson._id} // MongoDB uses _id by default
+                key={lesson._id}
                 variants={{
                   hidden: { opacity: 0, scale: 0.9 },
                   visible: { opacity: 1, scale: 1 }

@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Compass, Users, User, Scroll, Globe, BookOpen, ChevronRight, Star, Map, LogIn } from "lucide-react";
 
-// ✅ Import animations
 import humanWalk from "../assets/animations/Ancient_Man.json";
 import dinoRoar from "../assets/animations/T-Rex.json";
 import rocketBg from "../assets/animations/Rocket_Webpage.json";
@@ -13,22 +12,33 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { scrollY } = useScroll();
   
-  // --- MOCK AUTH STATE ---
-  // In a real app, replace these with your Auth Context values
+  // ✅ FIX: State now defaults to false, but updates via useEffect
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
   const [user, setUser] = useState({
-    name: "Scholar",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" // Mock avatar
+    name: "",
+    avatar: "" 
   });
 
-  // Parallax effect for floating dust particles
+  // ✅ FIX: Check localStorage when the page loads
+  useEffect(() => {
+    const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+    
+    if (userInfo) {
+      setIsLoggedIn(true);
+      setUser({
+        name: userInfo.name,
+        // Use the saved avatar look or generate one based on name
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.avatarSeed || userInfo.name}` 
+      });
+    }
+  }, []);
+
   const y1 = useTransform(scrollY, [0, 1000], [0, 300]);
   const y2 = useTransform(scrollY, [0, 1000], [0, -200]);
 
   return (
     <div className="min-h-screen text-amber-50 font-body overflow-x-hidden selection:bg-amber-500/30">
       
-      {/* ---------------- GLOBAL STYLES ---------------- */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Lato:wght@400;700&display=swap');
         
@@ -56,15 +66,13 @@ export default function HomePage() {
         }
       `}</style>
 
-      {/* ---------------- BACKGROUND LAYERS ---------------- */}
       <div className="fixed inset-0 ancient-wall-bg z-[-2]"></div>
       <div className="fixed inset-0 vignette-overlay z-[-1]"></div>
 
-      {/* Parallax Particles */}
       <motion.div style={{ y: y1 }} className="fixed top-[10%] left-[5%] w-2 bg-amber-200/20 h-2 rounded-full blur-[1px] z-0" />
       <motion.div style={{ y: y2 }} className="fixed top-[40%] right-[10%] w-3 bg-amber-500/10 h-3 rounded-full blur-[2px] z-0" />
 
-      {/* ---------------- NAVIGATION ---------------- */}
+      {/* NAVIGATION */}
       <nav className="fixed top-0 w-full z-50 px-6 py-4">
         <div className="max-w-7xl mx-auto bg-[#1a120b]/70 backdrop-blur-md border border-amber-900/30 shadow-lg rounded-2xl px-6 py-3 flex justify-between items-center">
           
@@ -85,10 +93,10 @@ export default function HomePage() {
                 onClick={() => navigate("/profile")}
                 className="flex items-center gap-3 p-1 pr-4 bg-amber-950/40 border border-amber-500/30 rounded-full hover:bg-amber-900/50 transition-all active:scale-95 group"
               >
-                <div className="w-8 h-8 rounded-full border-2 border-amber-500 overflow-hidden group-hover:border-amber-400 transition-colors">
+                <div className="w-8 h-8 rounded-full border-2 border-amber-500 overflow-hidden group-hover:border-amber-400 transition-colors bg-amber-900">
                   <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
                 </div>
-                <span className="text-sm font-medium text-amber-100">Profile</span>
+                <span className="text-sm font-medium text-amber-100 max-w-[100px] truncate">{user.name}</span>
               </button>
             ) : (
               <button
@@ -103,13 +111,13 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* ---------------- HERO SECTION ---------------- */}
+      {/* HERO SECTION */}
       <main className="pt-32 pb-20 px-4 relative z-10 max-w-7xl mx-auto">
         <div className="relative w-full min-h-[600px] flex flex-col items-center justify-center text-center px-4">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-600/10 rounded-full blur-[100px] pointer-events-none"></div>
 
           <div className="absolute inset-0 opacity-20 mix-blend-screen pointer-events-none -z-10">
-             <Lottie animationData={rocketBg} loop autoplay className="w-full h-full object-cover scale-110" />
+              <Lottie animationData={rocketBg} loop autoplay className="w-full h-full object-cover scale-110" />
           </div>
 
           <motion.div 
@@ -159,7 +167,7 @@ export default function HomePage() {
           </motion.div>
         </div>
 
-        {/* ---------------- STATS SECTION ---------------- */}
+        {/* STATS */}
         <div className="relative z-30 max-w-6xl mx-auto px-4 mt-8">
           <div className="bg-[#0f0a06]/60 backdrop-blur-md rounded-2xl border border-amber-900/40 p-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-center shadow-2xl">
             <StatItem number="10k+" label="Active Learners" />
@@ -169,7 +177,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ---------------- FEATURES SECTION ---------------- */}
+        {/* FEATURES */}
         <div className="mt-32 mb-16 flex flex-col items-center justify-center text-center">
            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent mb-6"></div>
            <h3 className="font-heading text-4xl font-bold text-amber-100 drop-shadow-lg">
@@ -202,74 +210,72 @@ export default function HomePage() {
           />
         </motion.div>
 
-        {/* ---------------- CTA SECTION ---------------- */}
+        {/* CTA */}
         <section className="relative overflow-hidden rounded-3xl border border-amber-900/50 shadow-2xl">
            <div className="absolute inset-0 bg-[#150f0a] z-0"></div>
            <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] mix-blend-overlay z-0"></div>
            
            <div className="relative z-10 p-8 md:p-16 flex flex-col md:flex-row items-center gap-12">
-              <div className="flex-1 space-y-6 text-center md:text-left">
+             <div className="flex-1 space-y-6 text-center md:text-left">
                  <div className="inline-block px-4 py-1 border border-amber-700 rounded-full text-xs tracking-[0.2em] uppercase text-amber-500 bg-amber-900/20">
-                    Our Mission
+                   Our Mission
                  </div>
                  <h3 className="text-3xl md:text-4xl font-heading font-bold text-amber-50 leading-tight">
-                    History isn't just text. <br />
-                    <span className="text-gold-gradient">It's an experience.</span>
+                   History isn't just text. <br />
+                   <span className="text-gold-gradient">It's an experience.</span>
                  </h3>
                  <p className="text-lg leading-relaxed text-amber-200/60 max-w-lg mx-auto md:mx-0">
-                    Gone are the days of dusty textbooks. Historia uses WebGL and AI to reconstruct the past, allowing you to walk the streets of Rome.
+                   Gone are the days of dusty textbooks. Historia uses WebGL and AI to reconstruct the past, allowing you to walk the streets of Rome.
                  </p>
                  <button className="text-amber-400 hover:text-amber-200 font-bold flex items-center justify-center md:justify-start gap-2 group transition-colors mt-4">
-                    Read the Manifesto <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform"/>
+                   Read the Manifesto <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform"/>
                  </button>
-              </div>
-              
-              <div className="w-full md:w-1/2 h-64 bg-black/40 rounded-2xl flex items-center justify-center border border-amber-800/30 shadow-inner">
+             </div>
+             
+             <div className="w-full md:w-1/2 h-64 bg-black/40 rounded-2xl flex items-center justify-center border border-amber-800/30 shadow-inner">
                  <div className="text-center">
                     <Map className="w-12 h-12 text-amber-800 mx-auto mb-2 opacity-50" />
                     <span className="text-amber-800/50 font-mono text-xs tracking-widest">[ ARTIFACT PREVIEW ]</span>
                  </div>
-              </div>
+             </div>
            </div>
         </section>
       </main>
 
-      {/* ---------------- FOOTER ---------------- */}
+      {/* FOOTER */}
       <footer className="bg-[#120c08] text-amber-200/40 py-16 border-t border-amber-900/30 relative z-10">
         <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="col-span-1 md:col-span-2 space-y-4">
-             <div className="flex items-center gap-3 text-amber-100">
-               <div className="bg-amber-900/30 p-1.5 rounded border border-amber-800/50">
-                 <Scroll className="w-5 h-5" />
-               </div>
-               <span className="font-heading font-bold text-lg tracking-wide">HISTORIA</span>
-             </div>
-             <p className="text-sm max-w-xs leading-relaxed">
-               Preserving the past for the future. An open-source initiative to digitize human history.
-             </p>
+              <div className="flex items-center gap-3 text-amber-100">
+                <div className="bg-amber-900/30 p-1.5 rounded border border-amber-800/50">
+                  <Scroll className="w-5 h-5" />
+                </div>
+                <span className="font-heading font-bold text-lg tracking-wide">HISTORIA</span>
+              </div>
+              <p className="text-sm max-w-xs leading-relaxed">
+                Preserving the past for the future. An open-source initiative to digitize human history.
+              </p>
           </div>
           <div>
-             <h4 className="text-amber-500 font-bold mb-6 uppercase text-xs tracking-widest">Platform</h4>
-             <ul className="space-y-3 text-sm">
-                <li className="hover:text-amber-200 cursor-pointer transition-colors">Explore</li>
-                <li className="hover:text-amber-200 cursor-pointer transition-colors">Community</li>
-                <li className="hover:text-amber-200 cursor-pointer transition-colors">Teachers</li>
-             </ul>
+              <h4 className="text-amber-500 font-bold mb-6 uppercase text-xs tracking-widest">Platform</h4>
+              <ul className="space-y-3 text-sm">
+                 <li className="hover:text-amber-200 cursor-pointer transition-colors">Explore</li>
+                 <li className="hover:text-amber-200 cursor-pointer transition-colors">Community</li>
+                 <li className="hover:text-amber-200 cursor-pointer transition-colors">Teachers</li>
+              </ul>
           </div>
           <div>
-             <h4 className="text-amber-500 font-bold mb-6 uppercase text-xs tracking-widest">Legal</h4>
-             <ul className="space-y-3 text-sm">
-                <li className="hover:text-amber-200 cursor-pointer transition-colors">Privacy Policy</li>
-                <li className="hover:text-amber-200 cursor-pointer transition-colors">Terms of Service</li>
-             </ul>
+              <h4 className="text-amber-500 font-bold mb-6 uppercase text-xs tracking-widest">Legal</h4>
+              <ul className="space-y-3 text-sm">
+                 <li className="hover:text-amber-200 cursor-pointer transition-colors">Privacy Policy</li>
+                 <li className="hover:text-amber-200 cursor-pointer transition-colors">Terms of Service</li>
+              </ul>
           </div>
         </div>
       </footer>
     </div>
   );
 }
-
-// ---------------- SUB-COMPONENTS ----------------
 
 function NavLink({ icon, label, onClick }) {
   return (

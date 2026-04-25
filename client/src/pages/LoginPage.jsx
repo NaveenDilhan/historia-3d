@@ -1,15 +1,46 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Scroll, Mail, Lock, LogIn, ChevronRight, Github } from "lucide-react";
+import { Scroll, Mail, Lock, LogIn, Github } from "lucide-react";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      }); //
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // Store basic user info (but NOT the token, that's in the HTTP-only cookie)
+        localStorage.setItem("userInfo", JSON.stringify(data));
+        navigate("/explore"); // Redirect to main app
+      } else {
+        setError(data.message || "Invalid credentials");
+      }
+    } catch (err) {
+      setError("Failed to connect to the archives.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen ancient-wall-bg flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Background Vignette */}
       <div className="fixed inset-0 bg-radial-gradient(circle at center, transparent 0%, rgba(10, 5, 2, 0.8) 100%) pointer-events-none"></div>
 
       <motion.div 
@@ -17,7 +48,6 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md relative z-10"
       >
-        {/* Logo/Brand Header */}
         <div className="text-center mb-8 cursor-pointer" onClick={() => navigate("/")}>
           <div className="inline-block bg-amber-900/50 p-3 rounded-xl border border-amber-700/50 mb-4">
             <Scroll className="w-8 h-8 text-amber-400" />
@@ -26,16 +56,25 @@ export default function LoginPage() {
           <p className="text-amber-200/50 text-sm mt-2 font-body uppercase tracking-tighter">Enter the Halls of Time</p>
         </div>
 
-        {/* Login Card */}
         <div className="bg-[#1a120b]/80 backdrop-blur-xl border border-amber-900/40 p-8 rounded-2xl shadow-2xl">
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-5" onSubmit={handleLogin}>
+            
+            {error && (
+              <div className="p-3 bg-red-900/30 border border-red-800 rounded text-red-200 text-xs text-center uppercase tracking-wide">
+                {error}
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80 ml-1">Email Address</label>
               <div className="relative group">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700 group-focus-within:text-amber-400 transition-colors" />
                 <input 
                   type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="scholar@alexandria.edu"
+                  required
                   className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 pl-10 pr-4 text-amber-50 placeholder:text-amber-900 focus:outline-none focus:border-amber-500/50 transition-all"
                 />
               </div>
@@ -47,15 +86,25 @@ export default function LoginPage() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700 group-focus-within:text-amber-400 transition-colors" />
                 <input 
                   type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  required
                   className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 pl-10 pr-4 text-amber-50 placeholder:text-amber-900 focus:outline-none focus:border-amber-500/50 transition-all"
                 />
               </div>
             </div>
 
-            <button className="w-full bg-gradient-to-r from-amber-700 to-amber-900 text-amber-50 font-bold py-3 rounded-lg shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 border border-amber-600/30">
-              <LogIn size={18} />
-              <span>Begin Exploration</span>
+            <button 
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-amber-700 to-amber-900 text-amber-50 font-bold py-3 rounded-lg shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 border border-amber-600/30 disabled:opacity-50"
+            >
+              {isLoading ? 'Accessing Archives...' : (
+                <>
+                  <LogIn size={18} />
+                  <span>Begin Exploration</span>
+                </>
+              )}
             </button>
           </form>
 
