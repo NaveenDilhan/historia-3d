@@ -232,9 +232,9 @@ export default function ExplorePage() {
             lesson={selectedLesson}
             onClose={() => setSelectedLesson(null)}
             onPlay={() => {
-              // Ensure your database/backend includes a 'slug' or identifier for the lesson
-              // Example: lesson.slug = 'earth-formation'
-              const routeId = selectedLesson.slug || 'jurassic'; // Fallback to 'jurassic' if slug is missing
+              // 1. Strictly use the database slug.
+              // 2. If it's an old DB entry missing a slug, dynamically create one to prevent a crash.
+              const routeId = selectedLesson.slug || selectedLesson.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
               setSelectedLesson(null);
               navigate(`/scene/${routeId}`);
             }}

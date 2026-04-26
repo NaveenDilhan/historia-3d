@@ -11,7 +11,17 @@ export const getLessons = async (req, res) => {
 
 export const createLesson = async (req, res) => {
   try {
-    const newLesson = new Lesson(req.body);
+    const lessonData = req.body;
+    
+    // Auto-generate a slug from the title if one isn't provided
+    if (!lessonData.slug && lessonData.title) {
+        lessonData.slug = lessonData.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-') // replace spaces & special chars with hyphens
+            .replace(/(^-|-$)+/g, '');   // remove leading/trailing hyphens
+    }
+
+    const newLesson = new Lesson(lessonData);
     const savedLesson = await newLesson.save();
     return res.status(201).json(savedLesson);
   } catch (error) {
