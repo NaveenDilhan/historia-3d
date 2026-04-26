@@ -226,14 +226,17 @@ export default function ExplorePage() {
         </div>
       </footer>
 
-      <AnimatePresence>
+<AnimatePresence>
         {selectedLesson && (
           <LessonPopup
             lesson={selectedLesson}
             onClose={() => setSelectedLesson(null)}
             onPlay={() => {
-              setSelectedLesson(null)
-              navigate('/scene')
+              // Ensure your database/backend includes a 'slug' or identifier for the lesson
+              // Example: lesson.slug = 'earth-formation'
+              const routeId = selectedLesson.slug || 'jurassic'; // Fallback to 'jurassic' if slug is missing
+              setSelectedLesson(null);
+              navigate(`/scene/${routeId}`);
             }}
           />
         )}

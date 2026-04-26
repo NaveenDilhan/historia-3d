@@ -4,7 +4,7 @@ import { Sky, Environment } from '@react-three/drei';
 import Terrain from './Environment/Terrain';
 import Lighting from './Environment/Lighting';
 import DinosaurEncounter from './Events/DinosaurEncounter';
-import Player from '../hooks/Player';
+import Player from '../../hooks/Player';
 
 export default function Scene() {
   const terrainRef = useRef();

@@ -19,7 +19,7 @@ export default function App() {
           {/* Main Content Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/explore" element={<ExplorePage />} />
-          <Route path="/scene" element={<ScenePage />} />
+          <Route path="/scene/:lessonId" element={<ScenePage />} />
 
           {/* Authentication Routes */}
           <Route path="/login" element={<LoginPage />} />

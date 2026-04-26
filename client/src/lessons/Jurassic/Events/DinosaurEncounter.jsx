@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import useAI from '../../hooks/useAI';
+import useAI from '../../../hooks/useAI';
 import DinosaurModel from '../Environment/DinosaurModel';
 
 export default function DinosaurEncounter() {

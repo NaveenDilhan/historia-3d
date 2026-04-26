@@ -4,9 +4,9 @@ import Lottie from "lottie-react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Compass, Users, User, Globe, BookOpen, ChevronRight, Star, Map, LogIn } from "lucide-react";
 
-import humanWalk from "../../public/animations/Ancient_Man.json";
-import dinoRoar from "../../public/animations/T-Rex.json";
-import rocketBg from "../../public/animations/Rocket_Webpage.json";
+import humanWalk from "../assets/animations/Ancient_Man.json";
+import dinoRoar from "../assets/animations/T-Rex.json";
+import rocketBg from "../assets/animations/Rocket_Webpage.json";
 
 export default function HomePage() {
   const navigate = useNavigate();
