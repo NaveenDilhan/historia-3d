@@ -3,7 +3,8 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 
-export default function TreeForest({ genericCount = 50, forestCount = 200, areaSize = 350, terrainGeo }) {
+// ADDED: treeScale prop with a default of 1 (but it will receive 4.5 from Terrain.jsx)
+export default function TreeForest({ genericCount = 50, forestCount = 200, areaSize = 350, terrainGeo, treeScale = 1 }) {
   const genericModels = [useGLTF('/models/tree1.glb'), useGLTF('/models/tree2.glb'), useGLTF('/models/tree3.glb'), useGLTF('/models/tree4.glb'), useGLTF('/models/tree5.glb')];
   const pineModels = [useGLTF('/models/pine1.glb'), useGLTF('/models/pine2.glb'), useGLTF('/models/pine3.glb'), useGLTF('/models/pine4.glb')];
   const twistedModels = [useGLTF('/models/twisted1.glb'), useGLTF('/models/twisted2.glb'), useGLTF('/models/twisted3.glb'), useGLTF('/models/twisted4.glb'), useGLTF('/models/twisted5.glb')];
@@ -11,7 +12,7 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, areaS
 
   const getHeight = (x, z) => {
     if (!terrainGeo) return 0;
-    const size = 400; // FIXED: Matches new terrain map size
+    const size = 400; // Matches new terrain map size
     const segments = 256;
     let ix = Math.floor(((x + size / 2) / size) * segments);
     let iz = Math.floor(((z + size / 2) / size) * segments);
@@ -26,9 +27,11 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, areaS
     return Array.from({ length: genericCount }, () => {
       const x = Math.random() * areaSize - areaSize / 2;
       const z = Math.random() * areaSize - areaSize / 2;
-      return { x, y: getHeight(x, z), z, scale: 1.5 + Math.random() * 0.7, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * genericModels.length) };
+      // MULTIPLY base scale by treeScale prop
+      const scale = (1.5 + Math.random() * 0.7) * treeScale; 
+      return { x, y: getHeight(x, z), z, scale, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * genericModels.length) };
     });
-  }, [genericCount, areaSize, terrainGeo]);
+  }, [genericCount, areaSize, terrainGeo, treeScale]); // Added treeScale to dependencies
 
   const forestTrees = useMemo(() => {
     return Array.from({ length: forestCount }, () => {
@@ -36,11 +39,12 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, areaS
       const z = Math.random() * areaSize - areaSize / 2;
       const rnd = Math.random();
       let type = rnd < 0.5 ? 'pine' : rnd < 0.85 ? 'twisted' : 'dead';
-      let scale = type === 'pine' ? 1.5 + Math.random() * 0.8 : 0.8 + Math.random() * 0.7;
+      // MULTIPLY base scale by treeScale prop
+      let scale = (type === 'pine' ? 1.5 + Math.random() * 0.8 : 0.8 + Math.random() * 0.7) * treeScale;
       let modelListLength = type === 'pine' ? pineModels.length : type === 'twisted' ? twistedModels.length : deadModels.length;
       return { x, y: getHeight(x, z), z, scale, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * modelListLength), type };
     });
-  }, [forestCount, areaSize, terrainGeo]);
+  }, [forestCount, areaSize, terrainGeo, treeScale]); // Added treeScale to dependencies
 
   const treeRefs = useRef([]);
 
@@ -62,8 +66,10 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, areaS
         let modelList = t.type === 'pine' ? pineModels : t.type === 'twisted' ? twistedModels : t.type === 'dead' ? deadModels : genericModels;
         const model = modelList[t.modelIndex].scene.clone();
 
+        // Collider scales automatically with t.scale
         const colliderHeight = t.scale * 5;
-        const colliderRadius = t.scale * 0.5;
+        // TIGHTENED trunk radius from 0.5 to 0.25 to prevent massive invisible walls around the huge trees
+        const colliderRadius = t.scale * 0.25; 
 
         return (
           <RigidBody key={i} type="fixed" colliders={false} position={[t.x, t.y, t.z]}>
