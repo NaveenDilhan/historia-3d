@@ -161,7 +161,7 @@ export default function Terrain({ setTerrainGeo }) {
     return mat;
   }, [grassTex, pathRocks, rocks, desertRocks]);
 
-  return (
+return (
     <group>
       <RigidBody type="fixed" colliders="trimesh">
         <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow>
@@ -171,9 +171,21 @@ export default function Terrain({ setTerrainGeo }) {
 
       <BorderMountains />
 
+      {/* Upgraded Water Plane: Murky, deep swamp physics */}
       <mesh position={[0, -4.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[1500, 1500, 64, 64]} />
-        <meshPhysicalMaterial color="#006699" transmission={0.8} opacity={1} transparent roughness={0.1} metalness={0.6} ior={1.33} thickness={10} />
+        <meshPhysicalMaterial 
+          color="#003b29" 
+          transmission={0.9} 
+          opacity={1} 
+          transparent 
+          roughness={0.15} 
+          metalness={0.8} 
+          ior={1.33} 
+          thickness={15} 
+          attenuationColor="#005940" 
+          attenuationDistance={10} 
+        />
       </mesh>
 
       <RigidBody type="fixed">
