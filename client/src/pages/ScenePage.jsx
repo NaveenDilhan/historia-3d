@@ -1,8 +1,9 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DialogueBox from '../components/UI/DialogueBox';
 import LoadingScreen from '../components/UI/LoadingScreen';
 import { ChevronLeft } from 'lucide-react';
+import { useProgress } from '@react-three/drei';
 
 // 1. Define lazy imports for your isolated scenes.
 const SceneMap = {
@@ -34,26 +35,66 @@ const LessonNotFound = () => {
 };
 
 export default function ScenePage() {
-  // Grab the lessonId (which is the slug) from the URL
   const { lessonId } = useParams();
-
-  // Select the correct scene based on the URL parameter
   const ActiveScene = SceneMap[lessonId];
+  
+  // Track 3D asset loading progress globally
+  const { active, progress, total, errors } = useProgress();
+  const [isSceneReady, setIsSceneReady] = useState(false);
+
+  useEffect(() => {
+    // 1. If actively downloading, ensure the scene stays hidden.
+    if (active) {
+      setIsSceneReady(false);
+      return; 
+    }
+
+    // 2. If finished loading and hit 100%
+    if (!active && progress === 100) {
+      // Add a 1.2-second buffer. This prevents flickering if another asset 
+      // is requested late, and gives the GPU time to compile shaders smoothly.
+      const timer = setTimeout(() => setIsSceneReady(true), 1200);
+      return () => clearTimeout(timer);
+    }
+
+    // 3. Failsafe: If there are network errors, let the user read them, then proceed anyway
+    if (!active && errors.length > 0) {
+      const timer = setTimeout(() => setIsSceneReady(true), 3000);
+      return () => clearTimeout(timer);
+    }
+
+    // 4. Failsafe: If a scene has literally 0 assets to load
+    if (!active && total === 0) {
+      const timer = setTimeout(() => setIsSceneReady(true), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [active, progress, total, errors.length]);
 
   return (
     <div className="scene-page relative w-full h-screen overflow-hidden bg-black">
       
-      {/* If the scene exists in our map, render it. Otherwise, show the Not Found page */}
+      {/* Opaque Loading Barrier: 
+        Because we control visibility via CSS overlapping (z-50) rather than unmounting 
+        the Canvas, the 3D scene can silently render in the background while this covers it.
+      */}
+      {!isSceneReady && ActiveScene && (
+        <div className="absolute inset-0 z-50 bg-[#1a120b]">
+          <LoadingScreen />
+        </div>
+      )}
+
+      {/* The 3D Component */}
       {ActiveScene ? (
-        <Suspense fallback={<LoadingScreen />}>
+        // Fallback is null because our custom overlay above handles the visual loading state
+        <Suspense fallback={null}>
           <ActiveScene />
         </Suspense>
       ) : (
         <LessonNotFound />
       )}
 
-      {/* Only render the DialogueBox if an ActiveScene is actually running */}
-      {ActiveScene && (
+      {/* Only reveal UI overlays when the scene is 100% prepared */}
+      {ActiveScene && isSceneReady && (
         <div className="ui-overlay absolute bottom-10 left-1/2 -translate-x-1/2 z-20">
           <DialogueBox />
         </div>
