@@ -7,7 +7,7 @@ import { getExactHeight, getDistToRexPath } from './Terrain';
 export default function TreeForest({ genericCount = 50, forestCount = 200, areaSize = 350, terrainGeo, treeScale = 1 }) {
   const genericModels = [useGLTF('/models/tree1.glb'), useGLTF('/models/tree2.glb'), useGLTF('/models/tree3.glb'), useGLTF('/models/tree4.glb'), useGLTF('/models/tree5.glb')];
   const pineModels = [useGLTF('/models/pine1.glb'), useGLTF('/models/pine2.glb'), useGLTF('/models/pine3.glb'), useGLTF('/models/pine4.glb')];
-  const twistedModels = [useGLTF('/models/twisted1.glb'), useGLTF('/models/twisted2.glb'), useGLTF('/models/twisted3.glb'), useGLTF('/models/twisted4.glb'), useGLTF('/models/twisted5.glb')];
+  // Twisted models removed
   const deadModels = [useGLTF('/models/dead1.glb'), useGLTF('/models/dead2.glb'), useGLTF('/models/dead3.glb'), useGLTF('/models/dead4.glb'), useGLTF('/models/dead5.glb')];
 
   const genericTrees = useMemo(() => {
@@ -18,7 +18,6 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, areaS
       const z = Math.random() * areaSize - areaSize / 2;
       attempts++;
       
-      // Trees need plenty of clearance
       if (getDistToRexPath(x, z) < 14) continue;
 
       const scale = (1.5 + Math.random() * 0.7) * treeScale; 
@@ -38,9 +37,11 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, areaS
       if (getDistToRexPath(x, z) < 14) continue;
 
       const rnd = Math.random();
-      let type = rnd < 0.5 ? 'pine' : rnd < 0.85 ? 'twisted' : 'dead';
+      // Logic adjusted: 70% Pine, 30% Dead (Twisted removed)
+      let type = rnd < 0.7 ? 'pine' : 'dead';
       let scale = (type === 'pine' ? 1.5 + Math.random() * 0.8 : 0.8 + Math.random() * 0.7) * treeScale;
-      let modelListLength = type === 'pine' ? pineModels.length : type === 'twisted' ? twistedModels.length : deadModels.length;
+      let modelListLength = type === 'pine' ? pineModels.length : deadModels.length;
+      
       trees.push({ x, y: getExactHeight(x, z, terrainGeo), z, scale, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * modelListLength), type });
     }
     return trees;
@@ -63,7 +64,8 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, areaS
   return (
     <>
       {[...genericTrees, ...forestTrees].map((t, i) => {
-        let modelList = t.type === 'pine' ? pineModels : t.type === 'twisted' ? twistedModels : t.type === 'dead' ? deadModels : genericModels;
+        // Condition updated to exclude twistedModels
+        let modelList = t.type === 'pine' ? pineModels : t.type === 'dead' ? deadModels : genericModels;
         const model = modelList[t.modelIndex].scene.clone();
 
         const colliderHeight = t.scale * 5;

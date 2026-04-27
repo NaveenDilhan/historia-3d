@@ -12,8 +12,9 @@ import RockModel from './RockModel';
 // --- Shared Helper for Ground Alignment ---
 export const getExactHeight = (x, z, terrainGeo) => {
   if (!terrainGeo) return 0;
+  // Reduced segments from 256 to 100 for deliberate, chunky low-poly geometry
   const size = 400;
-  const segments = 256;
+  const segments = 100;
   const halfSize = size / 2;
 
   let u = (x + halfSize) / size;
@@ -47,9 +48,7 @@ export const rexPathVectors = [
   new THREE.Vector3(0, 0, 40),
   new THREE.Vector3(-30, 0, -20),
 ];
-// Exported curve so DinosaurModel can follow it
 export const rexCurve = new THREE.CatmullRomCurve3(rexPathVectors, true, 'centripetal', 0.5);
-// Sample points to easily calculate distance for obstacles
 export const curveSamples = rexCurve.getPoints(100); 
 
 export const getDistToRexPath = (x, z) => {
@@ -98,22 +97,24 @@ useGLTF.preload('/models/mountain1.glb');
 useGLTF.preload('/models/volcano.glb');
 
 export default function Terrain({ setTerrainGeo }) {
-  const [grassTex, pathRocks, rocks, desertRocks] = useLoader(THREE.TextureLoader, [
-    '/textures/Grass.jpg',
-    '/textures/PathRocks_Diffuse.png',
-    '/textures/Rocks_Diffuse.png',
-    '/textures/Rocks_Desert_Diffuse.png',
+  // NOTE: For the best stylized look, replace these specific files in your public folder 
+  // with "Hand-Painted Stylized Moss", "Stylized Mud", and "Stylized Rock" textures.
+  const [mossTex, mudTex, rockTex] = useLoader(THREE.TextureLoader, [
+    '/textures/grass_mossy.png',
+    '/textures/mud.png',
+    '/textures/rock.png',
   ]);
 
   useMemo(() => {
-    [grassTex, pathRocks, rocks, desertRocks].forEach((tex) => {
+    [mossTex, mudTex, rockTex].forEach((tex) => {
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
       tex.colorSpace = THREE.SRGBColorSpace;
     });
-  }, [grassTex, pathRocks, rocks, desertRocks]);
+  }, [mossTex, mudTex, rockTex]);
 
   const geometry = useMemo(() => {
-    const geo = new THREE.PlaneGeometry(400, 400, 256, 256);
+    // 100x100 segments creates visually pleasing, deliberate low-poly triangles
+    const geo = new THREE.PlaneGeometry(400, 400, 100, 100);
     const vertices = geo.attributes.position;
     const noise = new ImprovedNoise();
 
@@ -121,13 +122,12 @@ export default function Terrain({ setTerrainGeo }) {
       const x = vertices.getX(i);
       const y = vertices.getY(i); 
       
-      let height = noise.noise(x / 80, y / 80, 0) * 12; 
-      height += noise.noise(x / 25, y / 25, 0) * 4;     
-      height += noise.noise(x / 5, y / 5, 0) * 0.8;     
+      // Smoothed out the terrain frequencies for rolling low-poly hills
+      let height = noise.noise(x / 90, y / 90, 0) * 14; 
+      height += noise.noise(x / 30, y / 30, 0) * 3;     
 
       if (x > 175) height -= Math.pow((x - 175) * 0.15, 2); 
 
-      // CARVE THE PATH: Note that the 'y' from the plane geometry represents World Z.
       const distFromRexZone = getDistToRexPath(x, y);
       if (distFromRexZone < 15) {
         const flattenFactor = THREE.MathUtils.smoothstep(distFromRexZone, 4, 15);
@@ -147,21 +147,66 @@ export default function Terrain({ setTerrainGeo }) {
   }, [geometry, setTerrainGeo]);
 
   const material = useMemo(() => {
-    const mat = new THREE.MeshStandardMaterial({ roughness: 0.95, metalness: 0.05 });
+    const mat = new THREE.MeshStandardMaterial({ 
+      roughness: 0.9, 
+      metalness: 0.0,
+      flatShading: true // Activates the crisp low-poly faceting
+    });
+    
     mat.onBeforeCompile = (shader) => {
-      shader.uniforms.grassTex = { value: grassTex };
-      shader.uniforms.pathTex = { value: pathRocks };
-      shader.uniforms.rockTex = { value: rocks };
-      shader.uniforms.desertTex = { value: desertRocks };
-      shader.vertexShader = shader.vertexShader.replace(`#include <common>`, `#include <common>\n varying float vHeight;\n varying vec3 vWorldPosition;\n varying vec2 vCustomUv;`);
-      shader.vertexShader = shader.vertexShader.replace(`#include <begin_vertex>`, `#include <begin_vertex>\n vHeight = position.z;\n vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;\n vCustomUv = uv;`);
-      shader.fragmentShader = shader.fragmentShader.replace(`#include <common>`, `#include <common>\n uniform sampler2D grassTex;\n uniform sampler2D pathTex;\n uniform sampler2D rockTex;\n uniform sampler2D desertTex;\n varying float vHeight;\n varying vec3 vWorldPosition;\n varying vec2 vCustomUv;\n float random(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123); }`);
-      shader.fragmentShader = shader.fragmentShader.replace(`#include <color_fragment>`, `#include <color_fragment>\n vec2 texUv = vCustomUv * 60.0;\n vec4 grassColor = texture2D(grassTex, texUv);\n vec4 pathColor = texture2D(pathTex, texUv);\n vec4 rockColor = texture2D(rockTex, texUv);\n vec4 desertColor = texture2D(desertTex, texUv);\n float noiseVal = random(floor(vWorldPosition.xy * 2.5)) * 2.0;\n float h = vHeight + noiseVal;\n vec4 terrainColor = grassColor;\n if (h > 2.0) terrainColor = mix(grassColor, pathColor, smoothstep(2.0, 5.0, h));\n if (h > 6.0) terrainColor = mix(pathColor, rockColor, smoothstep(6.0, 10.0, h));\n if (h > 12.0) terrainColor = mix(rockColor, desertColor, smoothstep(12.0, 15.0, h));\n diffuseColor = vec4(terrainColor.rgb, 1.0);`);
+      shader.uniforms.mossTex = { value: mossTex };
+      shader.uniforms.mudTex = { value: mudTex };
+      shader.uniforms.rockTex = { value: rockTex };
+      
+      shader.vertexShader = shader.vertexShader.replace(
+        `#include <common>`, 
+        `#include <common>\n varying float vHeight;\n varying vec2 vCustomUv;`
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        `#include <begin_vertex>`, 
+        `#include <begin_vertex>\n vHeight = position.z;\n vCustomUv = uv;`
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        `#include <common>`, 
+        `#include <common>\n 
+         uniform sampler2D mossTex;\n 
+         uniform sampler2D mudTex;\n 
+         uniform sampler2D rockTex;\n 
+         varying float vHeight;\n 
+         varying vec2 vCustomUv;`
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        `#include <color_fragment>`, 
+        `#include <color_fragment>\n 
+         vec2 texUv = vCustomUv * 50.0; // Adjust tiling scale here
+         
+         vec4 mossColor = texture2D(mossTex, texUv);
+         vec4 mudColor = texture2D(mudTex, texUv);
+         vec4 rockColor = texture2D(rockTex, texUv);
+         
+         // Stylized Sharp-Stepped Blending
+         // Instead of a blurry gradient, we use tight smoothsteps for a cel-shaded edge
+         float h = vHeight;
+         
+         vec4 terrainColor = mudColor; // Base layer
+         
+         // Sharp transition to Moss/Grass
+         float mossBlend = smoothstep(1.0, 1.2, h);
+         terrainColor = mix(terrainColor, mossColor, mossBlend);
+         
+         // Sharp transition to Rock at higher elevations
+         float rockBlend = smoothstep(6.0, 6.5, h);
+         terrainColor = mix(terrainColor, rockColor, rockBlend);
+         
+         // Add a subtle humid amber tint to match the scene fog
+         vec3 sceneTint = vec3(0.05, 0.07, 0.03); 
+         diffuseColor = vec4(terrainColor.rgb + sceneTint, 1.0);`
+      );
     };
     return mat;
-  }, [grassTex, pathRocks, rocks, desertRocks]);
+  }, [mossTex, mudTex, rockTex]);
 
-return (
+  return (
     <group>
       <RigidBody type="fixed" colliders="trimesh">
         <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow>
@@ -171,20 +216,18 @@ return (
 
       <BorderMountains />
 
-      {/* Upgraded Water Plane: Murky, deep swamp physics */}
+      {/* Stylized Murky Swamp Water */}
       <mesh position={[0, -4.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[1500, 1500, 64, 64]} />
         <meshPhysicalMaterial 
-          color="#003b29" 
-          transmission={0.9} 
+          color="#002b1f" 
+          transmission={0.8} 
           opacity={1} 
           transparent 
-          roughness={0.15} 
-          metalness={0.8} 
+          roughness={0.2} 
+          metalness={0.5} 
           ior={1.33} 
-          thickness={15} 
-          attenuationColor="#005940" 
-          attenuationDistance={10} 
+          thickness={10} 
         />
       </mesh>
 
