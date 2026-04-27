@@ -1,14 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import useAI from '../../../hooks/useAI';
 import DinosaurModel from '../Environment/DinosaurModel';
+import { rexCurve } from '../Environment/Terrain';
 
-export default function DinosaurEncounter() {
+export default function DinosaurEncounter({ terrainGeo }) {
   const { getNarration } = useAI();
   const timerRef = useRef(null);
   const [showDino, setShowDino] = useState(false);
 
   useEffect(() => {
-    // Trigger narration and show dinosaur after 6 seconds
     timerRef.current = setTimeout(() => {
       getNarration(
         'A large dinosaur appears at the tree line.',
@@ -24,15 +24,11 @@ export default function DinosaurEncounter() {
     <group>
       {showDino && (
         <DinosaurModel
-          path={[
-            [10, 0, -30],
-            [0, 0, -50],
-            [-10, 0, -30],
-            [0, 0, -10], // optional loop path
-          ]}
-          speed={0.8}
-          scale={2.5}
+          curve={rexCurve}
+          speed={0.02}
+          scale={2.8}
           animate={true}
+          terrainGeo={terrainGeo}
         />
       )}
     </group>

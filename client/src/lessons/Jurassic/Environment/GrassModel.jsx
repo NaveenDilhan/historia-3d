@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
+import { getExactHeight, getDistToRexPath } from './Terrain';
 
 export default function GrassModel({ count = 200, areaSize = 350, terrainGeo }) {
   const grassModels = [
@@ -10,33 +11,18 @@ export default function GrassModel({ count = 200, areaSize = 350, terrainGeo }) 
     useGLTF('/models/grass4.glb'),
   ];
 
-  // Function to get exact terrain height at (x, z)
-  const getHeight = (x, z) => {
-    if (!terrainGeo) return 0;
-    
-    // CRITICAL FIX: The geometry is 400x400. We must use 400 to look up 
-    // the height array, even if the grasses only spawn in an areaSize of 350.
-    const size = 400; 
-    const segments = 256;
-    
-    let ix = Math.floor(((x + size / 2) / size) * segments);
-    let iz = Math.floor(((z + size / 2) / size) * segments);
-
-    // Clamp to prevent out of bounds edge errors
-    ix = Math.max(0, Math.min(segments, ix));
-    iz = Math.max(0, Math.min(segments, iz));
-
-    const idx = ix + iz * (segments + 1);
-    return terrainGeo.attributes.position.getZ(idx) || 0;
-  };
-
   const grasses = useMemo(() => {
     const data = [];
-    for (let i = 0; i < count; i++) {
+    let attempts = 0;
+    while (data.length < count && attempts < count * 3) {
       const x = Math.random() * areaSize - areaSize / 2;
       const z = Math.random() * areaSize - areaSize / 2;
+      attempts++;
       
-      const y = getHeight(x, z);
+      // Worn path in the center
+      if (getDistToRexPath(x, z) < 4) continue;
+      
+      const y = getExactHeight(x, z, terrainGeo);
       
       const scale = 0.5 + Math.random() * 1.5;
       const rotationY = Math.random() * Math.PI * 2;

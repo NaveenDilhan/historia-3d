@@ -9,39 +9,85 @@ import TreeForest from './TreeModel';
 import GrassModel from './GrassModel';
 import RockModel from './RockModel';
 
+// --- Shared Helper for Ground Alignment ---
+export const getExactHeight = (x, z, terrainGeo) => {
+  if (!terrainGeo) return 0;
+  const size = 400;
+  const segments = 256;
+  const halfSize = size / 2;
+
+  let u = (x + halfSize) / size;
+  let v = (z + halfSize) / size;
+  u = Math.max(0, Math.min(1, u));
+  v = Math.max(0, Math.min(1, v));
+
+  const fX = u * segments;
+  const fY = v * segments;
+  const x0 = Math.floor(fX);
+  const x1 = Math.min(segments, x0 + 1);
+  const y0 = Math.floor(fY);
+  const y1 = Math.min(segments, y0 + 1);
+
+  const tx = fX - x0;
+  const ty = fY - y0;
+
+  const pos = terrainGeo.attributes.position;
+  const getZ = (ix, iy) => pos.getZ(ix + iy * (segments + 1));
+
+  const h0 = getZ(x0, y0) * (1 - tx) + getZ(x1, y0) * tx;
+  const h1 = getZ(x0, y1) * (1 - tx) + getZ(x1, y1) * tx;
+
+  return h0 * (1 - ty) + h1 * ty;
+};
+
+// --- Shared T-Rex Path Logic ---
+export const rexPathVectors = [
+  new THREE.Vector3(10, 0, -60),
+  new THREE.Vector3(30, 0, -20),
+  new THREE.Vector3(0, 0, 40),
+  new THREE.Vector3(-30, 0, -20),
+];
+// Exported curve so DinosaurModel can follow it
+export const rexCurve = new THREE.CatmullRomCurve3(rexPathVectors, true, 'centripetal', 0.5);
+// Sample points to easily calculate distance for obstacles
+export const curveSamples = rexCurve.getPoints(100); 
+
+export const getDistToRexPath = (x, z) => {
+  let minDist = Infinity;
+  for (let i = 0; i < curveSamples.length; i++) {
+    const pt = curveSamples[i];
+    const d = Math.hypot(pt.x - x, pt.z - z);
+    if (d < minDist) minDist = d;
+  }
+  return minDist;
+};
+
 // --- GLB Mountain Range ---
 function BorderMountains() {
   const { scene: mountainScene } = useGLTF('/models/mountain1.glb');
   const { scene: volcanoScene } = useGLTF('/models/volcano.glb');
 
-  // Pushed further back (-260 to -280) to accommodate the massive scale increase
   const borderPositions = useMemo(() => [
-    // Left Border Range
-    [-260, -10, -180], [-270, -10, -80], [-250, -10, 20], [-280, -10, 110], [-260, -10, 200],
-    // Back Border Range (Top)
-    [-140, -10, -270], [-50, -10, -250], [50, -10, -280], [140, -10, -260], [220, -10, -275],
-    // Front Border Range (Bottom)
-    [-150, -10, 270], [-60, -10, 260], [40, -10, 280], [130, -10, 255], [210, -10, 265]
+    [-280, -20, -200], [-300, -15, -80], [-270, -25, 40], [-290, -10, 150], [-260, -20, 240],
+    [-160, -20, -290], [-60, -15, -280], [60, -25, -300], [160, -10, -280], [250, -20, -295],
+    [-180, -20, 290], [-70, -15, 280], [50, -25, 300], [150, -10, 275], [240, -20, 285]
   ], []);
 
   return (
     <group>
-      {/* Massive Mountain Range */}
       {borderPositions.map((pos, index) => (
         <Clone
           key={`mountain-${index}`}
           object={mountainScene}
           position={pos}
-          scale={45} // INCREASED: Was 15, now 45 for towering peaks
+          scale={50 + Math.random() * 20}
           rotation={[0, Math.random() * Math.PI, 0]}
         />
       ))}
-
-      {/* Epic Volcano in the top-left corner */}
       <Clone
         object={volcanoScene}
-        position={[-270, -20, -270]} // Sunk slightly so the wider base blends into the ground
-        scale={65} // INCREASED: Was 20, now 65 for a massive landmark
+        position={[-280, -35, -280]}
+        scale={80}
         rotation={[0, Math.PI / 4, 0]}
       />
     </group>
@@ -50,7 +96,6 @@ function BorderMountains() {
 
 useGLTF.preload('/models/mountain1.glb');
 useGLTF.preload('/models/volcano.glb');
-
 
 export default function Terrain({ setTerrainGeo }) {
   const [grassTex, pathRocks, rocks, desertRocks] = useLoader(THREE.TextureLoader, [
@@ -74,14 +119,19 @@ export default function Terrain({ setTerrainGeo }) {
 
     for (let i = 0; i < vertices.count; i++) {
       const x = vertices.getX(i);
-      const y = vertices.getY(i);
+      const y = vertices.getY(i); 
       
       let height = noise.noise(x / 80, y / 80, 0) * 12; 
       height += noise.noise(x / 25, y / 25, 0) * 4;     
       height += noise.noise(x / 5, y / 5, 0) * 0.8;     
 
-      if (x > 175) {
-        height -= Math.pow((x - 175) * 0.15, 2); 
+      if (x > 175) height -= Math.pow((x - 175) * 0.15, 2); 
+
+      // CARVE THE PATH: Note that the 'y' from the plane geometry represents World Z.
+      const distFromRexZone = getDistToRexPath(x, y);
+      if (distFromRexZone < 15) {
+        const flattenFactor = THREE.MathUtils.smoothstep(distFromRexZone, 4, 15);
+        height = THREE.MathUtils.lerp(0, height, flattenFactor);
       }
 
       vertices.setZ(i, height);
@@ -113,44 +163,29 @@ export default function Terrain({ setTerrainGeo }) {
 
   return (
     <group>
-      {/* 1. Main Playable Terrain */}
       <RigidBody type="fixed" colliders="trimesh">
         <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow>
           <primitive object={material} attach="material" />
         </mesh>
       </RigidBody>
 
-      {/* 2. GLB Mountain & Volcano Borders */}
       <BorderMountains />
 
-      {/* 3. Ocean Extension */}
-      <mesh position={[300, -3.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[400, 600]} />
-        <meshStandardMaterial color="#005577" transparent opacity={0.7} roughness={0.1} metalness={0.8} />
+      <mesh position={[0, -4.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[1500, 1500, 64, 64]} />
+        <meshPhysicalMaterial color="#006699" transmission={0.8} opacity={1} transparent roughness={0.1} metalness={0.6} ior={1.33} thickness={10} />
       </mesh>
 
-      {/* 4. Invisible Playable Area Bounds */}
-      {/* INCREASED WALL HEIGHT: Position Y moved from 50 to 150, Half-height arg increased from 100 to 200 */}
       <RigidBody type="fixed">
-        <CuboidCollider position={[185, 150, 0]} args={[1, 200, 200]} />   
-        <CuboidCollider position={[-185, 150, 0]} args={[1, 200, 200]} />  
-        <CuboidCollider position={[0, 150, 185]} args={[200, 200, 1]} />   
-        <CuboidCollider position={[0, 150, -185]} args={[200, 200, 1]} />  
+        <CuboidCollider position={[195, 150, 0]} args={[1, 200, 200]} />   
+        <CuboidCollider position={[-195, 150, 0]} args={[1, 200, 200]} />  
+        <CuboidCollider position={[0, 150, 195]} args={[200, 200, 1]} />   
+        <CuboidCollider position={[0, 150, -195]} args={[200, 200, 1]} />  
       </RigidBody>
 
-      {/* 5. Vegetation */}
-      {/* Rocks & Grass remain untouched */}
       <GrassModel count={500} areaSize={350} terrainGeo={geometry} />
-      <RockModel count={180} areaSize={350} terrainGeo={geometry} />
-      
-      {/* Trees get the new treeScale multiplier to make them tower over the Dinosaurs */}
-      <TreeForest 
-        genericCount={180} 
-        forestCount={250} 
-        areaSize={350} 
-        terrainGeo={geometry} 
-        treeScale={4.5} 
-      />
+      <RockModel count={220} areaSize={350} terrainGeo={geometry} />
+      <TreeForest genericCount={180} forestCount={250} areaSize={350} terrainGeo={geometry} treeScale={4.5} />
     </group>
   );
 }
