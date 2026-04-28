@@ -66,7 +66,8 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, bound
         const model = modelList[t.modelIndex].scene.clone();
 
         const colliderHeight = t.scale * 5;
-        const colliderRadius = t.scale * 0.25; 
+        // Increased collider radius from 0.25 to 0.5 to prevent player from clipping through thicker trunks
+        const colliderRadius = t.scale * 0.5; 
 
         return (
           <RigidBody key={i} type="fixed" colliders={false} position={[t.x, t.y, t.z]}>
