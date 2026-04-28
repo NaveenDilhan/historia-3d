@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useGLTF, Clone } from '@react-three/drei';
+import { RigidBody } from '@react-three/rapier';
 
 export default function BorderMountains() {
   const { scene: mountainScene } = useGLTF('/models/mountain1.glb');
@@ -24,10 +25,15 @@ export default function BorderMountains() {
         const jz = z + (Math.random() - 0.5) * 15;
         const y = -35 + Math.random() * 10; 
 
+        // Scale updated: Volcano is ~3-4x bigger (Base 300 instead of 85)
+        const elementScale = type === 'volcano' 
+          ? 300 + Math.random() * 75 
+          : 55 + Math.random() * 25;
+
         elements.push({
           pos: [jx, y, jz],
           rot: [0, Math.random() * Math.PI, 0],
-          scale: (type === 'volcano' ? 85 : 55) + Math.random() * 25,
+          scale: elementScale,
           type: type
         });
       }
@@ -52,13 +58,18 @@ export default function BorderMountains() {
   return (
     <group>
       {borderElements.map((el, index) => (
-        <Clone
-          key={`border-${index}`}
-          object={el.type === 'volcano' ? volcanoScene : mountainScene}
-          position={el.pos}
-          scale={el.scale}
+        <RigidBody 
+          key={`border-${index}`} 
+          type="fixed" 
+          colliders="trimesh"
+          position={el.pos} 
           rotation={el.rot}
-        />
+        >
+          <Clone
+            object={el.type === 'volcano' ? volcanoScene : mountainScene}
+            scale={el.scale}
+          />
+        </RigidBody>
       ))}
     </group>
   );
