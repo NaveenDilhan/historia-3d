@@ -21,11 +21,20 @@ export default function BorderMountains() {
         const x = startX + (endX - startX) * t;
         const z = startZ + (endZ - startZ) * t;
         
-        const jx = x + (Math.random() - 0.5) * 15;
-        const jz = z + (Math.random() - 0.5) * 15;
+        // Jitter logic pushes mountains slightly OUTWARDS, never inward into playable space
+        let jx = x;
+        let jz = z;
+
+        if (type !== 'volcano') {
+           if (x >= 240) jx += Math.random() * 12; // push right
+           else if (x <= -240) jx -= Math.random() * 12; // push left
+           
+           if (z <= -790) jz -= Math.random() * 12; // push back
+           else if (z >= 540) jz += Math.random() * 12; // push front
+        }
+        
         const y = -35 + Math.random() * 10; 
 
-        // Scale updated: Volcano is ~3-4x bigger (Base 300 instead of 85)
         const elementScale = type === 'volcano' 
           ? 300 + Math.random() * 75 
           : 55 + Math.random() * 25;
@@ -39,18 +48,21 @@ export default function BorderMountains() {
       }
     };
 
-    // Right Edge Walls (X = 230: Off the 200-playable bounds, perfectly on the terrain edge)
-    addEdge(230, 550, 230, 400, 'mountain', 0.85); // Beach (sparse)
-    addEdge(230, 400, 230, -400, 'mountain', 0);   // Forest & Desert
-    addEdge(230, -400, 230, -820, 'mountain', 0);  // Volcano
+    // Adjusted to ±245. Terrain is 500 wide (-250 to 250).
+    // Placing exactly at 245 makes it mesh perfectly at the edge without eating into playable space (-190 to 190).
 
-    // Left Edge Walls (X = -230: Off the 200-playable bounds, perfectly on the terrain edge)
-    addEdge(-230, 550, -230, 400, 'mountain', 0.85); // Beach (sparse)
-    addEdge(-230, 400, -230, -400, 'mountain', 0);   // Forest & Desert
-    addEdge(-230, -400, -230, -820, 'mountain', 0);  // Volcano
+    // Right Edge Walls
+    addEdge(245, 550, 245, 400, 'mountain', 0.85); // Beach (sparse)
+    addEdge(245, 400, 245, -400, 'mountain', 0);   // Forest & Desert
+    addEdge(245, -400, 245, -795, 'mountain', 0);  // Volcano edge
 
-    // Front Edge Wall (Volcano End Z = -820)
-    addEdge(-240, -820, 240, -820, 'volcano', 0); 
+    // Left Edge Walls
+    addEdge(-245, 550, -245, 400, 'mountain', 0.85); // Beach (sparse)
+    addEdge(-245, 400, -245, -400, 'mountain', 0);   // Forest & Desert
+    addEdge(-245, -400, -245, -795, 'mountain', 0);  // Volcano edge
+
+    // Front Edge Wall (Volcano End Z = -795 to match Terrain bounds at -800)
+    addEdge(-250, -795, 250, -795, 'volcano', 0); 
 
     return elements;
   }, []);
