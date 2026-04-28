@@ -3,7 +3,7 @@ import { useGLTF } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
 import { getExactHeight, getDistToRexPath } from './Terrain';
 
-export default function RockModel({ count = 100, areaSize = 350, terrainGeo }) {
+export default function RockModel({ count = 100, bounds, terrainGeo }) {
   const rockModels = [
     useGLTF('/models/rock1.glb'),
     useGLTF('/models/rock2.glb'),
@@ -14,8 +14,9 @@ export default function RockModel({ count = 100, areaSize = 350, terrainGeo }) {
     const data = [];
     let attempts = 0;
     while (data.length < count && attempts < count * 3) {
-      const x = Math.random() * areaSize - areaSize / 2;
-      const z = Math.random() * areaSize - areaSize / 2;
+      // Use bounds if provided by Terrain.jsx
+      const x = bounds ? bounds.xMin + Math.random() * (bounds.xMax - bounds.xMin) : (Math.random() - 0.5) * 350;
+      const z = bounds ? bounds.zMin + Math.random() * (bounds.zMax - bounds.zMin) : (Math.random() - 0.5) * 350;
       attempts++;
       
       // Keep rocks 6 units away from the trail to prevent clipping with the dinosaur
@@ -29,7 +30,7 @@ export default function RockModel({ count = 100, areaSize = 350, terrainGeo }) {
       data.push({ x, y: y - 0.5, z, scale, modelIndex, rotY });
     }
     return data;
-  }, [count, areaSize, terrainGeo]);
+  }, [count, bounds, terrainGeo]);
 
   return (
     <group>

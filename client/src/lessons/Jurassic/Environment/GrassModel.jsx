@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { getExactHeight, getDistToRexPath } from './Terrain';
 
-export default function GrassModel({ count = 200, areaSize = 350, terrainGeo }) {
+export default function GrassModel({ count = 200, bounds, terrainGeo }) {
   const grassModels = [
     useGLTF('/models/grass1.glb'),
     useGLTF('/models/grass2.glb'),
@@ -15,8 +15,9 @@ export default function GrassModel({ count = 200, areaSize = 350, terrainGeo }) 
     const data = [];
     let attempts = 0;
     while (data.length < count && attempts < count * 3) {
-      const x = Math.random() * areaSize - areaSize / 2;
-      const z = Math.random() * areaSize - areaSize / 2;
+      // Use bounds if provided by Terrain.jsx, otherwise fallback
+      const x = bounds ? bounds.xMin + Math.random() * (bounds.xMax - bounds.xMin) : (Math.random() - 0.5) * 350;
+      const z = bounds ? bounds.zMin + Math.random() * (bounds.zMax - bounds.zMin) : (Math.random() - 0.5) * 350;
       attempts++;
       
       // Worn path in the center
@@ -31,7 +32,7 @@ export default function GrassModel({ count = 200, areaSize = 350, terrainGeo }) 
       data.push({ x, y, z, scale, rotationY, windOffset, modelIndex });
     }
     return data;
-  }, [count, areaSize, terrainGeo]);
+  }, [count, bounds, terrainGeo]);
 
   const grassRefs = useRef([]);
 

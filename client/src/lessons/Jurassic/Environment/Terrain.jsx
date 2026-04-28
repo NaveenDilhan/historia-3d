@@ -3,16 +3,19 @@ import { useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise.js';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
-import { useGLTF, Clone } from '@react-three/drei';
 
+// Import separated environment models
 import TreeForest from './TreeModel';
 import GrassModel from './GrassModel';
 import RockModel from './RockModel';
+import BorderMountains from './BorderMountains';
+import DesertDeadTrees from './DesertDeadTrees';
+import Ocean from './Ocean';
 
 // --- Shared Helper for Ground Alignment ---
 export const getExactHeight = (x, z, terrainGeo) => {
   if (!terrainGeo) return 0;
-  const sizeX = 500; // Expanded to 500 to create a shoulder for mountains to sit on
+  const sizeX = 500; 
   const sizeZ = 1600; 
   const segX = 125;
   const segZ = 400;
@@ -61,106 +64,6 @@ export const getDistToRexPath = (x, z) => {
   return minDist;
 };
 
-// --- Desert Dead Trees Spawner (Confined to Desert Biome: Z -400 to 0) ---
-function DesertDeadTrees({ terrainGeo, count = 40 }) {
-  const { scene: d1 } = useGLTF('/models/dead1.glb');
-  const { scene: d2 } = useGLTF('/models/dead2.glb');
-  const { scene: d3 } = useGLTF('/models/dead3.glb');
-  const models = [d1, d2, d3];
-
-  const instances = useMemo(() => {
-    if (!terrainGeo) return [];
-    const arr = [];
-    for (let i = 0; i < count; i++) {
-      const x = (Math.random() - 0.5) * 360; 
-      const z = -(Math.random() * 380 + 10); 
-      const y = getExactHeight(x, z, terrainGeo);
-      
-      const model = models[Math.floor(Math.random() * models.length)];
-      arr.push({ x, y, z, model, scale: 3 + Math.random() * 2, rot: Math.random() * Math.PI * 2 });
-    }
-    return arr;
-  }, [terrainGeo, count]);
-
-  return (
-    <group>
-      {instances.map((inst, i) => (
-        <Clone key={`deadtree-${i}`} object={inst.model} position={[inst.x, inst.y, inst.z]} scale={inst.scale} rotation={[0, inst.rot, 0]} />
-      ))}
-    </group>
-  );
-}
-
-// --- GLB Mountain Range (Placed on the extended 500-width shoulder) ---
-function BorderMountains() {
-  const { scene: mountainScene } = useGLTF('/models/mountain1.glb');
-  const { scene: volcanoScene } = useGLTF('/models/volcano.glb');
-
-  const borderElements = useMemo(() => {
-    const elements = [];
-    const step = 25; 
-
-    const addEdge = (startX, startZ, endX, endZ, type = 'mountain', skipChance = 0) => {
-      const dist = Math.hypot(endX - startX, endZ - startZ);
-      const steps = Math.floor(dist / step);
-      
-      for (let i = 0; i <= steps; i++) {
-        if (Math.random() < skipChance) continue; 
-
-        const t = i / steps;
-        const x = startX + (endX - startX) * t;
-        const z = startZ + (endZ - startZ) * t;
-        
-        const jx = x + (Math.random() - 0.5) * 15;
-        const jz = z + (Math.random() - 0.5) * 15;
-        const y = -35 + Math.random() * 10; 
-
-        elements.push({
-          pos: [jx, y, jz],
-          rot: [0, Math.random() * Math.PI, 0],
-          scale: (type === 'volcano' ? 85 : 55) + Math.random() * 25,
-          type: type
-        });
-      }
-    };
-
-    // Right Edge Walls (X = 230: Off the 200-playable bounds, perfectly on the terrain edge)
-    addEdge(230, 550, 230, 400, 'mountain', 0.85); // Beach (sparse)
-    addEdge(230, 400, 230, -400, 'mountain', 0);   // Forest & Desert
-    addEdge(230, -400, 230, -820, 'mountain', 0);  // Volcano
-
-    // Left Edge Walls (X = -230: Off the 200-playable bounds, perfectly on the terrain edge)
-    addEdge(-230, 550, -230, 400, 'mountain', 0.85); // Beach (sparse)
-    addEdge(-230, 400, -230, -400, 'mountain', 0);   // Forest & Desert
-    addEdge(-230, -400, -230, -820, 'mountain', 0);  // Volcano
-
-    // Front Edge Wall (Volcano End Z = -820)
-    addEdge(-240, -820, 240, -820, 'volcano', 0); 
-
-    return elements;
-  }, []);
-
-  return (
-    <group>
-      {borderElements.map((el, index) => (
-        <Clone
-          key={`border-${index}`}
-          object={el.type === 'volcano' ? volcanoScene : mountainScene}
-          position={el.pos}
-          scale={el.scale}
-          rotation={el.rot}
-        />
-      ))}
-    </group>
-  );
-}
-
-useGLTF.preload('/models/mountain1.glb');
-useGLTF.preload('/models/volcano.glb');
-useGLTF.preload('/models/dead1.glb');
-useGLTF.preload('/models/dead2.glb');
-useGLTF.preload('/models/dead3.glb');
-
 export default function Terrain({ setTerrainGeo }) {
   const [mossTex, mudTex, rockTex] = useLoader(THREE.TextureLoader, [
     '/textures/grass_mossy.png',
@@ -176,7 +79,6 @@ export default function Terrain({ setTerrainGeo }) {
   }, [mossTex, mudTex, rockTex]);
 
   const geometry = useMemo(() => {
-    // Terrain is physically 500 wide to support mountains safely outside the 400 playable width
     const geo = new THREE.PlaneGeometry(500, 1600, 125, 400);
     const vertices = geo.attributes.position;
     const noise = new ImprovedNoise();
@@ -207,12 +109,7 @@ export default function Terrain({ setTerrainGeo }) {
       
       let beachH = -2 + noise.noise(worldX / 80, worldZ / 80, 0) * 1.5; 
       
-      // Slopes the beach end down into the water gradually
-      if (worldZ > 480) {
-        beachH -= (worldZ - 480) * 0.15; 
-      }
-      
-      // Rounds off the sides of the beach so it looks like a peninsula
+      if (worldZ > 480) beachH -= (worldZ - 480) * 0.15; 
       if (worldZ > 380) {
         if (worldX > 180) beachH -= (worldX - 180) * 0.2;
         if (worldX < -180) beachH -= (-180 - worldX) * 0.2;
@@ -220,10 +117,8 @@ export default function Terrain({ setTerrainGeo }) {
 
       let volcanoH = noise.noise(worldX / 70, worldZ / 70, 0) * 25 + noise.noise(worldX / 20, worldZ / 20, 0) * 10 + 15;
 
-      // Combine
       let finalHeight = (forestH * forestWeight) + (desertH * desertWeight) + (beachH * beachWeight) + (volcanoH * volcanoWeight);
 
-      // Preserve T-Rex Path Flattening
       const distFromRexZone = getDistToRexPath(worldX, worldZ);
       if (distFromRexZone < 15) {
         const flattenFactor = THREE.MathUtils.smoothstep(distFromRexZone, 4, 15);
@@ -275,7 +170,6 @@ export default function Terrain({ setTerrainGeo }) {
       shader.fragmentShader = shader.fragmentShader.replace(
         `#include <color_fragment>`, 
         `#include <color_fragment>\n 
-         // Proportional UV scaling prevents texture stretching on non-square map sizes
          vec2 texUv = vCustomUv * vec2(50.0, 160.0); 
          
          vec4 mossColor = texture2D(mossTex, texUv);
@@ -296,7 +190,7 @@ export default function Terrain({ setTerrainGeo }) {
          fColor = mix(fColor, rockColor, smoothstep(6.0, 6.5, h)); 
 
          vec4 dColor = mix(sandColor, rockColor, smoothstep(16.0, 20.0, h));
-         vec4 bColor = sandColor; // Pure sand
+         vec4 bColor = sandColor;
 
          vec4 vColor = rockColor;
          float lavaVeins = smoothstep(1.0, 2.0, h) - smoothstep(4.0, 6.0, h);
@@ -313,59 +207,29 @@ export default function Terrain({ setTerrainGeo }) {
 
   return (
     <group>
+      {/* 1. Main Terrain Mesh */}
       <RigidBody type="fixed" colliders="trimesh">
         <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow>
           <primitive object={material} attach="material" />
         </mesh>
       </RigidBody>
 
+      {/* 2. Isolated Components */}
       <BorderMountains />
+      <Ocean />
 
-      {/* Stylized Ocean Water */}
-      <mesh position={[0, -4.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[2000, 3000, 64, 64]} />
-        <meshPhysicalMaterial 
-          color="#002b1f" 
-          transmission={0.8} 
-          opacity={1} 
-          transparent 
-          roughness={0.2} 
-          metalness={0.5} 
-          ior={1.33} 
-          thickness={10} 
-        />
-      </mesh>
-
-      {/* Box Colliders: Playable Area is tightly constrained to 400x1600 */}
+      {/* 3. Invisible Playable-Area Box Colliders */}
       <RigidBody type="fixed">
-        <CuboidCollider position={[-205, 150, -100]} args={[1, 200, 700]} />  {/* Left Wall */}
-        <CuboidCollider position={[205, 150, -100]} args={[1, 200, 700]} />   {/* Right Wall */}
-        <CuboidCollider position={[0, 150, -805]} args={[250, 200, 1]} />     {/* Front Wall (Volcano End) */}
-        
-        {/* Beach Water Blocker Wall (Allows user to wade into ankle-deep water before stopping them) */}
-        <CuboidCollider position={[0, 150, 540]} args={[250, 200, 1]} />      {/* Back Wall (Beach Surf) */}
+        <CuboidCollider position={[-205, 150, -100]} args={[1, 200, 700]} />
+        <CuboidCollider position={[205, 150, -100]} args={[1, 200, 700]} />
+        <CuboidCollider position={[0, 150, -805]} args={[250, 200, 1]} />
+        <CuboidCollider position={[0, 150, 540]} args={[250, 200, 1]} /> 
       </RigidBody>
 
-      {/* Forest Biome Elements strictly confined */}
-      <GrassModel 
-        count={500} 
-        terrainGeo={geometry} 
-        bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} 
-      />
-      <RockModel 
-        count={220} 
-        terrainGeo={geometry} 
-        bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} 
-      />
-      <TreeForest 
-        genericCount={180} 
-        forestCount={250} 
-        terrainGeo={geometry} 
-        treeScale={4.5} 
-        bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} 
-      />
-
-      {/* Desert Biome Elements confined to Z: -400 to 0 */}
+      {/* 4. Model Scatters */}
+      <GrassModel count={500} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} />
+      <RockModel count={220} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} />
+      <TreeForest genericCount={180} forestCount={250} terrainGeo={geometry} treeScale={4.5} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} />
       <DesertDeadTrees terrainGeo={geometry} count={45} />
     </group>
   );
