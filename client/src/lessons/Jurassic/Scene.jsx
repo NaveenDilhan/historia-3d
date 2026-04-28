@@ -13,7 +13,7 @@ export default function Scene() {
   const [terrainGeo, setTerrainGeo] = useState(null);
 
   return (
-    <Canvas shadows dpr={[1, 2]} camera={{ fov: 60 }} gl={{ antialias: true, toneMappingExposure: 1.1 }}>
+    <Canvas shadows dpr={[1, 2]} camera={{ fov: 60, far: 10000 }} gl={{ antialias: true, toneMappingExposure: 1.1 }}>
       {/* Humid prehistoric green/amber fog */}
       <color attach="background" args={['#597a61']} />
       <fogExp2 attach="fog" args={['#597a61', 0.012]} />
@@ -47,7 +47,8 @@ export default function Scene() {
       </Suspense>
 
       <Sky
-        sunPosition={[150, 40, -50]}
+        distance={450000}
+        sunPosition={[1500, 400, -500]} // Synced with the new directionalLight position
         inclination={0.48}
         azimuth={0.25}
         turbidity={20}

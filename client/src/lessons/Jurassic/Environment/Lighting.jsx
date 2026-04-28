@@ -11,20 +11,24 @@ export default function Lighting() {
       
       {/* Dramatic Golden Hour Sun */}
       <directionalLight
-        position={[150, 40, -50]} 
-        intensity={3.0} // Boosted for stronger highlights through the bloom pass
+        // 1. FIXED: Moved the light drastically further back and up so the 
+        // shadow camera doesn't sit inside the terrain.
+        position={[1500, 400, -500]} 
+        intensity={3.0}
         color="#ffebd6"
         castShadow
         shadow-mapSize-width={4096}
         shadow-mapSize-height={4096}
-        shadow-camera-near={10}
-        shadow-camera-far={400}
-        shadow-camera-left={-250}
-        shadow-camera-right={250}
-        shadow-camera-top={250}
-        shadow-camera-bottom={-250}
-        shadow-bias={-0.0001} 
-        shadow-normalBias={0.02} // Fixes surface acne without requiring heavier shadow maps
+        // 2. FIXED: Adjusted clipping planes for the new distance
+        shadow-camera-near={100}
+        shadow-camera-far={5000} 
+        shadow-camera-left={-1000}
+        shadow-camera-right={1000}
+        shadow-camera-top={1000}
+        shadow-camera-bottom={-1000}
+        // 3. FIXED: Tweaked biases to stop the micro-stuttering/flickering of shadows on surfaces
+        shadow-bias={-0.0005} 
+        shadow-normalBias={0.05} 
       />
     </group>
   );
