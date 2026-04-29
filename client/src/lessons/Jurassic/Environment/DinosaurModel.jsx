@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF, useAnimations } from '@react-three/drei';
+import { useGLTF, useAnimations, PositionalAudio } from '@react-three/drei';
 import * as THREE from 'three';
 import { getExactHeight } from './Terrain';
 
@@ -11,6 +11,7 @@ export default function DinosaurModel({
   animate = true,
   terrainGeo
 }) {
+  const groupRef = useRef(); // Parent group to hold model + audio
   const dinoRef = useRef();
   const { scene, animations } = useGLTF('/models/T-Rex.glb');
   const { actions, mixer } = useAnimations(animations, dinoRef);
@@ -20,6 +21,13 @@ export default function DinosaurModel({
   const idleTimerRef = useRef(0);
   const [loaded, setLoaded] = useState(false);
   const animRefs = useRef({ idle: null, walk: null, run: null });
+
+  // === Audio Refs ===
+  const footstepAudioRef = useRef();
+  const roarAudioRef = useRef();
+  const lastStompTime = useRef(0);
+  const nextRoarTime = useRef(0);
+  const isAudioInit = useRef(false);
 
   useEffect(() => {
     if (!animations || animations.length === 0 || !curve) return;
@@ -52,9 +60,33 @@ export default function DinosaurModel({
     }
   };
 
-  useFrame((_, delta) => {
-    if (!dinoRef.current || !animate || !loaded || !curve) return;
+  useFrame((state, delta) => {
+    if (!groupRef.current || !dinoRef.current || !animate || !loaded || !curve) return;
 
+    // Initialize Audio Properties on the first frame
+    if (!isAudioInit.current) {
+      if (footstepAudioRef.current) {
+        footstepAudioRef.current.setRefDistance(5);
+        footstepAudioRef.current.setMaxDistance(40);
+        footstepAudioRef.current.setRolloffFactor(2.5);
+      }
+      if (roarAudioRef.current) {
+        roarAudioRef.current.setRefDistance(20);
+        roarAudioRef.current.setMaxDistance(120);
+        roarAudioRef.current.setRolloffFactor(1.5);
+        roarAudioRef.current.setVolume(3.0);
+        
+        if (roarAudioRef.current.context.state === 'suspended') {
+          roarAudioRef.current.context.resume();
+        }
+        roarAudioRef.current.play(); // Initial spawn roar
+      }
+      lastStompTime.current = state.clock.elapsedTime;
+      nextRoarTime.current = state.clock.elapsedTime + 15 + Math.random() * 15;
+      isAudioInit.current = true;
+    }
+
+    // Animation Timers
     idleTimerRef.current -= delta;
     if (idleTimerRef.current <= 0) {
       const current = currentStateRef.current;
@@ -69,8 +101,9 @@ export default function DinosaurModel({
       }
     }
 
-    const state = currentStateRef.current;
-    if (state === 'walk' || state === 'run') {
+    // Movement & Walking Sounds
+    const animState = currentStateRef.current;
+    if (animState === 'walk' || animState === 'run') {
       progressRef.current += delta * speed;
       const t = progressRef.current % 1; 
 
@@ -78,22 +111,46 @@ export default function DinosaurModel({
       const tangent = curve.getTangentAt(t).normalize();
       
       const targetY = getExactHeight(position.x, position.z, terrainGeo);
-      position.y = THREE.MathUtils.lerp(dinoRef.current.position.y, targetY, 0.1); 
-      dinoRef.current.position.copy(position);
+      position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1); 
+      groupRef.current.position.copy(position);
 
-      // FIX: The T-Rex model faces +Z natively. By subtracting the tangent, 
-      // we point its back (-Z) away from the path, aiming the head (+Z) forward.
       const lookAtPos = position.clone().sub(tangent);
       lookAtPos.y = getExactHeight(lookAtPos.x, lookAtPos.z, terrainGeo); 
       
       const targetQuaternion = new THREE.Quaternion().setFromRotationMatrix(
-        new THREE.Matrix4().lookAt(dinoRef.current.position, lookAtPos, new THREE.Vector3(0, 1, 0))
+        new THREE.Matrix4().lookAt(groupRef.current.position, lookAtPos, new THREE.Vector3(0, 1, 0))
       );
-      dinoRef.current.quaternion.slerp(targetQuaternion, 0.08);
+      groupRef.current.quaternion.slerp(targetQuaternion, 0.08);
+
+      // Play footsteps ONLY when the model is actually walking
+      if (state.clock.elapsedTime - lastStompTime.current > 1.2) {
+        if (footstepAudioRef.current && !footstepAudioRef.current.isPlaying) {
+          footstepAudioRef.current.setVolume(2.0); 
+          footstepAudioRef.current.play();
+        }
+        lastStompTime.current = state.clock.elapsedTime;
+      }
     }
+
+    // Random Ambient Roars
+    if (state.clock.elapsedTime > nextRoarTime.current) {
+      if (roarAudioRef.current && !roarAudioRef.current.isPlaying) {
+        roarAudioRef.current.setVolume(3.0);
+        roarAudioRef.current.play();
+      }
+      nextRoarTime.current = state.clock.elapsedTime + 15 + Math.random() * 15;
+    }
+
     mixer.update(delta);
   });
 
-  return <primitive ref={dinoRef} object={scene} scale={scale} />;
+  return (
+    <group ref={groupRef}>
+      <primitive ref={dinoRef} object={scene} scale={scale} />
+      {/* Audio sources are now embedded physically onto the moving dinosaur group */}
+      <PositionalAudio ref={footstepAudioRef} url="/sounds/jurrasic/footstep.ogg" loop={false} autoplay={false} />
+      <PositionalAudio ref={roarAudioRef} url="/sounds/jurrasic/roar.mp3" loop={false} autoplay={false} />
+    </group>
+  );
 }
 useGLTF.preload('/models/T-Rex.glb');

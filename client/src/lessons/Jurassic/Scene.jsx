@@ -1,5 +1,5 @@
-import React, { Suspense, useState, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { Suspense, useState, useRef, useEffect } from 'react';
+import { Canvas } from '@react-three/fiber';
 import { Sky, Environment, Cloud, Sparkles, PositionalAudio } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
@@ -17,67 +17,67 @@ function BiomeAudio({ hasStarted }) {
   const forestRef = useRef();
   const volcanoRef = useRef();
   const oceanRef = useRef();
-  const isInitialized = useRef(false);
 
-  // Initialize spatial boundaries on the first active frame AFTER user starts the journey
-  useFrame(() => {
-    if (hasStarted && !isInitialized.current) {
-      
-      const setupAudioNode = (ref, refDist, maxDist, rolloff, vol) => {
+  useEffect(() => {
+    // Only configure and play once the user has clicked "Begin Journey"
+    if (hasStarted) {
+      const playAudioNode = (ref, refDist, maxDist, rolloff, vol) => {
         if (ref.current) {
           ref.current.setRefDistance(refDist);   // 100% volume inside this radius
           ref.current.setMaxDistance(maxDist);   // 0% volume outside this radius
           ref.current.setRolloffFactor(rolloff); // Fade curve steepness
           ref.current.setVolume(vol);
           
+          // Browsers require audio contexts to be explicitly resumed after a user gesture
           if (ref.current.context.state === 'suspended') {
             ref.current.context.resume();
           }
-          if (!ref.current.isPlaying) ref.current.play();
+          if (!ref.current.isPlaying) {
+            ref.current.play();
+          }
         }
       };
 
-      // TUNING PARAMETERS: Adjust these to fit the exact scale of your map
-      // setupAudioNode(ref, refDistance, maxDistance, rolloffFactor, volume)
-      setupAudioNode(forestRef,  100, 300, 1.5, 0.4); // Wide, gentle fade (will be heard slightly in the nearby desert)
-      setupAudioNode(volcanoRef,  80, 250, 2.0, 0.6); // Slightly steeper fade to isolate the rumbling
-      setupAudioNode(oceanRef,   150, 450, 1.0, 0.5); // Massive spread for a long coastline
+      // TUNING PARAMETERS (Mapped to Terrain.jsx Z-coordinates)
+      // Center of map (Z: 0). Gentle fade so it acts as ambient background.
+      playAudioNode(forestRef, 150, 450, 1.5, 0.4); 
       
-      isInitialized.current = true;
+      // Deep negative coordinates (Z < -425). Steeper fade to isolate the rumbling.
+      playAudioNode(volcanoRef, 120, 350, 2.0, 0.6); 
+      
+      // Deep positive coordinates (Z > 375). 
+      // Very steep rolloff so the waves are ONLY heard when walking out of the tree line.
+      playAudioNode(oceanRef, 80, 200, 3.0, 0.6); 
     }
-  });
-
-  // Don't mount the audio nodes to the scene until the user actually starts the experience
-  if (!hasStarted) return null;
+  }, [hasStarted]);
 
   return (
     <group>
-      {/* POSITIONING: Update the [X, Y, Z] arrays below to match the exact 
-        coordinates of your actual models on the map.
+      {/* Mount the audio nodes immediately so they preload during the Suspense screen,
+          but set autoplay={false} so they don't violate browser audio policies.
       */}
-      
-      {/* Center of the Forest */}
       <PositionalAudio 
         ref={forestRef} 
         url="/sounds/jurrasic/forest.mp3" 
         loop 
-        position={[0, 0, 0]} 
+        position={[0, 10, 0]} 
+        autoplay={false}
       />
       
-      {/* Deep inside the Volcano crater */}
       <PositionalAudio 
         ref={volcanoRef} 
         url="/sounds/jurrasic/volcano.mp3" 
         loop 
-        position={[-200, 50, -200]} 
+        position={[0, 50, -600]} 
+        autoplay={false}
       />
       
-      {/* At the edge of the Ocean coastline */}
       <PositionalAudio 
         ref={oceanRef} 
         url="/sounds/jurrasic/ocean.mp3" 
         loop 
-        position={[300, 0, 100]} 
+        position={[0, 0, 450]} 
+        autoplay={false}
       />
     </group>
   );
@@ -86,7 +86,6 @@ function BiomeAudio({ hasStarted }) {
 // ==========================================
 // 2. MAIN SCENE
 // ==========================================
-// Accept hasStarted from ScenePage.jsx
 export default function Scene({ hasStarted }) {
   const [terrainGeo, setTerrainGeo] = useState(null);
 
