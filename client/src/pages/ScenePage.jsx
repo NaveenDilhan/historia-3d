@@ -40,61 +40,66 @@ export default function ScenePage() {
   
   // Track 3D asset loading progress globally
   const { active, progress, total, errors } = useProgress();
-  const [isSceneReady, setIsSceneReady] = useState(false);
+  
+  // Two distinct states: one for loading completion, one for user initiating the scene
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
 
   useEffect(() => {
-    // 1. If actively downloading, ensure the scene stays hidden.
-    if (active) {
-      setIsSceneReady(false);
-      return; 
-    }
+    // 1. Once we hit 100% and set it to loaded, freeze the state. 
+    // This prevents the screen from flashing if a background asset loads later.
+    if (hasLoaded) return;
 
     // 2. If finished loading and hit 100%
     if (!active && progress === 100) {
-      // Add a 1.2-second buffer. This prevents flickering if another asset 
-      // is requested late, and gives the GPU time to compile shaders smoothly.
-      const timer = setTimeout(() => setIsSceneReady(true), 1200);
+      // Add a small buffer to let the GPU compile shaders smoothly before showing the button
+      const timer = setTimeout(() => setHasLoaded(true), 800);
       return () => clearTimeout(timer);
     }
 
-    // 3. Failsafe: If there are network errors, let the user read them, then proceed anyway
+    // 3. Failsafe: If there are network errors, let the user read them, then proceed
     if (!active && errors.length > 0) {
-      const timer = setTimeout(() => setIsSceneReady(true), 3000);
+      const timer = setTimeout(() => setHasLoaded(true), 3000);
       return () => clearTimeout(timer);
     }
 
     // 4. Failsafe: If a scene has literally 0 assets to load
     if (!active && total === 0) {
-      const timer = setTimeout(() => setIsSceneReady(true), 2000);
+      const timer = setTimeout(() => setHasLoaded(true), 1500);
       return () => clearTimeout(timer);
     }
-  }, [active, progress, total, errors.length]);
+  }, [active, progress, total, errors.length, hasLoaded]);
+
+  // Handler for the "Start" button
+  const handleStart = () => {
+    setHasStarted(true);
+  };
 
   return (
     <div className="scene-page relative w-full h-screen overflow-hidden bg-black">
       
       {/* Opaque Loading Barrier: 
-        Because we control visibility via CSS overlapping (z-50) rather than unmounting 
-        the Canvas, the 3D scene can silently render in the background while this covers it.
+        Stays visible until the user explicitly clicks the Start button.
+        This gives the browser the "user interaction" needed to play audio reliably.
       */}
-      {!isSceneReady && ActiveScene && (
+      {!hasStarted && ActiveScene && (
         <div className="absolute inset-0 z-50 bg-[#1a120b]">
-          <LoadingScreen />
+          <LoadingScreen hasLoaded={hasLoaded} onStart={handleStart} />
         </div>
       )}
 
       {/* The 3D Component */}
       {ActiveScene ? (
-        // Fallback is null because our custom overlay above handles the visual loading state
         <Suspense fallback={null}>
-          <ActiveScene />
+          {/* Pass the hasStarted state down to the scene so it knows when to trigger events */}
+          <ActiveScene hasStarted={hasStarted} />
         </Suspense>
       ) : (
         <LessonNotFound />
       )}
 
-      {/* Only reveal UI overlays when the scene is 100% prepared */}
-      {ActiveScene && isSceneReady && (
+      {/* Only reveal UI overlays when the scene is active and the user has pressed start */}
+      {ActiveScene && hasStarted && (
         <div className="ui-overlay absolute bottom-10 left-1/2 -translate-x-1/2 z-20">
           <DialogueBox />
         </div>

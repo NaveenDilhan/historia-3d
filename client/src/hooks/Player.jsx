@@ -1,19 +1,25 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { usePlayerControls } from './usePlayerControls';
 import * as THREE from 'three';
 import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
+import { PositionalAudio } from '@react-three/drei';
 
 export default function Player() {
   const playerRef = useRef();
   const { forward, backward, left, right, jump } = usePlayerControls();
   const { camera, gl } = useThree();
-  const { rapier, world } = useRapier(); // Import rapier physics tools for raycasting
+  const { rapier, world } = useRapier(); 
 
-  const speed = 18; // Increased from 12 for brisker walking
+  const speed = 18; 
   const jumpStrength = 8;
 
-  // === Pointer Lock (click to look around) ===
+  // === Audio State ===
+  const [audioIndex, setAudioIndex] = useState(1);
+  const audioRefs = useRef([]);
+  const lastStepTime = useRef(0);
+
+  // === Pointer Lock ===
   useEffect(() => {
     const handleClick = () => gl.domElement.requestPointerLock();
     window.addEventListener('click', handleClick);
@@ -37,15 +43,13 @@ export default function Player() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [gl.domElement]);
 
-  // === Main Physics Loop ===
+  // === Main Physics & Audio Loop ===
   useFrame((state, delta) => {
     if (!playerRef.current) return;
 
-    // 1. Get current physical velocity and position from Rapier
     const linvel = playerRef.current.linvel();
     const pos = playerRef.current.translation();
 
-    // 2. Calculate intended movement direction
     const direction = new THREE.Vector3(0, 0, 0);
     if (forward) direction.z -= 1;
     if (backward) direction.z += 1;
@@ -53,15 +57,12 @@ export default function Player() {
     if (right) direction.x += 1;
     direction.normalize();
 
-    // 3. Apply camera yaw rotation to movement so we walk where we look
     const rotMatrix = new THREE.Matrix4().makeRotationY(yaw.current);
     direction.applyMatrix4(rotMatrix);
 
-    // 4. Apply physical velocity smoothly using lerp (adds momentum/smooth stops)
     const targetX = direction.x * speed;
     const targetZ = direction.z * speed;
     
-    // Lerp factor (10 * delta) dictates how slippery or snappy the movement is
     const smoothX = THREE.MathUtils.lerp(linvel.x, targetX, 10 * delta);
     const smoothZ = THREE.MathUtils.lerp(linvel.z, targetZ, 10 * delta);
 
@@ -71,17 +72,35 @@ export default function Player() {
       z: smoothZ
     }, true);
 
-    // 5. Jump logic: Use a Raycast to accurately check if the player is touching the ground
     const rayOrigin = { x: pos.x, y: pos.y, z: pos.z };
     const rayDir = { x: 0, y: -1, z: 0 };
     const ray = new rapier.Ray(rayOrigin, rayDir);
     
-    // castRay(ray, maxDistance, solid)
-    const hit = world.castRay(ray, 10, true);
+    // Increased ray length slightly to ensure it detects uneven terrain
+    const hit = world.castRay(ray, 2, true); 
+    const isGrounded = hit && hit.toi < 1.2; 
+
+    // --- Fixed Footstep Audio Logic ---
+    const isMoving = (forward || backward || left || right);
     
-    // The capsule is 1 unit from center to bottom (halfHeight 0.5 + radius 0.5 = 1.0)
-    // A hit time of impact (toi) < 1.1 means we are very close to or on the ground
-    const isGrounded = hit && hit.toi < 1.1; 
+    if (isMoving && isGrounded && state.clock.elapsedTime - lastStepTime.current > 0.4) {
+      const currentAudio = audioRefs.current[audioIndex];
+      
+      // Ensure the audio component exists and its file buffer has finished loading
+      if (currentAudio && currentAudio.buffer) {
+        // Force the browser's audio context to wake up if it was suspended
+        if (currentAudio.context.state === 'suspended') {
+          currentAudio.context.resume();
+        }
+        
+        if (!currentAudio.isPlaying) {
+          currentAudio.setVolume(1.0);
+          currentAudio.play();
+        }
+      }
+      setAudioIndex((prev) => (prev % 6) + 1); 
+      lastStepTime.current = state.clock.elapsedTime;
+    }
 
     if (jump && isGrounded) {
       playerRef.current.setLinvel({ 
@@ -91,12 +110,10 @@ export default function Player() {
       }, true);
     }
 
-    // 6. Camera follows the player's physical capsule
     const quaternion = new THREE.Quaternion();
     quaternion.setFromEuler(new THREE.Euler(pitch.current, yaw.current, 0, 'YXZ'));
     camera.quaternion.copy(quaternion);
     
-    // Position camera at "eye level" (Capsule is total 2 units tall, center is 0, so +0.8 is head level)
     camera.position.set(pos.x, pos.y + 0.8, pos.z);
   });
 
@@ -108,9 +125,20 @@ export default function Player() {
       mass={1}
       type="dynamic"
       enabledRotations={[false, false, false]} 
-      friction={0} // Prevents the player from sticking to walls or rough terrain
+      friction={0} 
     >
       <CapsuleCollider args={[0.5, 0.5]} />
+      
+      {/* Dynamic Player Footsteps */}
+      {[1, 2, 3, 4, 5, 6].map((num) => (
+        <PositionalAudio
+          key={num}
+          ref={(el) => (audioRefs.current[num] = el)}
+          url={`/sounds/jurrasic/0${num}-footstep.ogg`}
+          distance={2} 
+          loop={false}
+        />
+      ))}
     </RigidBody>
   );
 }
