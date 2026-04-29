@@ -223,7 +223,8 @@ export default function Terrain({ setTerrainGeo }) {
         <CuboidCollider position={[-205, 150, -100]} args={[1, 200, 700]} />
         <CuboidCollider position={[205, 150, -100]} args={[1, 200, 700]} />
         <CuboidCollider position={[0, 150, -805]} args={[250, 200, 1]} />
-        <CuboidCollider position={[0, 150, 540]} args={[250, 200, 1]} /> 
+        {/* CHANGED: Brought the Z boundary forward to 480 to block the ocean exactly at the slope */}
+        <CuboidCollider position={[0, 150, 480]} args={[250, 200, 1]} /> 
       </RigidBody>
 
       {/* 4. Model Scatters */}
