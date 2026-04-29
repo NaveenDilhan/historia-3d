@@ -120,7 +120,7 @@ export default function Player() {
   return (
     <RigidBody
       ref={playerRef}
-      position={[0, 20, 0]} 
+      position={[0, 20, 400]} // <-- CHANGED SPAWN POINT TO BEACH BIOME (Z: 400)
       colliders={false}
       mass={1}
       type="dynamic"
