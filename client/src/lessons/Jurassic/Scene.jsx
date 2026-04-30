@@ -7,6 +7,7 @@ import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import Terrain from './Environment/Terrain';
 import Lighting from './Environment/Lighting';
 import DinosaurEncounter from './Events/DinosaurEncounter';
+import ApatosaurusModel from './Environment/ApatosaurusModel'; // <-- New Import
 import Player from '../../hooks/Player';
 
 // ==========================================
@@ -32,6 +33,7 @@ function BiomeAudio({ hasStarted }) {
           if (ref.current.context.state === 'suspended') {
             ref.current.context.resume();
           }
+
           if (!ref.current.isPlaying) {
             ref.current.play();
           }
@@ -40,14 +42,14 @@ function BiomeAudio({ hasStarted }) {
 
       // TUNING PARAMETERS (Mapped to Terrain.jsx Z-coordinates)
       // Center of map (Z: 0). Gentle fade so it acts as ambient background.
-      playAudioNode(forestRef, 150, 450, 1.5, 0.4); 
+      playAudioNode(forestRef, 150, 450, 1.5, 0.4);
       
       // Deep negative coordinates (Z < -425). Steeper fade to isolate the rumbling.
-      playAudioNode(volcanoRef, 120, 350, 2.0, 0.6); 
+      playAudioNode(volcanoRef, 120, 350, 2.0, 0.6);
       
       // Deep positive coordinates (Z > 375). 
       // Very steep rolloff so the waves are ONLY heard when walking out of the tree line.
-      playAudioNode(oceanRef, 80, 200, 3.0, 0.6); 
+      playAudioNode(oceanRef, 80, 200, 3.0, 0.6);
     }
   }, [hasStarted]);
 
@@ -56,28 +58,28 @@ function BiomeAudio({ hasStarted }) {
       {/* Mount the audio nodes immediately so they preload during the Suspense screen,
           but set autoplay={false} so they don't violate browser audio policies.
       */}
-      <PositionalAudio 
-        ref={forestRef} 
-        url="/sounds/jurrasic/forest.mp3" 
-        loop 
-        position={[0, 10, 0]} 
-        autoplay={false}
+      <PositionalAudio
+         ref={forestRef}
+         url="/sounds/jurrasic/forest.mp3"
+         loop
+         position={[0, 10, 0]}
+         autoplay={false}
       />
       
-      <PositionalAudio 
-        ref={volcanoRef} 
-        url="/sounds/jurrasic/volcano.mp3" 
-        loop 
-        position={[0, 50, -600]} 
-        autoplay={false}
+      <PositionalAudio
+         ref={volcanoRef}
+         url="/sounds/jurrasic/volcano.mp3"
+         loop
+         position={[0, 50, -600]}
+         autoplay={false}
       />
       
-      <PositionalAudio 
-        ref={oceanRef} 
-        url="/sounds/jurrasic/ocean.mp3" 
-        loop 
-        position={[0, 0, 450]} 
-        autoplay={false}
+      <PositionalAudio
+         ref={oceanRef}
+         url="/sounds/jurrasic/ocean.mp3"
+         loop
+         position={[0, 0, 450]}
+         autoplay={false}
       />
     </group>
   );
@@ -104,6 +106,20 @@ export default function Scene({ hasStarted }) {
             <>
               {/* Pass down the hasStarted state so the events stay dormant during load */}
               <DinosaurEncounter terrainGeo={terrainGeo} hasStarted={hasStarted} />
+              
+              {/* NEW: Spawn Apatosaurus in the desert once the user hits 'Begin Journey' */}
+              {hasStarted && (
+                <Suspense fallback={null}>
+                  <ApatosaurusModel 
+                     terrainGeo={terrainGeo} 
+                     hasStarted={hasStarted} 
+                     x={20}       // Shifted slightly off dead-center
+                     z={-200}     // Deep into the desert biome
+                     scale={5.0}  // Significantly larger than T-Rex
+                  />
+                </Suspense>
+              )}
+
               <Player terrainGeo={terrainGeo} />
             </>
           )}
@@ -128,7 +144,7 @@ export default function Scene({ hasStarted }) {
 
       <Sky
         distance={450000}
-        sunPosition={[1500, 400, -500]} 
+        sunPosition={[1500, 400, -500]}
         inclination={0.48}
         azimuth={0.25}
         turbidity={20}
