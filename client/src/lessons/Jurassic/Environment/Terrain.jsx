@@ -65,18 +65,19 @@ export const getDistToRexPath = (x, z) => {
 };
 
 export default function Terrain({ setTerrainGeo }) {
-  const [mossTex, mudTex, rockTex] = useLoader(THREE.TextureLoader, [
+  const [mossTex, mudTex, rockTex, lavaTex] = useLoader(THREE.TextureLoader, [
     '/textures/grass_mossy.png',
     '/textures/mud.png',
     '/textures/rock.png',
+    '/textures/Lava.webp',
   ]);
 
   useMemo(() => {
-    [mossTex, mudTex, rockTex].forEach((tex) => {
+    [mossTex, mudTex, rockTex, lavaTex].forEach((tex) => {
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
       tex.colorSpace = THREE.SRGBColorSpace;
     });
-  }, [mossTex, mudTex, rockTex]);
+  }, [mossTex, mudTex, rockTex, lavaTex]);
 
   const geometry = useMemo(() => {
     const geo = new THREE.PlaneGeometry(500, 1600, 125, 400);
@@ -148,6 +149,7 @@ export default function Terrain({ setTerrainGeo }) {
       shader.uniforms.mossTex = { value: mossTex };
       shader.uniforms.mudTex = { value: mudTex };
       shader.uniforms.rockTex = { value: rockTex };
+      shader.uniforms.lavaTex = { value: lavaTex }; 
       
       shader.vertexShader = shader.vertexShader.replace(
         `#include <common>`, 
@@ -163,6 +165,7 @@ export default function Terrain({ setTerrainGeo }) {
          uniform sampler2D mossTex;\n 
          uniform sampler2D mudTex;\n 
          uniform sampler2D rockTex;\n 
+         uniform sampler2D lavaTex;\n 
          varying float vHeight;\n 
          varying vec2 vCustomUv;\n
          varying vec2 vWorldPos;`
@@ -175,9 +178,9 @@ export default function Terrain({ setTerrainGeo }) {
          vec4 mossColor = texture2D(mossTex, texUv);
          vec4 mudColor = texture2D(mudTex, texUv);
          vec4 rockColor = texture2D(rockTex, texUv);
+         vec4 lavaMapColor = texture2D(lavaTex, texUv);
 
          vec4 sandColor = mudColor * vec4(1.6, 1.4, 0.9, 1.0); 
-         vec4 lavaColor = rockColor * vec4(3.0, 0.6, 0.1, 1.0); 
          
          float beachMix = smoothstep(375.0, 425.0, vWorldPos.y);
          float forestMix = smoothstep(-25.0, 25.0, vWorldPos.y) * (1.0 - smoothstep(375.0, 425.0, vWorldPos.y));
@@ -192,10 +195,8 @@ export default function Terrain({ setTerrainGeo }) {
          vec4 dColor = mix(sandColor, rockColor, smoothstep(16.0, 20.0, h));
          vec4 bColor = sandColor;
 
-         vec4 vColor = rockColor;
-         float lavaVeins = smoothstep(1.0, 2.0, h) - smoothstep(4.0, 6.0, h);
-         vColor = mix(vColor, lavaColor, lavaVeins);
-         vColor = mix(vColor, lavaColor, smoothstep(35.0, 40.0, h));
+         // CHANGED: The entire volcano biome is now completely mapped to the lava texture
+         vec4 vColor = lavaMapColor;
 
          vec4 terrainColor = (fColor * forestMix) + (dColor * desertMix) + (bColor * beachMix) + (vColor * volcanoMix);
          vec3 sceneTint = vec3(0.05, 0.07, 0.03); 
@@ -203,7 +204,7 @@ export default function Terrain({ setTerrainGeo }) {
       );
     };
     return mat;
-  }, [mossTex, mudTex, rockTex]);
+  }, [mossTex, mudTex, rockTex, lavaTex]);
 
   return (
     <group>
@@ -223,7 +224,6 @@ export default function Terrain({ setTerrainGeo }) {
         <CuboidCollider position={[-205, 150, -100]} args={[1, 200, 700]} />
         <CuboidCollider position={[205, 150, -100]} args={[1, 200, 700]} />
         <CuboidCollider position={[0, 150, -805]} args={[250, 200, 1]} />
-        {/* CHANGED: Brought the Z boundary forward to 480 to block the ocean exactly at the slope */}
         <CuboidCollider position={[0, 150, 480]} args={[250, 200, 1]} /> 
       </RigidBody>
 
