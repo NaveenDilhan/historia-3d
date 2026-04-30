@@ -4,26 +4,19 @@ import { useGLTF } from '@react-three/drei';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { getExactHeight, getDistToRexPath } from './Terrain';
 
-// Helper function to check if the new tree is too close to existing ones
-const isPositionValid = (x, z, currentTrees, otherTrees, minDist) => {
-  for (let t of currentTrees) {
-    if (Math.hypot(t.x - x, t.z - z) < minDist) return false;
-  }
-  if (otherTrees) {
-    for (let t of otherTrees) {
-      if (Math.hypot(t.x - x, t.z - z) < minDist) return false;
-    }
+const isPositionValid = (x, z, obstacles, minDist) => {
+  for (let obs of obstacles) {
+    if (Math.hypot(obs.x - x, obs.z - z) < (obs.radius + minDist)) return false;
   }
   return true;
 };
 
-export default function TreeForest({ genericCount = 50, forestCount = 200, bounds, terrainGeo, treeScale = 1 }) {
+export default function TreeForest({ genericCount = 50, forestCount = 200, bounds, terrainGeo, treeScale = 1, obstacles = [] }) {
   const genericModels = [useGLTF('/models/tree1.glb'), useGLTF('/models/tree2.glb'), useGLTF('/models/tree3.glb'), useGLTF('/models/tree4.glb'), useGLTF('/models/tree5.glb')];
   const pineModels = [useGLTF('/models/pine1.glb'), useGLTF('/models/pine2.glb'), useGLTF('/models/pine3.glb'), useGLTF('/models/pine4.glb')];
   const deadModels = [useGLTF('/models/dead1.glb'), useGLTF('/models/dead2.glb'), useGLTF('/models/dead3.glb'), useGLTF('/models/dead4.glb'), useGLTF('/models/dead5.glb')];
-
-  const MIN_DIST = 10; // Minimum distance between any two trees
-  const MAX_HEIGHT = 8.5; // Max terrain Y height to spawn trees (prevents mountain clipping)
+  
+  const MAX_HEIGHT = 8.5; 
 
   const genericTrees = useMemo(() => {
     const trees = [];
@@ -36,14 +29,22 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, bound
       if (getDistToRexPath(x, z) < 14) continue;
       
       const y = getExactHeight(x, z, terrainGeo);
-      if (y > MAX_HEIGHT) continue; // Skip steep mountain areas
-      if (!isPositionValid(x, z, trees, null, MIN_DIST)) continue; // Spatial check
+      if (y > MAX_HEIGHT) continue; 
 
+      // NEW: Slope check to prevent clipping into noise-generated hills
+      const slopeX = Math.abs(y - getExactHeight(x + 2, z, terrainGeo));
+      const slopeZ = Math.abs(y - getExactHeight(x, z + 2, terrainGeo));
+      if (slopeX > 1.2 || slopeZ > 1.2) continue; // Too steep!
+
+      if (!isPositionValid(x, z, obstacles, 2.0)) continue; 
+      
       const scale = (1.5 + Math.random() * 0.7) * treeScale; 
       trees.push({ x, y, z, scale, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * genericModels.length) });
+      
+      obstacles.push({ x, z, radius: scale * 1.5 });
     }
     return trees;
-  }, [genericCount, bounds, terrainGeo, treeScale]);
+  }, [genericCount, bounds, terrainGeo, treeScale, obstacles]);
 
   const forestTrees = useMemo(() => {
     const trees = [];
@@ -54,20 +55,28 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, bound
       attempts++;
       
       if (getDistToRexPath(x, z) < 14) continue;
-
+      
       const y = getExactHeight(x, z, terrainGeo);
-      if (y > MAX_HEIGHT) continue; // Skip steep mountain areas
-      if (!isPositionValid(x, z, trees, genericTrees, MIN_DIST)) continue; // Check against both lists
+      if (y > MAX_HEIGHT) continue; 
 
+      // NEW: Slope check to prevent clipping into noise-generated hills
+      const slopeX = Math.abs(y - getExactHeight(x + 2, z, terrainGeo));
+      const slopeZ = Math.abs(y - getExactHeight(x, z + 2, terrainGeo));
+      if (slopeX > 1.2 || slopeZ > 1.2) continue; // Too steep!
+
+      if (!isPositionValid(x, z, obstacles, 2.0)) continue; 
+      
       const rnd = Math.random();
       let type = rnd < 0.7 ? 'pine' : 'dead';
       let scale = (type === 'pine' ? 1.5 + Math.random() * 0.8 : 0.8 + Math.random() * 0.7) * treeScale;
       let modelListLength = type === 'pine' ? pineModels.length : deadModels.length;
       
       trees.push({ x, y, z, scale, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * modelListLength), type });
+      
+      obstacles.push({ x, z, radius: scale * 1.5 });
     }
     return trees;
-  }, [forestCount, bounds, terrainGeo, treeScale, genericTrees]);
+  }, [forestCount, bounds, terrainGeo, treeScale, obstacles]);
 
   const treeRefs = useRef([]);
 
@@ -88,7 +97,6 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, bound
       {[...genericTrees, ...forestTrees].map((t, i) => {
         let modelList = t.type === 'pine' ? pineModels : t.type === 'dead' ? deadModels : genericModels;
         const model = modelList[t.modelIndex].scene.clone();
-
         const colliderHeight = t.scale * 5;
         const colliderRadius = t.scale * 0.5; 
 

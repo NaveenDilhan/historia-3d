@@ -51,7 +51,8 @@ export default function ScenePage() {
     if (hasLoaded) return;
 
     // 2. If finished loading and hit 100%
-    if (!active && progress === 100) {
+    // THE FIX: Added `total > 0` so it doesn't trigger before lazy() mounts the scene
+    if (!active && progress === 100 && total > 0) {
       // Add a small buffer to let the GPU compile shaders smoothly before showing the button
       const timer = setTimeout(() => setHasLoaded(true), 800);
       return () => clearTimeout(timer);
@@ -63,11 +64,8 @@ export default function ScenePage() {
       return () => clearTimeout(timer);
     }
 
-    // 4. Failsafe: If a scene has literally 0 assets to load
-    if (!active && total === 0) {
-      const timer = setTimeout(() => setHasLoaded(true), 1500);
-      return () => clearTimeout(timer);
-    }
+    // THE FIX: The `total === 0` failsafe has been completely removed to kill the race condition.
+
   }, [active, progress, total, errors.length, hasLoaded]);
 
   // Handler for the "Start" button
