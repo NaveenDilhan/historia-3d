@@ -1,7 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { Suspense, useState, useRef, useEffect } from 'react';
 import useAI from '../../../hooks/useAI';
 import DinosaurModel from '../Environment/DinosaurModel';
 import { rexCurve } from '../Environment/Terrain';
+import { useGLTF } from '@react-three/drei';
 
 export default function DinosaurEncounter({ terrainGeo, hasStarted }) {
   const { getNarration } = useAI();
@@ -25,16 +26,25 @@ export default function DinosaurEncounter({ terrainGeo, hasStarted }) {
 
   return (
     <group>
-      {/* 3D Model - Audio is now handled natively inside this component so it tracks location */}
+      {/* 
+        Wrap the dynamically loaded model in its own Suspense boundary.
+        This prevents the suspension from bubbling up to Scene.jsx 
+        and wiping out the terrain. 
+      */}
       {showDino && (
-        <DinosaurModel
-          curve={rexCurve}
-          speed={0.02}
-          scale={2.8}
-          animate={true}
-          terrainGeo={terrainGeo}
-        />
+        <Suspense fallback={null}>
+          <DinosaurModel
+            curve={rexCurve}
+            speed={0.02}
+            scale={2.8}
+            animate={true}
+            terrainGeo={terrainGeo}
+          />
+        </Suspense>
       )}
     </group>
   );
 }
+
+// Preload at the module level to ensure the browser fetches it as early as possible
+useGLTF.preload('/models/T-Rex.glb');
