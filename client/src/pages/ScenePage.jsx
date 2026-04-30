@@ -1,18 +1,17 @@
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DialogueBox from '../components/UI/DialogueBox';
 import LoadingScreen from '../components/UI/LoadingScreen';
 import { ChevronLeft } from 'lucide-react';
 import { useProgress } from '@react-three/drei';
+import gsap from 'gsap';
 
-// 1. Define lazy imports for your isolated scenes.
+// 1. Lazy load isolated scenes to chunk JS bundles
 const SceneMap = {
   'earth-formation': lazy(() => import('../lessons/EarthFormation/Scene')),
   'jurassic': lazy(() => import('../lessons/Jurassic/Scene')),
-  // Add future lessons here matching the database 'slug'...
 };
 
-// 2. The Fallback UI for missing lessons
 const LessonNotFound = () => {
   const navigate = useNavigate();
   return (
@@ -21,7 +20,7 @@ const LessonNotFound = () => {
         SCROLL MISSING
       </h1>
       <p className="text-amber-200/60 mb-8 max-w-md text-center leading-relaxed">
-        The scribes have not yet documented this era, or the scrolls have been lost to time. The 3D scene you are looking for does not exist.
+        The scribes have not yet documented this era, or the scrolls have been lost to time.
       </p>
       <button 
         onClick={() => navigate('/explore')}
@@ -41,62 +40,95 @@ export default function ScenePage() {
   // Track 3D asset loading progress globally
   const { active, progress, total, errors } = useProgress();
   
-  // Two distinct states: one for loading completion, one for user initiating the scene
+  // State Management
   const [hasLoaded, setHasLoaded] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [isRevealing, setIsRevealing] = useState(false);
 
+  // Refs for GSAP Animation
+  const overlayRef = useRef(null);
+  const canvasWrapperRef = useRef(null);
+
+  // Optimization: Monitor loading progress
   useEffect(() => {
-    // 1. Once we hit 100% and set it to loaded, freeze the state. 
-    // This prevents the screen from flashing if a background asset loads later.
     if (hasLoaded) return;
 
-    // 2. If finished loading and hit 100%
-    // THE FIX: Added `total > 0` so it doesn't trigger before lazy() mounts the scene
+    // When everything is downloaded (progress === 100) and we actually had items to load
     if (!active && progress === 100 && total > 0) {
-      // Add a small buffer to let the GPU compile shaders smoothly before showing the button
+      // CRITICAL OPTIMIZATION: Wait an extra 800ms. 
+      // Even though files are downloaded, WebGL needs a few frames to compile shaders.
+      // This prevents the screen from freezing the moment the curtain lifts.
       const timer = setTimeout(() => setHasLoaded(true), 800);
       return () => clearTimeout(timer);
     }
 
-    // 3. Failsafe: If there are network errors, let the user read them, then proceed
+    // Failsafe: If files fail to load, let the user proceed after a delay anyway
     if (!active && errors.length > 0) {
       const timer = setTimeout(() => setHasLoaded(true), 3000);
       return () => clearTimeout(timer);
     }
-
-    // THE FIX: The `total === 0` failsafe has been completely removed to kill the race condition.
-
   }, [active, progress, total, errors.length, hasLoaded]);
 
-  // Handler for the "Start" button
+  // Handler for the "Start" button - Triggers GSAP Transition
   const handleStart = () => {
-    setHasStarted(true);
+    setIsRevealing(true); // Fades out the text/buttons on the loading screen
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        setHasStarted(true); // Unmounts overlay completely to free DOM memory
+      }
+    });
+
+    // 1. Slide the dark overlay up like a theater curtain
+    tl.to(overlayRef.current, {
+      y: '-100%',
+      duration: 1.6,
+      ease: 'power4.inOut',
+      delay: 0.3 // Pause to let the UI text fade out first
+    }, 0);
+
+    // 2. Cinematic "falling into the world" effect
+    tl.fromTo(canvasWrapperRef.current, 
+      {
+        scale: 1.15,
+        filter: 'blur(10px)',
+      }, 
+      {
+        scale: 1,
+        filter: 'blur(0px)',
+        duration: 2.2,
+        ease: 'power3.out'
+      }, 0.2 // Starts slightly after the curtain begins rising
+    );
   };
 
   return (
     <div className="scene-page relative w-full h-screen overflow-hidden bg-black">
       
-      {/* Opaque Loading Barrier: 
-        Stays visible until the user explicitly clicks the Start button.
-        This gives the browser the "user interaction" needed to play audio reliably.
+      {/* 
+        Opaque Loading Barrier
+        The Canvas renders BEHIND this barrier. This forces all 3D models to visually 
+        render and compile into the GPU invisibly, guaranteeing zero stutter on reveal.
       */}
       {!hasStarted && ActiveScene && (
-        <div className="absolute inset-0 z-50 bg-[#1a120b]">
-          <LoadingScreen hasLoaded={hasLoaded} onStart={handleStart} />
+        <div ref={overlayRef} className="absolute inset-0 z-50 bg-[#1a120b] shadow-[0_20px_50px_rgba(0,0,0,1)] flex items-center justify-center">
+          <LoadingScreen hasLoaded={hasLoaded} onStart={handleStart} isRevealing={isRevealing} />
         </div>
       )}
 
-      {/* The 3D Component */}
-      {ActiveScene ? (
-        <Suspense fallback={null}>
-          {/* Pass the hasStarted state down to the scene so it knows when to trigger events */}
-          <ActiveScene hasStarted={hasStarted} />
-        </Suspense>
-      ) : (
-        <LessonNotFound />
-      )}
+      {/* The 3D Component Wrapper - Targeted by GSAP */}
+      <div ref={canvasWrapperRef} className="w-full h-full absolute inset-0 z-10">
+        {ActiveScene ? (
+          <Suspense fallback={null}>
+            {/* Pass `hasStarted` down so logic/audio/AI ONLY fires AFTER the visual reveal */}
+            <ActiveScene hasStarted={hasStarted} />
+          </Suspense>
+        ) : (
+          <LessonNotFound />
+        )}
+      </div>
 
-      {/* Only reveal UI overlays when the scene is active and the user has pressed start */}
+      {/* UI Overlays (Dialogue, UI controls) - Only mount when the scene is active */}
       {ActiveScene && hasStarted && (
         <div className="ui-overlay absolute bottom-10 left-1/2 -translate-x-1/2 z-20">
           <DialogueBox />
