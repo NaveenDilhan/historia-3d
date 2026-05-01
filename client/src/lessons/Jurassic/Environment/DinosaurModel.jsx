@@ -8,24 +8,17 @@ import { getExactHeight } from './Terrain';
 useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/footstep.ogg");
 useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/roar.mp3");
 
-// Hoisted variables to prevent GC jitter on every frame
 const _lookAtPos = new THREE.Vector3();
 const _targetQuat = new THREE.Quaternion();
 const _mat4 = new THREE.Matrix4();
 const _up = new THREE.Vector3(0, 1, 0);
 
-export default function DinosaurModel({
-  curve,
-  speed = 0.02,
-  scale = 3.0,
-  animate = true,
-  visible = true,
-  terrainGeo 
-}) {
+export default function DinosaurModel({ curve, speed = 0.02, scale = 3.0, animate = true, visible = true, terrainGeo }) {
   const groupRef = useRef();
   const dinoRef = useRef();
   const { scene, animations } = useGLTF('/models/T-Rex.glb');
   const { actions, mixer } = useAnimations(animations, dinoRef);
+  
   const progressRef = useRef(0);
   const currentStateRef = useRef('idle');
   const idleTimerRef = useRef(0);
@@ -119,8 +112,9 @@ export default function DinosaurModel({
       
       const targetY = getExactHeight(position.x, position.z, terrainGeo);
       position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, 0.1);
+      
       groupRef.current.position.copy(position);
-
+      
       _lookAtPos.copy(position).sub(tangent);
       _lookAtPos.y = getExactHeight(_lookAtPos.x, _lookAtPos.z, terrainGeo);
       
@@ -144,12 +138,30 @@ export default function DinosaurModel({
       }
       nextRoarTime.current = state.clock.elapsedTime + 15 + Math.random() * 15;
     }
+
     mixer.update(delta);
   });
 
   return (
     <group ref={groupRef} visible={visible}>
-      <primitive ref={dinoRef} object={scene} scale={scale} dispose={null} />
+      <primitive 
+        ref={dinoRef} 
+        object={scene} 
+        scale={scale} 
+        dispose={null} 
+        // NEW: Interactivity Dispatchers
+        onPointerOver={(e) => {
+            e.stopPropagation();
+            window.dispatchEvent(new CustomEvent('dino-hover', { detail: { isHovering: true } }));
+        }}
+        onPointerOut={(e) => {
+            window.dispatchEvent(new CustomEvent('dino-hover', { detail: { isHovering: false } }));
+        }}
+        onClick={(e) => {
+            e.stopPropagation();
+            window.dispatchEvent(new CustomEvent('dino-click', { detail: { type: 'trex' } }));
+        }}
+      />
       <PositionalAudio ref={footstepAudioRef} url="/sounds/jurrasic/footstep.ogg" loop={false} autoplay={false} />
       <PositionalAudio ref={roarAudioRef} url="/sounds/jurrasic/roar.mp3" loop={false} autoplay={false} />
     </group>
