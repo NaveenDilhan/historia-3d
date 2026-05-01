@@ -25,7 +25,6 @@ export default function Player() {
   
   const speed = 18;
   const jumpStrength = 8;
-  
   const audioIndexRef = useRef(1);
   const audioRefs = useRef([]);
   const lastStepTime = useRef(0);
@@ -51,6 +50,7 @@ export default function Player() {
         pitch.current = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch.current));
       }
     };
+
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [gl.domElement]);
@@ -58,7 +58,7 @@ export default function Player() {
   useFrame((state, delta) => {
     if (!playerRef.current) return;
     
-    // CRITICAL FIX: Safely supports both useState and useRef control hooks without crashing
+    // Safely supports both useState and useRef control hooks without crashing
     const controls = keys.current || keys || {};
     const forward = controls.forward || false;
     const backward = controls.backward || false;
@@ -89,7 +89,6 @@ export default function Player() {
     const currentVelZ = linvel.z || 0;
 
     const safeLerpFactor = 1.0 - Math.exp(-15 * delta);
-
     const smoothX = THREE.MathUtils.lerp(currentVelX, targetX, safeLerpFactor);
     const smoothZ = THREE.MathUtils.lerp(currentVelZ, targetZ, safeLerpFactor);
 
@@ -97,13 +96,14 @@ export default function Player() {
     _linvelTarget.y = linvel.y || 0;
     _linvelTarget.z = smoothZ;
 
-    // CRITICAL FIX: Clean raycast object creation to prevent Rapier prototype errors
-    const rayOrigin = { x: pos.x || 0, y: pos.y || 0, z: pos.z || 0 };
+    // CRITICAL FIX: Lower the raycast origin to the bottom of the capsule and set solid to false
+    // so the raycast doesn't hit the player's own internal geometry.
+    const rayOrigin = { x: pos.x || 0, y: (pos.y || 0) - 0.9, z: pos.z || 0 };
     const rayDir = { x: 0, y: -1, z: 0 };
     const ray = new rapier.Ray(rayOrigin, rayDir);
     
-    const hit = world.castRay(ray, 2, true);
-    const isGrounded = hit && hit.toi < 1.2;
+    const hit = world.castRay(ray, 0.5, false);
+    const isGrounded = hit && hit.toi < 0.3;
 
     const isMoving = (forward || backward || left || right);
 
@@ -150,6 +150,7 @@ export default function Player() {
       type="dynamic"
       enabledRotations={[false, false, false]}
       friction={0}
+      ccd={true} // CRITICAL FIX: Prevents the player from piercing deeply into the trimesh
     >
       <CapsuleCollider args={[0.5, 0.5]} />
       {[1, 2, 3, 4, 5, 6].map((num) => (
