@@ -4,19 +4,13 @@ import { X } from 'lucide-react';
 
 const archiveData = {
     tutorial: {
-        title: "ARCHIVE UPLINK ESTABLISHED",
-        image: "/assets/scroll.png", // Uses an existing asset as a placeholder
-        desc: "Welcome to the simulation. Use [W] [A] [S] [D] to navigate the terrain. Use your [Mouse] to survey the environment. When you encounter indigenous fauna, center your view on them and [Left Click] to extract archival data.",
+        title: "TUTORIAL",
     },
     trex: {
         title: "TYRANNOSAURUS REX",
-        image: "/assets/scroll.png", 
-        desc: "Apex predator of the Late Cretaceous. Reaching up to 40 feet in length, this theropod possessed an immensely powerful bite force capable of crushing bone. Its binocular vision made it a terrifyingly effective tracker.",
     },
     apatosaurus: {
         title: "APATOSAURUS",
-        image: "/assets/scroll.png",
-        desc: "A colossal sauropod from the Late Jurassic. It utilized its immense, whip-like tail for defense against predators. Despite its fearsome size, it was a gentle herbivore that shaped the ancient forests.",
     }
 };
 
@@ -42,44 +36,121 @@ export default function DinoModal({ type, onClose }) {
 
     return (
         <div ref={overlayRef} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-            <div ref={modalRef} className="relative w-full max-w-2xl bg-[#1a120b] border border-amber-900/50 rounded-3xl shadow-[0_0_60px_rgba(245,158,11,0.15)] overflow-hidden">
+            <div ref={modalRef} className="relative w-[90vw] max-w-5xl min-h-[60vh] bg-[#1a120b] border border-amber-900/50 rounded-3xl shadow-[0_0_60px_rgba(245,158,11,0.15)] overflow-hidden flex flex-col">
+                
                 {/* Decorative Top Line */}
                 <div className="h-1.5 w-full bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-80"></div>
 
                 <button 
                     onClick={onClose} 
-                    className="absolute top-4 right-4 z-10 p-2 bg-black/40 hover:bg-amber-900/50 text-amber-500 rounded-full transition-colors border border-amber-900/50"
+                    className="absolute top-6 right-6 z-50 p-2 bg-black/40 hover:bg-amber-900/50 text-amber-500 rounded-full transition-colors border border-amber-900/50"
                 >
-                    <X size={20} />
+                    <X size={24} />
                 </button>
 
-                <div className="flex flex-col md:flex-row h-full">
-                    {/* Image Section */}
-                    <div className="md:w-2/5 relative h-48 md:h-auto bg-black border-r border-amber-900/30 flex items-center justify-center overflow-hidden">
-                        <div className="absolute inset-0 bg-amber-900/20 mix-blend-overlay z-10"></div>
-                        <img src={data.image} alt={data.title} className="w-2/3 h-2/3 object-contain opacity-70 drop-shadow-2xl" />
-                    </div>
+                <div className="flex-1 flex flex-col items-center justify-center p-8">
+                    {type === 'tutorial' ? (
+                        /* --- TUTORIAL VIEW --- */
+                        <div className="flex flex-col items-center justify-center w-full h-full">
+                            <div className="text-center mb-12">
+                                <h2 style={{ fontFamily: "'Cinzel', serif" }} className="text-2xl md:text-3xl font-bold text-amber-100 tracking-wider">
+                                    {data.title}
+                                </h2>
+                                <div className="w-24 h-px bg-amber-700/50 mx-auto mt-4"></div>
+                            </div>
 
-                    {/* Info Section */}
-                    <div className="md:w-3/5 p-8 md:p-10 flex flex-col justify-center">
-                        <div className="text-[10px] uppercase tracking-[0.3em] text-amber-600 font-bold mb-2">
-                            Historical Archive
+                            <div className="flex flex-col md:flex-row items-center justify-center gap-12 md:gap-24 w-full">
+                                {/* WASD Cluster & Text */}
+                                <div className="flex flex-col items-center gap-2">
+                                    <img 
+                                        src="/assets/keyboard_w.png" 
+                                        alt="W Key" 
+                                        className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                                        onError={(e) => { e.target.src = '/assets/w.png'; }} // Fallback if named differently
+                                    />
+                                    <div className="flex gap-2">
+                                        <img 
+                                            src="/assets/keyboard_a.png" 
+                                            alt="A Key" 
+                                            className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                                            onError={(e) => { e.target.src = '/assets/a.png'; }}
+                                        />
+                                        <img 
+                                            src="/assets/keyboard_s.png" 
+                                            alt="S Key" 
+                                            className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                                            onError={(e) => { e.target.src = '/assets/s.png'; }}
+                                        />
+                                        <img 
+                                            src="/assets/keyboard_d.png" 
+                                            alt="D Key" 
+                                            className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                                            onError={(e) => { e.target.src = '/assets/d.png'; }}
+                                        />
+                                    </div>
+                                    <div className="mt-6 px-5 py-2 bg-amber-950/40 border border-amber-900/50 rounded-lg text-center shadow-inner">
+                                        <p className="text-amber-400 font-bold tracking-widest text-sm uppercase">Navigate Terrain</p>
+                                        <p className="text-amber-200/50 text-xs mt-1">Move forward, back, left, and right</p>
+                                    </div>
+                                </div>
+                                
+                                {/* Visual Separator */}
+                                <div className="text-amber-700/50 text-4xl md:text-5xl font-black mb-8 md:mb-0">+</div>
+
+                                {/* Mouse Icon & Text */}
+                                <div className="flex flex-col items-center">
+                                    <img 
+                                        src="/assets/left-click.png" 
+                                        alt="Mouse Interaction" 
+                                        className="w-32 h-32 md:w-48 md:h-48 object-contain drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                                        onError={(e) => { e.target.src = '/assets/scroll.png'; }} // Failsafe
+                                    />
+                                    <div className="mt-6 px-5 py-2 bg-amber-950/40 border border-amber-900/50 rounded-lg text-center shadow-inner">
+                                        <p className="text-amber-400 font-bold tracking-widest text-sm uppercase">Survey & Extract</p>
+                                        <p className="text-amber-200/50 text-xs mt-1">Look around and Left Click on targets</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <h3 style={{ fontFamily: "'Cinzel', serif" }} className="text-2xl md:text-3xl font-bold text-amber-100 mb-4 tracking-wider">
-                            {data.title}
-                        </h3>
-                        <div className="w-16 h-px bg-amber-700/50 mb-6"></div>
-                        <p style={{ fontFamily: "'Lato', sans-serif" }} className="text-amber-200/70 leading-relaxed text-sm">
-                            {data.desc}
-                        </p>
+                    ) : (
+                        /* --- INFORMATION VIEW (T-Rex / Apatosaurus) --- */
+                        <div className="flex flex-col items-center justify-center w-full h-full py-4">
+                            
+                            {/* Dinosaur Name Header */}
+                            <div className="text-center mb-10 w-full">
+                                <div className="text-[10px] uppercase tracking-[0.3em] text-amber-600 font-bold mb-2">
+                                    Historical Archive
+                                </div>
+                                <h3 style={{ fontFamily: "'Cinzel', serif" }} className="text-3xl md:text-5xl font-bold text-amber-100 tracking-widest drop-shadow-lg">
+                                    {data.title}
+                                </h3>
+                                <div className="w-32 h-1 bg-gradient-to-r from-transparent via-amber-600 to-transparent mx-auto mt-6"></div>
+                            </div>
 
-                        <button 
-                            onClick={onClose} 
-                            className="mt-8 self-start px-6 py-2.5 bg-amber-900/20 border border-amber-600/40 text-amber-400 text-xs uppercase tracking-widest font-bold rounded-lg hover:bg-amber-600 hover:text-amber-950 transition-all active:scale-95"
-                        >
-                            Close Archive
-                        </button>
-                    </div>
+                            {/* 3 Slanted Pictures using scroll.png placeholders */}
+                            <div className="w-full flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 px-4">
+                                
+                                {/* Panel 1: Slanted Left */}
+                                <div className="w-full md:w-1/3 aspect-[4/5] max-w-[280px] bg-black border-2 border-amber-900/40 rounded-2xl overflow-hidden shadow-2xl transform -rotate-6 hover:rotate-0 hover:scale-105 transition-all duration-500 relative group cursor-pointer">
+                                    <div className="absolute inset-0 bg-amber-900/20 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
+                                    <img src="/assets/scroll.png" alt="Archive 1" className="w-full h-full object-contain p-8 opacity-80 group-hover:opacity-100 transition-opacity" />
+                                </div>
+
+                                {/* Panel 2: Popped forward, slightly Slanted Right */}
+                                <div className="w-full md:w-1/3 aspect-[4/5] max-w-[280px] bg-black border-2 border-amber-500/50 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(245,158,11,0.2)] transform rotate-3 scale-110 hover:rotate-0 hover:scale-115 transition-all duration-500 relative z-10 group cursor-pointer">
+                                    <div className="absolute inset-0 bg-amber-600/10 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
+                                    <img src="/assets/scroll.png" alt="Archive 2" className="w-full h-full object-contain p-8 opacity-100" />
+                                </div>
+
+                                {/* Panel 3: Slanted Left */}
+                                <div className="w-full md:w-1/3 aspect-[4/5] max-w-[280px] bg-black border-2 border-amber-900/40 rounded-2xl overflow-hidden shadow-2xl transform -rotate-3 hover:rotate-0 hover:scale-105 transition-all duration-500 relative group cursor-pointer">
+                                    <div className="absolute inset-0 bg-amber-900/20 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
+                                    <img src="/assets/scroll.png" alt="Archive 3" className="w-full h-full object-contain p-8 opacity-80 group-hover:opacity-100 transition-opacity" />
+                                </div>
+
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
