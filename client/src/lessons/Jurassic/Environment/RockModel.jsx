@@ -1,16 +1,17 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, memo } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { RigidBody } from '@react-three/rapier';
 import { getExactHeight, getDistToRexPath } from './Terrain';
 
-export default function RockModel({ count = 100, bounds, terrainGeo, obstacles = [] }) {
-  const rockModels = [
-    useGLTF('/models/rock1.glb'),
-    useGLTF('/models/rock2.glb'),
-    useGLTF('/models/rock3.glb'),
+const GrassModel = memo(function GrassModel({ count = 200, bounds, terrainGeo }) {
+  const grassModels = [
+    useGLTF('/models/grass1.glb'),
+    useGLTF('/models/grass2.glb'),
+    useGLTF('/models/grass3.glb'),
+    useGLTF('/models/grass4.glb'),
   ];
 
-  const rocks = useMemo(() => {
+  const grasses = useMemo(() => {
     const data = [];
     let attempts = 0;
     while (data.length < count && attempts < count * 3) {
@@ -18,39 +19,52 @@ export default function RockModel({ count = 100, bounds, terrainGeo, obstacles =
       const z = bounds ? bounds.zMin + Math.random() * (bounds.zMax - bounds.zMin) : (Math.random() - 0.5) * 350;
       attempts++;
       
-      if (getDistToRexPath(x, z) < 6) continue;
+      if (getDistToRexPath(x, z) < 4) continue;
       
-      // Ensure it doesn't clip with previously spawned things
-      let isClipping = false;
-      for (let obs of obstacles) {
-         if (Math.hypot(obs.x - x, obs.z - z) < (obs.radius + 1.5)) {
-             isClipping = true;
-             break;
-         }
-      }
-      if (isClipping) continue;
-
-      let y = getExactHeight(x, z, terrainGeo);
-      const scale = 1.0 + Math.random() * 2.5;
-      const modelIndex = Math.floor(Math.random() * rockModels.length);
-      const rotY = Math.random() * Math.PI * 2;
+      const y = getExactHeight(x, z, terrainGeo);
+      const scale = 0.5 + Math.random() * 1.5;
+      const rotationY = Math.random() * Math.PI * 2;
+      const windOffset = Math.random() * Math.PI * 2;
+      const modelIndex = Math.floor(Math.random() * grassModels.length);
       
-      data.push({ x, y: y - 0.5, z, scale, modelIndex, rotY });
-      obstacles.push({ x, z, radius: scale * 1.5 });
+      data.push({ x, y, z, scale, rotationY, windOffset, modelIndex });
     }
     return data;
-  }, [count, bounds, terrainGeo, obstacles]);
+  }, [count, bounds, terrainGeo]);
+
+  const grassRefs = useRef([]);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    grassRefs.current.forEach((grass, i) => {
+      if (grass) {
+        const sway = Math.sin(t * 0.5 + grasses[i].windOffset) * 0.015;
+        const tilt = Math.cos(t * 0.3 + grasses[i].windOffset) * 0.01;
+        grass.rotation.z = sway;
+        grass.rotation.x = tilt;
+      }
+    });
+  });
 
   return (
-    <group>
-      {rocks.map((r, i) => {
-        const model = rockModels[r.modelIndex].scene.clone();
-        return (
-          <RigidBody key={`rock-${i}`} type="fixed" colliders="hull" position={[r.x, r.y, r.z]}>
-            <primitive object={model} scale={r.scale} rotation={[0, r.rotY, 0]} />
-          </RigidBody>
-        );
-      })}
-    </group>
+    <>
+      {grasses.map((g, i) => (
+        <primitive
+          key={`grass-${i}`}
+          ref={(el) => (grassRefs.current[i] = el)}
+          object={grassModels[g.modelIndex].scene.clone()}
+          position={[g.x, g.y, g.z]}
+          scale={g.scale}
+          rotation={[0, g.rotationY, 0]}
+        />
+      ))}
+    </>
   );
-}
+});
+
+export default GrassModel;
+
+useGLTF.preload('/models/grass1.glb');
+useGLTF.preload('/models/grass2.glb');
+useGLTF.preload('/models/grass3.glb');
+useGLTF.preload('/models/grass4.glb');

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { useGLTF } from '@react-three/drei';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { getExactHeight } from './Terrain';
@@ -10,7 +10,6 @@ const isPositionValid = (x, z, currentTrees, obstacles, minDist) => {
   for (let t of currentTrees) {
     if (Math.hypot(t.x - x, t.z - z) < minDist) return false;
   }
-  
   if (obstacles) {
     for (let obs of obstacles) {
       if (Math.hypot(obs.x - x, obs.z - z) < (obs.radius + minDist / 2)) return false;
@@ -19,7 +18,7 @@ const isPositionValid = (x, z, currentTrees, obstacles, minDist) => {
   return true;
 };
 
-export default function DesertDeadTrees({ terrainGeo, count = 15, obstacles = [] }) {
+const DesertDeadTrees = memo(function DesertDeadTrees({ terrainGeo, count = 15, obstacles = [] }) {
   const genericModels = [
     useGLTF('/models/dead1.glb'),
     useGLTF('/models/dead2.glb'),
@@ -43,10 +42,9 @@ export default function DesertDeadTrees({ terrainGeo, count = 15, obstacles = []
       
       if (y > MAX_HEIGHT) continue;
 
-      // NEW: Slope check to prevent dead trees spawning on cliff sides
       const slopeX = Math.abs(y - getExactHeight(x + 2, z, terrainGeo));
       const slopeZ = Math.abs(y - getExactHeight(x, z + 2, terrainGeo));
-      if (slopeX > 1.2 || slopeZ > 1.2) continue; // Too steep!
+      if (slopeX > 1.2 || slopeZ > 1.2) continue; 
       
       if (!isPositionValid(x, z, arr, obstacles, MIN_DIST)) continue;
       
@@ -71,7 +69,9 @@ export default function DesertDeadTrees({ terrainGeo, count = 15, obstacles = []
       })}
     </group>
   );
-}
+});
+
+export default DesertDeadTrees;
 
 useGLTF.preload('/models/dead1.glb');
 useGLTF.preload('/models/dead2.glb');

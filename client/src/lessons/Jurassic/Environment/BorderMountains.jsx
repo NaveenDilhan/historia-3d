@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { useGLTF, Clone } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
 
-export default function BorderMountains({ obstacles = [] }) {
+const BorderMountains = memo(function BorderMountains({ obstacles = [] }) {
   const { scene: mountainScene } = useGLTF('/models/mountain1.glb');
   const { scene: volcanoScene } = useGLTF('/models/volcano.glb');
 
@@ -15,12 +15,12 @@ export default function BorderMountains({ obstacles = [] }) {
       const steps = Math.floor(dist / step);
       
       for (let i = 0; i <= steps; i++) {
-        if (Math.random() < skipChance) continue; 
+        if (Math.random() < skipChance) continue;
+        
         const t = i / steps;
         const x = startX + (endX - startX) * t;
         const z = startZ + (endZ - startZ) * t;
         
-        // Jitter logic pushes mountains slightly OUTWARDS
         let jx = x;
         let jz = z;
         if (type !== 'volcano') {
@@ -33,8 +33,8 @@ export default function BorderMountains({ obstacles = [] }) {
         
         const y = -35 + Math.random() * 10; 
         const elementScale = type === 'volcano'
-           ? 300 + Math.random() * 75
-           : 55 + Math.random() * 25;
+          ? 300 + Math.random() * 75
+          : 55 + Math.random() * 25;
         
         elements.push({
           pos: [jx, y, jz],
@@ -42,14 +42,12 @@ export default function BorderMountains({ obstacles = [] }) {
           scale: elementScale,
           type: type
         });
-
-        // NEW: Register this massive mountain into the obstacles array!
-        // This stops trees from clipping into the edges of the map.
-        obstacles.push({ 
-            x: jx, 
-            z: jz, 
-            radius: elementScale * 0.45 
-        });
+        
+        obstacles.push({
+             x: jx,
+             z: jz,
+             radius: elementScale * 0.45 
+         });
       }
     };
 
@@ -70,11 +68,11 @@ export default function BorderMountains({ obstacles = [] }) {
     <group>
       {borderElements.map((el, index) => (
         <RigidBody 
-          key={`border-${index}`} 
-          type="fixed" 
-          colliders="trimesh"
-          position={el.pos} 
-          rotation={el.rot}
+           key={`border-${index}`}
+           type="fixed" 
+           colliders="trimesh"
+           position={el.pos} 
+           rotation={el.rot}
         >
           <Clone
             object={el.type === 'volcano' ? volcanoScene : mountainScene}
@@ -84,7 +82,9 @@ export default function BorderMountains({ obstacles = [] }) {
       ))}
     </group>
   );
-}
+});
+
+export default BorderMountains;
 
 useGLTF.preload('/models/mountain1.glb');
 useGLTF.preload('/models/volcano.glb');

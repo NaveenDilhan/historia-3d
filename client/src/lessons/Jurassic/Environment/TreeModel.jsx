@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, memo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
@@ -11,7 +11,7 @@ const isPositionValid = (x, z, obstacles, minDist) => {
   return true;
 };
 
-export default function TreeForest({ genericCount = 50, forestCount = 200, bounds, terrainGeo, treeScale = 1, obstacles = [] }) {
+const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 200, bounds, terrainGeo, treeScale = 1, obstacles = [] }) {
   const genericModels = [useGLTF('/models/tree1.glb'), useGLTF('/models/tree2.glb'), useGLTF('/models/tree3.glb'), useGLTF('/models/tree4.glb'), useGLTF('/models/tree5.glb')];
   const pineModels = [useGLTF('/models/pine1.glb'), useGLTF('/models/pine2.glb'), useGLTF('/models/pine3.glb'), useGLTF('/models/pine4.glb')];
   const deadModels = [useGLTF('/models/dead1.glb'), useGLTF('/models/dead2.glb'), useGLTF('/models/dead3.glb'), useGLTF('/models/dead4.glb'), useGLTF('/models/dead5.glb')];
@@ -31,11 +31,9 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, bound
       const y = getExactHeight(x, z, terrainGeo);
       if (y > MAX_HEIGHT) continue; 
 
-      // NEW: Slope check to prevent clipping into noise-generated hills
       const slopeX = Math.abs(y - getExactHeight(x + 2, z, terrainGeo));
       const slopeZ = Math.abs(y - getExactHeight(x, z + 2, terrainGeo));
-      if (slopeX > 1.2 || slopeZ > 1.2) continue; // Too steep!
-
+      if (slopeX > 1.2 || slopeZ > 1.2) continue;
       if (!isPositionValid(x, z, obstacles, 2.0)) continue; 
       
       const scale = (1.5 + Math.random() * 0.7) * treeScale; 
@@ -59,11 +57,9 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, bound
       const y = getExactHeight(x, z, terrainGeo);
       if (y > MAX_HEIGHT) continue; 
 
-      // NEW: Slope check to prevent clipping into noise-generated hills
       const slopeX = Math.abs(y - getExactHeight(x + 2, z, terrainGeo));
       const slopeZ = Math.abs(y - getExactHeight(x, z + 2, terrainGeo));
-      if (slopeX > 1.2 || slopeZ > 1.2) continue; // Too steep!
-
+      if (slopeX > 1.2 || slopeZ > 1.2) continue; 
       if (!isPositionValid(x, z, obstacles, 2.0)) continue; 
       
       const rnd = Math.random();
@@ -109,4 +105,22 @@ export default function TreeForest({ genericCount = 50, forestCount = 200, bound
       })}
     </>
   );
-}
+});
+
+export default TreeForest;
+
+// Aggressively preload all possible tree variants to eliminate partial mounting lag
+useGLTF.preload('/models/tree1.glb');
+useGLTF.preload('/models/tree2.glb');
+useGLTF.preload('/models/tree3.glb');
+useGLTF.preload('/models/tree4.glb');
+useGLTF.preload('/models/tree5.glb');
+useGLTF.preload('/models/pine1.glb');
+useGLTF.preload('/models/pine2.glb');
+useGLTF.preload('/models/pine3.glb');
+useGLTF.preload('/models/pine4.glb');
+useGLTF.preload('/models/dead1.glb');
+useGLTF.preload('/models/dead2.glb');
+useGLTF.preload('/models/dead3.glb');
+useGLTF.preload('/models/dead4.glb');
+useGLTF.preload('/models/dead5.glb');

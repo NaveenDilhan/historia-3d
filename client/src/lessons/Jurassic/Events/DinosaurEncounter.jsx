@@ -26,25 +26,23 @@ export default function DinosaurEncounter({ terrainGeo, hasStarted }) {
 
   return (
     <group>
-      {/* 
-        Wrap the dynamically loaded model in its own Suspense boundary.
-        This prevents the suspension from bubbling up to Scene.jsx 
-        and wiping out the terrain. 
-      */}
-      {showDino && (
-        <Suspense fallback={null}>
-          <DinosaurModel
-            curve={rexCurve}
-            speed={0.02}
-            scale={2.8}
-            animate={true}
-            terrainGeo={terrainGeo}
-          />
-        </Suspense>
-      )}
+      <Suspense fallback={null}>
+        {/* 
+           OPTIMIZATION: The DinosaurModel is now rendered immediately behind the loading screen
+           to pre-compile shaders. We pass down visible={showDino} so it stays completely hidden
+           until the encounter triggers.
+        */}
+        <DinosaurModel
+          curve={rexCurve}
+          speed={0.02}
+          scale={2.8}
+          animate={showDino}
+          visible={showDino}
+          terrainGeo={terrainGeo}
+        />
+      </Suspense>
     </group>
   );
 }
 
-// Preload at the module level to ensure the browser fetches it as early as possible
 useGLTF.preload('/models/T-Rex.glb');

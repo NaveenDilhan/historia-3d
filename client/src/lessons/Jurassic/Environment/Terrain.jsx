@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, memo } from 'react';
 import { useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise.js';
@@ -65,7 +65,8 @@ export const getDistToRexPath = (x, z) => {
   return minDist;
 };
 
-export default function Terrain({ setTerrainGeo }) {
+// OPTIMIZATION: Wrap in React.memo to prevent expensive re-evaluations of the shader and noise logic
+const Terrain = memo(function Terrain({ setTerrainGeo }) {
   const [mossTex, mudTex, rockTex, lavaTex] = useLoader(THREE.TextureLoader, [
     '/textures/grass_mossy.png',
     '/textures/mud.png',
@@ -209,7 +210,7 @@ export default function Terrain({ setTerrainGeo }) {
          float volcanoMix = 1.0 - smoothstep(-425.0, -375.0, vWorldPos.y);
 
          float h = vHeight;
-          
+         
          vec4 fColor = mix(mudColor, mossColor, smoothstep(1.0, 1.2, h));
          fColor = mix(fColor, rockColor, smoothstep(6.0, 6.5, h)); 
          
@@ -255,4 +256,13 @@ export default function Terrain({ setTerrainGeo }) {
       <ForestFlora count={300} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
     </group>
   );
-}
+});
+
+export default Terrain;
+
+// OPTIMIZATION: Aggressively preload textures outside the component tree
+// This forces the browser to pull these heavy image files immediately
+useLoader.preload(THREE.TextureLoader, '/textures/grass_mossy.png');
+useLoader.preload(THREE.TextureLoader, '/textures/mud.png');
+useLoader.preload(THREE.TextureLoader, '/textures/rock.png');
+useLoader.preload(THREE.TextureLoader, '/textures/Lava.webp');

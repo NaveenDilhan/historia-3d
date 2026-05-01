@@ -9,13 +9,13 @@ export default function DinosaurModel({
   speed = 0.02, 
   scale = 3.0,  
   animate = true,
+  visible = true, // Received visibility prop
   terrainGeo
 }) {
-  const groupRef = useRef(); // Parent group to hold model + audio
+  const groupRef = useRef(); 
   const dinoRef = useRef();
   const { scene, animations } = useGLTF('/models/T-Rex.glb');
   const { actions, mixer } = useAnimations(animations, dinoRef);
-
   const progressRef = useRef(0);
   const currentStateRef = useRef('idle');
   const idleTimerRef = useRef(0);
@@ -31,6 +31,7 @@ export default function DinosaurModel({
 
   useEffect(() => {
     if (!animations || animations.length === 0 || !curve) return;
+
     scene.traverse((child) => {
       if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
     });
@@ -42,19 +43,25 @@ export default function DinosaurModel({
       if (name.includes('run')) animRefs.current.run = actions[clip.name];
     });
 
-    const idle = animRefs.current.idle;
-    if (idle) { idle.reset().fadeIn(0.8).play(); currentStateRef.current = 'idle'; }
-    idleTimerRef.current = 3 + Math.random() * 3; 
+    // Only start the animation routine if the event has been triggered
+    if (animate) {
+      const idle = animRefs.current.idle;
+      if (idle) { idle.reset().fadeIn(0.8).play(); currentStateRef.current = 'idle'; }
+      idleTimerRef.current = 3 + Math.random() * 3; 
+    }
+
     setLoaded(true);
-  }, [animations, actions, scene, curve]);
+  }, [animations, actions, scene, curve, animate]);
 
   const switchAnim = (next) => {
     const prev = currentStateRef.current;
     if (prev === next) return; 
+
     if (animRefs.current[next]) {
       if (animRefs.current[prev]) animRefs.current[prev].fadeOut(0.8);
       if (next === 'walk') animRefs.current[next].setEffectiveTimeScale(0.7); 
       if (next === 'idle') animRefs.current[next].setEffectiveTimeScale(1.0);
+
       animRefs.current[next].reset().fadeIn(0.8).play();
       currentStateRef.current = next;
     }
@@ -63,7 +70,7 @@ export default function DinosaurModel({
   useFrame((state, delta) => {
     if (!groupRef.current || !dinoRef.current || !animate || !loaded || !curve) return;
 
-    // Initialize Audio Properties on the first frame
+    // Initialize Audio Properties on the first frame ONLY when triggered (animate = true)
     if (!isAudioInit.current) {
       if (footstepAudioRef.current) {
         footstepAudioRef.current.setRefDistance(5);
@@ -106,7 +113,6 @@ export default function DinosaurModel({
     if (animState === 'walk' || animState === 'run') {
       progressRef.current += delta * speed;
       const t = progressRef.current % 1; 
-
       const position = curve.getPointAt(t);
       const tangent = curve.getTangentAt(t).normalize();
       
@@ -116,13 +122,12 @@ export default function DinosaurModel({
 
       const lookAtPos = position.clone().sub(tangent);
       lookAtPos.y = getExactHeight(lookAtPos.x, lookAtPos.z, terrainGeo); 
-      
+        
       const targetQuaternion = new THREE.Quaternion().setFromRotationMatrix(
         new THREE.Matrix4().lookAt(groupRef.current.position, lookAtPos, new THREE.Vector3(0, 1, 0))
       );
       groupRef.current.quaternion.slerp(targetQuaternion, 0.08);
 
-      // Play footsteps ONLY when the model is actually walking
       if (state.clock.elapsedTime - lastStompTime.current > 1.2) {
         if (footstepAudioRef.current && !footstepAudioRef.current.isPlaying) {
           footstepAudioRef.current.setVolume(2.0); 
@@ -145,12 +150,13 @@ export default function DinosaurModel({
   });
 
   return (
-    <group ref={groupRef}>
+    // Connected the toggled visible prop here
+    <group ref={groupRef} visible={visible}>
       <primitive ref={dinoRef} object={scene} scale={scale} />
-      {/* Audio sources are now embedded physically onto the moving dinosaur group */}
       <PositionalAudio ref={footstepAudioRef} url="/sounds/jurrasic/footstep.ogg" loop={false} autoplay={false} />
       <PositionalAudio ref={roarAudioRef} url="/sounds/jurrasic/roar.mp3" loop={false} autoplay={false} />
     </group>
   );
 }
+
 useGLTF.preload('/models/T-Rex.glb');
