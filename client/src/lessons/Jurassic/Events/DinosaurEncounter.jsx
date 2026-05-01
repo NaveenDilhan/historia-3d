@@ -27,17 +27,17 @@ export default function DinosaurEncounter({ terrainGeo, hasStarted }) {
   return (
     <group>
       <Suspense fallback={null}>
-        {/* 
-           OPTIMIZATION: The DinosaurModel is now rendered immediately behind the loading screen
-           to pre-compile shaders. We pass down visible={showDino} so it stays completely hidden
-           until the encounter triggers.
+        {/*
+            OPTIMIZATION: Removed `visible={showDino}`. 
+            By keeping the model natively visible to the renderer (but un-animated), 
+            we force Three.js to pre-compile the shader during the loading screen. 
+            This completely eliminates the 6-second stutter.
         */}
         <DinosaurModel
           curve={rexCurve}
           speed={0.02}
           scale={2.8}
           animate={showDino}
-          visible={showDino}
           terrainGeo={terrainGeo}
         />
       </Suspense>

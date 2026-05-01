@@ -1,10 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
-/**
- * Tracks WASD movement + jump for first-person control
- */
 export function usePlayerControls() {
-  const [keys, setKeys] = useState({
+  const keys = useRef({
     forward: false,
     backward: false,
     left: false,
@@ -15,45 +12,23 @@ export function usePlayerControls() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       switch (e.key.toLowerCase()) {
-        case 'w':
-          setKeys((k) => ({ ...k, forward: true }));
-          break;
-        case 's':
-          setKeys((k) => ({ ...k, backward: true }));
-          break;
-        case 'a':
-          setKeys((k) => ({ ...k, left: true }));
-          break;
-        case 'd':
-          setKeys((k) => ({ ...k, right: true }));
-          break;
-        case ' ':
-          setKeys((k) => ({ ...k, jump: true }));
-          break;
-        default:
-          break;
+        case 'w': keys.current.forward = true; break;
+        case 's': keys.current.backward = true; break;
+        case 'a': keys.current.left = true; break;
+        case 'd': keys.current.right = true; break;
+        case ' ': keys.current.jump = true; break;
+        default: break;
       }
     };
 
     const handleKeyUp = (e) => {
       switch (e.key.toLowerCase()) {
-        case 'w':
-          setKeys((k) => ({ ...k, forward: false }));
-          break;
-        case 's':
-          setKeys((k) => ({ ...k, backward: false }));
-          break;
-        case 'a':
-          setKeys((k) => ({ ...k, left: false }));
-          break;
-        case 'd':
-          setKeys((k) => ({ ...k, right: false }));
-          break;
-        case ' ':
-          setKeys((k) => ({ ...k, jump: false }));
-          break;
-        default:
-          break;
+        case 'w': keys.current.forward = false; break;
+        case 's': keys.current.backward = false; break;
+        case 'a': keys.current.left = false; break;
+        case 'd': keys.current.right = false; break;
+        case ' ': keys.current.jump = false; break;
+        default: break;
       }
     };
 

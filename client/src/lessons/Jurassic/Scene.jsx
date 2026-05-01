@@ -1,13 +1,19 @@
 import React, { Suspense, useState, useRef, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useLoader } from '@react-three/fiber';
 import { Sky, Environment, Cloud, Sparkles, PositionalAudio, Preload } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import * as THREE from 'three';
+
 import Terrain from './Environment/Terrain';
 import Lighting from './Environment/Lighting';
 import DinosaurEncounter from './Events/DinosaurEncounter';
 import ApatosaurusModel from './Environment/ApatosaurusModel';
 import Player from '../../hooks/Player';
+
+useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/forest.mp3");
+useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/volcano.mp3");
+useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/ocean.mp3");
 
 function BiomeAudio({ hasStarted }) {
   const forestRef = useRef();
@@ -58,7 +64,8 @@ export default function Scene({ hasStarted }) {
       <Suspense fallback={null}>
         <Lighting />
         
-        <Physics gravity={[0, -9.81, 0]}>
+        {/* CRITICAL FIX: timeStep="vary" prevents the physics death-spiral crash */}
+        <Physics gravity={[0, -9.81, 0]} timeStep="vary">
           <Terrain setTerrainGeo={setTerrainGeo} />
           
           {terrainGeo && (
@@ -74,14 +81,18 @@ export default function Scene({ hasStarted }) {
                     scale={5.0}
                 />
               </Suspense>
-              <Player terrainGeo={terrainGeo} />
+
+              <Suspense fallback={null}>
+                <Player terrainGeo={terrainGeo} />
+              </Suspense>
             </>
           )}
         </Physics>
 
         <BiomeAudio hasStarted={hasStarted} />
         
-        <Sparkles count={3500} scale={300} size={4} speed={0.2} opacity={0.2} color="#ffddaa" />
+        {/* Slightly reduced particles to alleviate GPU load when viewing the whole map */}
+        <Sparkles count={1500} scale={300} size={4} speed={0.2} opacity={0.2} color="#ffddaa" />
         <Cloud position={[-40, 50, -60]} speed={0.15} opacity={0.6} scale={2.5} color="#ffd8a8" />
         <Cloud position={[50, 60, 30]} speed={0.1} opacity={0.4} scale={3} color="#ffebd6" />
         <Cloud position={[0, 45, 80]} speed={0.2} opacity={0.5} scale={2} color="#e0cda6" />
@@ -91,6 +102,7 @@ export default function Scene({ hasStarted }) {
         <EffectComposer disableNormalPass>
           <Bloom luminanceThreshold={0.8} mipmapBlur intensity={0.5} />
         </EffectComposer>
+        
         <Preload all />
       </Suspense>
 

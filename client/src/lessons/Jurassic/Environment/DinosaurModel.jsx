@@ -1,8 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useLoader } from '@react-three/fiber';
 import { useGLTF, useAnimations, PositionalAudio } from '@react-three/drei';
 import * as THREE from 'three';
 import { getExactHeight } from './Terrain';
+
+// Preload heavy audio files to prevent late Suspense fallbacks
+useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/footstep.ogg");
+useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/roar.mp3");
 
 // Hoisted variables to prevent GC jitter on every frame
 const _lookAtPos = new THREE.Vector3();
@@ -16,30 +20,31 @@ export default function DinosaurModel({
   scale = 3.0,
   animate = true,
   visible = true,
-  terrainGeo
+  terrainGeo 
 }) {
   const groupRef = useRef();
   const dinoRef = useRef();
   const { scene, animations } = useGLTF('/models/T-Rex.glb');
   const { actions, mixer } = useAnimations(animations, dinoRef);
-  
   const progressRef = useRef(0);
   const currentStateRef = useRef('idle');
   const idleTimerRef = useRef(0);
   const [loaded, setLoaded] = useState(false);
   const animRefs = useRef({ idle: null, walk: null, run: null });
-  
   const footstepAudioRef = useRef();
   const roarAudioRef = useRef();
+  
   const lastStompTime = useRef(0);
   const nextRoarTime = useRef(0);
   const isAudioInit = useRef(false);
 
   useEffect(() => {
     if (!animations || animations.length === 0 || !curve) return;
+    
     scene.traverse((child) => {
       if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
     });
+    
     animations.forEach((clip) => {
       const name = clip.name.toLowerCase();
       if (name.includes('idle')) animRefs.current.idle = actions[clip.name];
