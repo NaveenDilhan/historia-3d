@@ -8,7 +8,7 @@ const BorderMountains = memo(function BorderMountains({ obstacles = [] }) {
 
   const borderElements = useMemo(() => {
     const elements = [];
-    const step = 25; 
+    const step = 25;
 
     const addEdge = (startX, startZ, endX, endZ, type = 'mountain', skipChance = 0) => {
       const dist = Math.hypot(endX - startX, endZ - startZ);
@@ -23,15 +23,16 @@ const BorderMountains = memo(function BorderMountains({ obstacles = [] }) {
         
         let jx = x;
         let jz = z;
+
         if (type !== 'volcano') {
-           if (x >= 240) jx += Math.random() * 12; 
-           else if (x <= -240) jx -= Math.random() * 12; 
+           if (x >= 240) jx += Math.random() * 12;
+           else if (x <= -240) jx -= Math.random() * 12;
            
-           if (z <= -790) jz -= Math.random() * 12; 
-           else if (z >= 540) jz += Math.random() * 12; 
+           if (z <= -790) jz -= Math.random() * 12;
+           else if (z >= 540) jz += Math.random() * 12;
         }
         
-        const y = -35 + Math.random() * 10; 
+        const y = -35 + Math.random() * 10;
         const elementScale = type === 'volcano'
           ? 300 + Math.random() * 75
           : 55 + Math.random() * 25;
@@ -44,22 +45,22 @@ const BorderMountains = memo(function BorderMountains({ obstacles = [] }) {
         });
         
         obstacles.push({
-             x: jx,
-             z: jz,
-             radius: elementScale * 0.45 
-         });
+            x: jx,
+            z: jz,
+            radius: elementScale * 0.45
+        });
       }
     };
 
-    addEdge(245, 550, 245, 400, 'mountain', 0.85); 
-    addEdge(245, 400, 245, -400, 'mountain', 0);   
-    addEdge(245, -400, 245, -795, 'mountain', 0);  
+    addEdge(245, 550, 245, 400, 'mountain', 0.85);
+    addEdge(245, 400, 245, -400, 'mountain', 0);
+    addEdge(245, -400, 245, -795, 'mountain', 0);
+    
+    addEdge(-245, 550, -245, 400, 'mountain', 0.85);
+    addEdge(-245, 400, -245, -400, 'mountain', 0);
+    addEdge(-245, -400, -245, -795, 'mountain', 0);
 
-    addEdge(-245, 550, -245, 400, 'mountain', 0.85); 
-    addEdge(-245, 400, -245, -400, 'mountain', 0);   
-    addEdge(-245, -400, -245, -795, 'mountain', 0);  
-
-    addEdge(-250, -795, 250, -795, 'volcano', 0); 
+    addEdge(-250, -795, 250, -795, 'volcano', 0);
 
     return elements;
   }, [obstacles]);
@@ -67,16 +68,17 @@ const BorderMountains = memo(function BorderMountains({ obstacles = [] }) {
   return (
     <group>
       {borderElements.map((el, index) => (
-        <RigidBody 
-           key={`border-${index}`}
-           type="fixed" 
-           colliders="trimesh"
-           position={el.pos} 
-           rotation={el.rot}
+        <RigidBody
+            key={`border-${index}`}
+            type="fixed"
+            colliders="trimesh"
+            position={el.pos}
+            rotation={el.rot}
         >
           <Clone
             object={el.type === 'volcano' ? volcanoScene : mountainScene}
             scale={el.scale}
+            dispose={null}
           />
         </RigidBody>
       ))}

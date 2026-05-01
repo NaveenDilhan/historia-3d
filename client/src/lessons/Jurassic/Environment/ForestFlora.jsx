@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, memo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
+import { useGLTF, Clone } from '@react-three/drei';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { getExactHeight, getDistToRexPath } from './Terrain';
 
@@ -52,7 +52,6 @@ const ForestFlora = memo(function ForestFlora({ count = 300, bounds, terrainGeo,
   }, [count, bounds, terrainGeo, models, obstacles]);
 
   const floraRefs = useRef([]);
-
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     floraRefs.current.forEach((mesh, i) => {
@@ -66,25 +65,25 @@ const ForestFlora = memo(function ForestFlora({ count = 300, bounds, terrainGeo,
   return (
     <group>
       {instances.map((inst, i) => {
-        const model = inst.scene.clone();
         if (inst.type === 'fern') {
           const colliderHeight = inst.scale * 2.0;
           const colliderRadius = inst.scale * 0.5;
           return (
             <RigidBody key={`flora-${i}`} type="fixed" colliders={false} position={[inst.x, inst.y, inst.z]}>
               <CuboidCollider position={[0, colliderHeight / 2, 0]} args={[colliderRadius, colliderHeight / 2, colliderRadius]} />
-              <primitive ref={(el) => (floraRefs.current[i] = el)} object={model} scale={inst.scale} rotation={[0, inst.rotY, 0]} />
+              <Clone ref={(el) => (floraRefs.current[i] = el)} object={inst.scene} scale={inst.scale} rotation={[0, inst.rotY, 0]} dispose={null} />
             </RigidBody>
           );
         }
         return (
-          <primitive
+          <Clone
             key={`flora-${i}`}
             ref={(el) => (floraRefs.current[i] = el)}
-            object={model}
+            object={inst.scene}
             position={[inst.x, inst.y, inst.z]}
             scale={inst.scale}
             rotation={[0, inst.rotY, 0]}
+            dispose={null}
           />
         );
       })}

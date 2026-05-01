@@ -1,5 +1,5 @@
 import React, { useMemo, memo } from 'react';
-import { useGLTF } from '@react-three/drei';
+import { useGLTF, Clone } from '@react-three/drei';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { getExactHeight } from './Terrain';
 
@@ -33,18 +33,19 @@ const DesertDeadTrees = memo(function DesertDeadTrees({ terrainGeo, count = 15, 
     
     const arr = [];
     let attempts = 0;
+
     while (arr.length < count && attempts < count * 15) {
       attempts++;
       
-      const x = (Math.random() - 0.5) * 360; 
-      const z = -(Math.random() * 380 + 10); 
+      const x = (Math.random() - 0.5) * 360;
+      const z = -(Math.random() * 380 + 10);
       const y = getExactHeight(x, z, terrainGeo);
       
       if (y > MAX_HEIGHT) continue;
 
       const slopeX = Math.abs(y - getExactHeight(x + 2, z, terrainGeo));
       const slopeZ = Math.abs(y - getExactHeight(x, z + 2, terrainGeo));
-      if (slopeX > 1.2 || slopeZ > 1.2) continue; 
+      if (slopeX > 1.2 || slopeZ > 1.2) continue;
       
       if (!isPositionValid(x, z, arr, obstacles, MIN_DIST)) continue;
       
@@ -60,10 +61,11 @@ const DesertDeadTrees = memo(function DesertDeadTrees({ terrainGeo, count = 15, 
       {instances.map((inst, i) => {
         const colliderHeight = inst.scale * 5;
         const colliderRadius = inst.scale * 0.8;
+
         return (
           <RigidBody key={`deadtree-${i}`} type="fixed" colliders={false} position={[inst.x, inst.y, inst.z]}>
             <CuboidCollider position={[0, colliderHeight / 2, 0]} args={[colliderRadius, colliderHeight / 2, colliderRadius]} />
-            <primitive object={inst.model.clone()} scale={inst.scale} rotation={[0, inst.rot, 0]} />
+            <Clone object={inst.model} scale={inst.scale} rotation={[0, inst.rot, 0]} dispose={null} />
           </RigidBody>
         );
       })}

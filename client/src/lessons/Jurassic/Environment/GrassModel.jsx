@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, memo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
+import { useGLTF, Clone } from '@react-three/drei';
 import { getExactHeight, getDistToRexPath } from './Terrain';
 
 const GrassModel = memo(function GrassModel({ count = 200, bounds, terrainGeo }) {
@@ -33,7 +33,6 @@ const GrassModel = memo(function GrassModel({ count = 200, bounds, terrainGeo })
   }, [count, bounds, terrainGeo]);
 
   const grassRefs = useRef([]);
-
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     grassRefs.current.forEach((grass, i) => {
@@ -49,13 +48,14 @@ const GrassModel = memo(function GrassModel({ count = 200, bounds, terrainGeo })
   return (
     <>
       {grasses.map((g, i) => (
-        <primitive
+        <Clone
           key={`grass-${i}`}
           ref={(el) => (grassRefs.current[i] = el)}
-          object={grassModels[g.modelIndex].scene.clone()}
+          object={grassModels[g.modelIndex].scene}
           position={[g.x, g.y, g.z]}
           scale={g.scale}
           rotation={[0, g.rotationY, 0]}
+          dispose={null}
         />
       ))}
     </>

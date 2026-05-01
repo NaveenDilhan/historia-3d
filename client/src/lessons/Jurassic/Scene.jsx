@@ -3,33 +3,26 @@ import { Canvas } from '@react-three/fiber';
 import { Sky, Environment, Cloud, Sparkles, PositionalAudio, Preload } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-
 import Terrain from './Environment/Terrain';
 import Lighting from './Environment/Lighting';
 import DinosaurEncounter from './Events/DinosaurEncounter';
 import ApatosaurusModel from './Environment/ApatosaurusModel';
 import Player from '../../hooks/Player';
 
-// ==========================================
-// 1. COMPONENT: Spatial Biome Audio
-// ==========================================
 function BiomeAudio({ hasStarted }) {
-  // Audio Refs for active biomes
   const forestRef = useRef();
   const volcanoRef = useRef();
   const oceanRef = useRef();
 
   useEffect(() => {
-    // Only configure and play once the user has clicked "Begin Journey"
     if (hasStarted) {
       const playAudioNode = (ref, refDist, maxDist, rolloff, vol) => {
         if (ref.current) {
-          ref.current.setRefDistance(refDist);   // 100% volume inside this radius
-          ref.current.setMaxDistance(maxDist);   // 0% volume outside this radius
-          ref.current.setRolloffFactor(rolloff); // Fade curve steepness
+          ref.current.setRefDistance(refDist);
+          ref.current.setMaxDistance(maxDist);
+          ref.current.setRolloffFactor(rolloff);
           ref.current.setVolume(vol);
           
-          // Browsers require audio contexts to be explicitly resumed after a user gesture
           if (ref.current.context.state === 'suspended') {
             ref.current.context.resume();
           }
@@ -39,7 +32,6 @@ function BiomeAudio({ hasStarted }) {
         }
       };
 
-      // TUNING PARAMETERS (Mapped to Terrain.jsx Z-coordinates)
       playAudioNode(forestRef, 150, 450, 1.5, 0.4);
       playAudioNode(volcanoRef, 120, 350, 2.0, 0.6);
       playAudioNode(oceanRef, 80, 200, 3.0, 0.6);
@@ -55,9 +47,6 @@ function BiomeAudio({ hasStarted }) {
   );
 }
 
-// ==========================================
-// 2. MAIN SCENE
-// ==========================================
 export default function Scene({ hasStarted }) {
   const [terrainGeo, setTerrainGeo] = useState(null);
 
@@ -65,7 +54,7 @@ export default function Scene({ hasStarted }) {
     <Canvas shadows dpr={[1, 2]} camera={{ fov: 60, far: 10000 }} gl={{ antialias: true, toneMappingExposure: 1.1 }}>
       <color attach="background" args={['#597a61']} />
       <fogExp2 attach="fog" args={['#597a61', 0.012]} />
-
+      
       <Suspense fallback={null}>
         <Lighting />
         
@@ -74,41 +63,34 @@ export default function Scene({ hasStarted }) {
           
           {terrainGeo && (
             <>
-              {/* Pass down the hasStarted state so the events stay dormant during load */}
               <DinosaurEncounter terrainGeo={terrainGeo} hasStarted={hasStarted} />
               
-              {/* OPTIMIZATION: Removed the `{hasStarted && ...}` block.
-                  Spawn Apatosaurus immediately so its geometry and materials upload to the GPU 
-                  while the loading screen is still active. The logic remains dormant via props. */}
               <Suspense fallback={null}>
                 <ApatosaurusModel
                     terrainGeo={terrainGeo}
                     hasStarted={hasStarted}
-                    x={20}       // Shifted slightly off dead-center
-                    z={-200}     // Deep into the desert biome
-                    scale={5.0}  // Significantly larger than T-Rex
+                    x={20}
+                    z={-200}
+                    scale={5.0}
                 />
               </Suspense>
-
               <Player terrainGeo={terrainGeo} />
             </>
           )}
         </Physics>
 
         <BiomeAudio hasStarted={hasStarted} />
-
+        
         <Sparkles count={3500} scale={300} size={4} speed={0.2} opacity={0.2} color="#ffddaa" />
         <Cloud position={[-40, 50, -60]} speed={0.15} opacity={0.6} scale={2.5} color="#ffd8a8" />
         <Cloud position={[50, 60, 30]} speed={0.1} opacity={0.4} scale={3} color="#ffebd6" />
         <Cloud position={[0, 45, 80]} speed={0.2} opacity={0.5} scale={2} color="#e0cda6" />
         
         <Environment preset="forest" background={false} />
-
+        
         <EffectComposer disableNormalPass>
           <Bloom luminanceThreshold={0.8} mipmapBlur intensity={0.5} />
         </EffectComposer>
-
-        {/* OPTIMIZATION: Force Preload to aggressively push all map textures and shaders to the GPU */}
         <Preload all />
       </Suspense>
 

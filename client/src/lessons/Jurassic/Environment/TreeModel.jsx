@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, memo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
+import { useGLTF, Clone } from '@react-three/drei';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { getExactHeight, getDistToRexPath } from './Terrain';
 
@@ -16,7 +16,7 @@ const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 2
   const pineModels = [useGLTF('/models/pine1.glb'), useGLTF('/models/pine2.glb'), useGLTF('/models/pine3.glb'), useGLTF('/models/pine4.glb')];
   const deadModels = [useGLTF('/models/dead1.glb'), useGLTF('/models/dead2.glb'), useGLTF('/models/dead3.glb'), useGLTF('/models/dead4.glb'), useGLTF('/models/dead5.glb')];
   
-  const MAX_HEIGHT = 8.5; 
+  const MAX_HEIGHT = 8.5;
 
   const genericTrees = useMemo(() => {
     const trees = [];
@@ -29,15 +29,16 @@ const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 2
       if (getDistToRexPath(x, z) < 14) continue;
       
       const y = getExactHeight(x, z, terrainGeo);
-      if (y > MAX_HEIGHT) continue; 
-
+      if (y > MAX_HEIGHT) continue;
+      
       const slopeX = Math.abs(y - getExactHeight(x + 2, z, terrainGeo));
       const slopeZ = Math.abs(y - getExactHeight(x, z + 2, terrainGeo));
       if (slopeX > 1.2 || slopeZ > 1.2) continue;
-      if (!isPositionValid(x, z, obstacles, 2.0)) continue; 
+      if (!isPositionValid(x, z, obstacles, 2.0)) continue;
       
-      const scale = (1.5 + Math.random() * 0.7) * treeScale; 
-      trees.push({ x, y, z, scale, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * genericModels.length) });
+      const scale = (1.5 + Math.random() * 0.7) * treeScale;
+      // Fixed: Calculating rotation in memo loop prevents massive React reconciler rebuilding
+      trees.push({ x, y, z, scale, rotY: Math.random() * Math.PI * 2, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * genericModels.length) });
       
       obstacles.push({ x, z, radius: scale * 1.5 });
     }
@@ -55,19 +56,19 @@ const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 2
       if (getDistToRexPath(x, z) < 14) continue;
       
       const y = getExactHeight(x, z, terrainGeo);
-      if (y > MAX_HEIGHT) continue; 
-
+      if (y > MAX_HEIGHT) continue;
+      
       const slopeX = Math.abs(y - getExactHeight(x + 2, z, terrainGeo));
       const slopeZ = Math.abs(y - getExactHeight(x, z + 2, terrainGeo));
-      if (slopeX > 1.2 || slopeZ > 1.2) continue; 
-      if (!isPositionValid(x, z, obstacles, 2.0)) continue; 
+      if (slopeX > 1.2 || slopeZ > 1.2) continue;
+      if (!isPositionValid(x, z, obstacles, 2.0)) continue;
       
       const rnd = Math.random();
       let type = rnd < 0.7 ? 'pine' : 'dead';
       let scale = (type === 'pine' ? 1.5 + Math.random() * 0.8 : 0.8 + Math.random() * 0.7) * treeScale;
       let modelListLength = type === 'pine' ? pineModels.length : deadModels.length;
       
-      trees.push({ x, y, z, scale, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * modelListLength), type });
+      trees.push({ x, y, z, scale, rotY: Math.random() * Math.PI * 2, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * modelListLength), type });
       
       obstacles.push({ x, z, radius: scale * 1.5 });
     }
@@ -75,7 +76,6 @@ const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 2
   }, [forestCount, bounds, terrainGeo, treeScale, obstacles]);
 
   const treeRefs = useRef([]);
-
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     treeRefs.current.forEach((tree, i) => {
@@ -92,14 +92,14 @@ const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 2
     <>
       {[...genericTrees, ...forestTrees].map((t, i) => {
         let modelList = t.type === 'pine' ? pineModels : t.type === 'dead' ? deadModels : genericModels;
-        const model = modelList[t.modelIndex].scene.clone();
+        const modelScene = modelList[t.modelIndex].scene;
         const colliderHeight = t.scale * 5;
-        const colliderRadius = t.scale * 0.5; 
-
+        const colliderRadius = t.scale * 0.5;
+        
         return (
           <RigidBody key={i} type="fixed" colliders={false} position={[t.x, t.y, t.z]}>
             <CuboidCollider position={[0, colliderHeight / 2, 0]} args={[colliderRadius, colliderHeight / 2, colliderRadius]} />
-            <primitive ref={(el) => (treeRefs.current[i] = el)} object={model} scale={t.scale} rotation={[0, Math.random() * Math.PI * 2, 0]} />
+            <Clone ref={(el) => (treeRefs.current[i] = el)} object={modelScene} scale={t.scale} rotation={[0, t.rotY, 0]} dispose={null} />
           </RigidBody>
         );
       })}
@@ -109,7 +109,6 @@ const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 2
 
 export default TreeForest;
 
-// Aggressively preload all possible tree variants to eliminate partial mounting lag
 useGLTF.preload('/models/tree1.glb');
 useGLTF.preload('/models/tree2.glb');
 useGLTF.preload('/models/tree3.glb');
