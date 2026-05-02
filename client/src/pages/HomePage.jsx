@@ -11,15 +11,13 @@ import rocketBg from "../assets/animations/Rocket_Webpage.json";
 export default function HomePage() {
   const navigate = useNavigate();
   const { scrollY } = useScroll();
-  
-  // ✅ FIX: State now defaults to false, but updates via useEffect
+
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
   const [user, setUser] = useState({
     name: "",
     avatar: "" 
   });
 
-  // ✅ FIX: Check localStorage when the page loads
   useEffect(() => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
     
@@ -27,7 +25,6 @@ export default function HomePage() {
       setIsLoggedIn(true);
       setUser({
         name: userInfo.name,
-        // Use the saved avatar look or generate one based on name
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.avatarSeed || userInfo.name}` 
       });
     }
@@ -44,7 +41,7 @@ export default function HomePage() {
         
         .font-heading { font-family: 'Cinzel', serif; }
         .font-body { font-family: 'Lato', sans-serif; }
-
+        
         .ancient-wall-bg {
           background-color: #2a1b12;
           background-image: 
@@ -58,7 +55,7 @@ export default function HomePage() {
           background: radial-gradient(circle at center, transparent 0%, rgba(10, 5, 2, 0.8) 100%);
           pointer-events: none;
         }
-
+        
         .text-gold-gradient {
           background: linear-gradient(to bottom, #fcd34d, #d97706);
           -webkit-background-clip: text;
@@ -68,7 +65,7 @@ export default function HomePage() {
 
       <div className="fixed inset-0 ancient-wall-bg z-[-2]"></div>
       <div className="fixed inset-0 vignette-overlay z-[-1]"></div>
-
+      
       <motion.div style={{ y: y1 }} className="fixed top-[10%] left-[5%] w-2 bg-amber-200/20 h-2 rounded-full blur-[1px] z-0" />
       <motion.div style={{ y: y2 }} className="fixed top-[40%] right-[10%] w-3 bg-amber-500/10 h-3 rounded-full blur-[2px] z-0" />
 
@@ -78,10 +75,15 @@ export default function HomePage() {
           
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate("/")}>
             <div className="group-hover:rotate-6 transition-transform flex items-center justify-center">
-              {/* Removed brown background wrapper classes, resized image slightly */}
               <img src="assets/scroll.png" alt="Scroll Icon" className="w-9 h-9 object-contain drop-shadow-md rounded-lg" />
             </div>
-            <h1 className="text-xl font-heading font-bold text-amber-100 tracking-widest drop-shadow-md">HISTORIA</h1>
+            {/* Replaced Text with Navbar Banner */}
+            <img 
+               src="/assets/dark_brown.png" 
+               alt="Historia Banner" 
+               className="h-6 md:h-8 object-contain drop-shadow-md"
+               style={{ filter: "brightness(0) invert(1) sepia(1) saturate(5) hue-rotate(5deg)" }}
+            />
           </div>
 
           <div className="hidden md:flex items-center space-x-8">
@@ -109,12 +111,14 @@ export default function HomePage() {
               </button>
             )}
           </div>
+
         </div>
       </nav>
 
       {/* HERO SECTION */}
       <main className="pt-32 pb-20 px-4 relative z-10 max-w-7xl mx-auto">
         <div className="relative w-full min-h-[600px] flex flex-col items-center justify-center text-center px-4">
+          
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-600/10 rounded-full blur-[100px] pointer-events-none"></div>
 
           <div className="absolute inset-0 opacity-20 mix-blend-screen pointer-events-none -z-10">
@@ -128,13 +132,16 @@ export default function HomePage() {
             className="relative z-20 max-w-5xl mx-auto flex flex-col items-center"
           >
             <div className="relative mb-6 group">
-              <img
+              {/* Added playful animation on Main Hero Banner */}
+              <motion.img
                 src="/assets/dark_brown.png" 
-                alt="Historia Logo"
+                alt="Historia Banner Logo"
                 className="w-72 md:w-[450px] relative z-10 drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]"
                 style={{ filter: "brightness(0) invert(1) sepia(1) saturate(5) hue-rotate(5deg) drop-shadow(0 0 10px rgba(251, 191, 36, 0.6))" }}
+                animate={{ y: [0, -20, 0], rotate: [0, 3, -3, 0], scale: [1, 1.05, 1] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               />
-
+              
               <motion.div className="absolute -left-23 bottom-4 w-28 h-28 hidden md:block"
                 initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.5 }}>
                 <Lottie animationData={humanWalk} loop autoplay />
@@ -241,6 +248,7 @@ export default function HomePage() {
              </div>
            </div>
         </section>
+
       </main>
 
       {/* FOOTER */}
@@ -272,6 +280,7 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
     </div>
   );
 }
@@ -299,7 +308,7 @@ function StatItem({ number, label, icon }) {
         {label}
       </span>
     </div>
-  )
+  );
 }
 
 function FeatureCard({ icon, title, desc }) {
@@ -307,7 +316,6 @@ function FeatureCard({ icon, title, desc }) {
     hidden: { opacity: 0, y: 30 },
     visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 40 } }
   };
-
   return (
     <motion.div 
       variants={cardVariants}

@@ -17,23 +17,31 @@ const _quaternion = new THREE.Quaternion();
 const _euler = new THREE.Euler(0, 0, 0, 'YXZ');
 const _linvelTarget = { x: 0, y: 0, z: 0 };
 
-export default function Player() {
+export default function Player({ hasStarted }) {
   const playerRef = useRef();
   const keys = usePlayerControls();
   const { camera, gl } = useThree();
   const { rapier, world } = useRapier();
-  
+
   const speed = 18;
   const jumpStrength = 8;
   const audioIndexRef = useRef(1);
   const audioRefs = useRef([]);
   const lastStepTime = useRef(0);
 
+  // FIXED: Attach click listener directly to the canvas, NOT the window.
+  // This ensures clicking UI buttons doesn't accidentally lock the pointer.
   useEffect(() => {
-    const handleClick = () => gl.domElement.requestPointerLock();
-    window.addEventListener('click', handleClick);
-    return () => window.removeEventListener('click', handleClick);
-  }, [gl.domElement]);
+    const handleClick = () => {
+      if (hasStarted) {
+        gl.domElement.requestPointerLock();
+      }
+    };
+    
+    const canvas = gl.domElement;
+    canvas.addEventListener('click', handleClick);
+    return () => canvas.removeEventListener('click', handleClick);
+  }, [gl.domElement, hasStarted]);
 
   const pitch = useRef(0);
   const yaw = useRef(0);
@@ -58,13 +66,15 @@ export default function Player() {
   useFrame((state, delta) => {
     if (!playerRef.current) return;
     
-    // Safely supports both useState and useRef control hooks without crashing
+    const isLocked = document.pointerLockElement === gl.domElement;
     const controls = keys.current || keys || {};
-    const forward = controls.forward || false;
-    const backward = controls.backward || false;
-    const left = controls.left || false;
-    const right = controls.right || false;
-    const jump = controls.jump || false;
+    
+    // CRITICAL FIX: Only register input if the game is currently "Locked" (Not Paused)
+    const forward = isLocked && (controls.forward || false);
+    const backward = isLocked && (controls.backward || false);
+    const left = isLocked && (controls.left || false);
+    const right = isLocked && (controls.right || false);
+    const jump = isLocked && (controls.jump || false);
 
     const linvel = playerRef.current.linvel();
     const pos = playerRef.current.translation();
@@ -75,7 +85,6 @@ export default function Player() {
     if (left) _direction.x -= 1;
     if (right) _direction.x += 1;
 
-    // Safely normalize only if the player is pressing keys to prevent NaN math explosions
     if (_direction.lengthSq() > 0) {
       _direction.normalize();
       _rotMatrix.makeRotationY(yaw.current);
@@ -96,8 +105,6 @@ export default function Player() {
     _linvelTarget.y = linvel.y || 0;
     _linvelTarget.z = smoothZ;
 
-    // CRITICAL FIX: Lower the raycast origin to the bottom of the capsule and set solid to false
-    // so the raycast doesn't hit the player's own internal geometry.
     const rayOrigin = { x: pos.x || 0, y: (pos.y || 0) - 0.9, z: pos.z || 0 };
     const rayDir = { x: 0, y: -1, z: 0 };
     const ray = new rapier.Ray(rayOrigin, rayDir);
@@ -126,17 +133,15 @@ export default function Player() {
       _linvelTarget.y = jumpStrength;
     }
 
-    // Apply the physics velocities
     playerRef.current.setLinvel(_linvelTarget, true);
 
-    // Apply the camera rotations and positions
     if (typeof pitch.current === 'number' && typeof yaw.current === 'number') {
       _euler.set(pitch.current, yaw.current, 0, 'YXZ');
       _quaternion.setFromEuler(_euler);
       camera.quaternion.copy(_quaternion);
     }
     
-    if (pos && typeof pos.x === 'number') {
+    if (pos && typeof pos.x === 'number') { 
        camera.position.set(pos.x, pos.y + 0.8, pos.z);
     }
   });
@@ -150,7 +155,7 @@ export default function Player() {
       type="dynamic"
       enabledRotations={[false, false, false]}
       friction={0}
-      ccd={true} // CRITICAL FIX: Prevents the player from piercing deeply into the trimesh
+      ccd={true} 
     >
       <CapsuleCollider args={[0.5, 0.5]} />
       {[1, 2, 3, 4, 5, 6].map((num) => (

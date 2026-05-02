@@ -80,17 +80,18 @@ export default function Scene({ hasStarted }) {
                 <DinosaurEncounter terrainGeo={terrainGeo} hasStarted={hasStarted} />
                 
                 <Suspense fallback={null}>
-                  <ApatosaurusModel
-                      terrainGeo={terrainGeo}
-                      hasStarted={hasStarted}
-                      x={20}
-                      z={-200}
-                      scale={5.0}
+                  <ApatosaurusModel 
+                      terrainGeo={terrainGeo} 
+                      hasStarted={hasStarted} 
+                      x={20} 
+                      z={-200} 
+                      scale={5.0} 
                   />
                 </Suspense>
 
                 <Suspense fallback={null}>
-                  <Player />
+                  {/* FIXED: Passing hasStarted to the Player */}
+                  <Player hasStarted={hasStarted} />
                 </Suspense>
               </>
             )}
@@ -98,7 +99,7 @@ export default function Scene({ hasStarted }) {
 
           <BiomeAudio hasStarted={hasStarted} />
           
-          {/* Atmosphere & Environment[cite: 1] */}
+          {/* Atmosphere & Environment */}
           <Sparkles count={1500} scale={300} size={4} speed={0.2} opacity={0.2} color="#ffddaa" />
           <Cloud position={[-40, 50, -60]} speed={0.15} opacity={0.6} scale={2.5} color="#ffd8a8" />
           <Cloud position={[50, 60, 30]} speed={0.1} opacity={0.4} scale={3} color="#ffebd6" />
@@ -125,7 +126,7 @@ export default function Scene({ hasStarted }) {
         />
       </Canvas>
 
-      {/* 2D UI Layer - Jurassic specific components moved here[cite: 1] */}
+      {/* 2D UI Layer */}
       <JurassicUI hasStarted={hasStarted} />
     </>
   );
