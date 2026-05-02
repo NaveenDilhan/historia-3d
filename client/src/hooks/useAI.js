@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export default function useAI() {
   const [narration, setNarration] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Listen for global AI events so the UI updates when 3D models trigger the narrator
+  // Listen for global AI events
   useEffect(() => {
     const handleAIUpdate = (e) => {
       setNarration(e.detail.narration);
@@ -14,21 +14,25 @@ export default function useAI() {
     return () => window.removeEventListener('ai-narration-update', handleAIUpdate);
   }, []);
 
-  async function getNarration(userAction, context = '') {
+  // Wrapped in useCallback so it can be safely used in interval timers without causing infinite loops
+  const getNarration = useCallback(async (userAction, context = '') => {
+    // GLOBAL LOCKS: Prevent rapid re-triggering and overlapping audio
+    if (window.__isAILoading) return;
+    if (window.__isSpeaking) return;
+
     try {
+      window.__isAILoading = true;
       setLoading(true);
-      setNarration('');
-      // Broadcast loading state
+      
       window.dispatchEvent(new CustomEvent('ai-narration-update', { 
         detail: { narration: '', loading: true } 
       }));
 
-      // --- THE SCHOLAR INJECTION ---
-      // This forces the AI to reply like a professor without changing your backend
+      // THE ONGOING SCHOLAR PERSONA
       const scholarContext = `
-        SYSTEM PROMPT: You are a wise, encouraging historical scholar guiding a student through an interactive simulation of the Jurassic period. 
-        TONE: Educational, warm, observant, and concise. Speak directly to the student as they explore this ancient world. 
-        FORMAT: 1 to 3 short sentences maximum. Deliver interesting facts naturally, as if observing the flora and fauna alongside the player.
+        SYSTEM PROMPT: You are a wise, encouraging historical scholar acting as an interactive test-track overseer (Portal style, but friendly and educational) for a student in a Jurassic period simulation. 
+        TONE: Educational, warm, observant, and concise. Speak directly to the student.
+        FORMAT: 1 to 2 short sentences maximum. You are keeping them company. Deliver interesting, unsolicited facts naturally about the climate, plants, or dinosaurs.
         CURRENT ENVIRONMENT/ACTION: ${userAction} - ${context}
       `;
 
@@ -41,21 +45,18 @@ export default function useAI() {
 
       const newText = data.narration || '';
       
-      // Broadcast new text
       window.dispatchEvent(new CustomEvent('ai-narration-update', { 
         detail: { narration: newText, loading: false } 
       }));
 
     } catch (err) {
       console.error('AI call failed', err);
-      const errorMsg = 'The chronosphere connection is disrupted. I cannot see what you are seeing...';
-      window.dispatchEvent(new CustomEvent('ai-narration-update', { 
-        detail: { narration: errorMsg, loading: false } 
-      }));
+      // Fail silently for ambient loops so we don't spam error messages
     } finally {
+      window.__isAILoading = false;
       setLoading(false);
     }
-  }
+  }, []);
 
   return { narration, getNarration, loading };
 }
