@@ -15,7 +15,7 @@ const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 2
   const genericModels = [useGLTF('/models/tree1.glb'), useGLTF('/models/tree2.glb'), useGLTF('/models/tree3.glb'), useGLTF('/models/tree4.glb'), useGLTF('/models/tree5.glb')];
   const pineModels = [useGLTF('/models/pine1.glb'), useGLTF('/models/pine2.glb'), useGLTF('/models/pine3.glb'), useGLTF('/models/pine4.glb')];
   const deadModels = [useGLTF('/models/dead1.glb'), useGLTF('/models/dead2.glb'), useGLTF('/models/dead3.glb'), useGLTF('/models/dead4.glb'), useGLTF('/models/dead5.glb')];
-  
+
   const MAX_HEIGHT = 8.5;
 
   const genericTrees = useMemo(() => {
@@ -34,13 +34,14 @@ const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 2
       const slopeX = Math.abs(y - getExactHeight(x + 2, z, terrainGeo));
       const slopeZ = Math.abs(y - getExactHeight(x, z + 2, terrainGeo));
       if (slopeX > 1.2 || slopeZ > 1.2) continue;
-      if (!isPositionValid(x, z, obstacles, 2.0)) continue;
+
+      if (!isPositionValid(x, z, obstacles, 2.5)) continue;
       
       const scale = (1.5 + Math.random() * 0.7) * treeScale;
-      // Fixed: Calculating rotation in memo loop prevents massive React reconciler rebuilding
       trees.push({ x, y, z, scale, rotY: Math.random() * Math.PI * 2, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * genericModels.length) });
       
-      obstacles.push({ x, z, radius: scale * 1.5 });
+      // Increased safety radius to prevent rock/bush clipping
+      obstacles.push({ x, z, radius: scale * 1.8, type: 'tree' });
     }
     return trees;
   }, [genericCount, bounds, terrainGeo, treeScale, obstacles]);
@@ -61,7 +62,8 @@ const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 2
       const slopeX = Math.abs(y - getExactHeight(x + 2, z, terrainGeo));
       const slopeZ = Math.abs(y - getExactHeight(x, z + 2, terrainGeo));
       if (slopeX > 1.2 || slopeZ > 1.2) continue;
-      if (!isPositionValid(x, z, obstacles, 2.0)) continue;
+
+      if (!isPositionValid(x, z, obstacles, 2.5)) continue;
       
       const rnd = Math.random();
       let type = rnd < 0.7 ? 'pine' : 'dead';
@@ -70,12 +72,13 @@ const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 2
       
       trees.push({ x, y, z, scale, rotY: Math.random() * Math.PI * 2, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * modelListLength), type });
       
-      obstacles.push({ x, z, radius: scale * 1.5 });
+      obstacles.push({ x, z, radius: scale * 1.8, type: 'tree' });
     }
     return trees;
   }, [forestCount, bounds, terrainGeo, treeScale, obstacles]);
 
   const treeRefs = useRef([]);
+
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     treeRefs.current.forEach((tree, i) => {

@@ -42,7 +42,6 @@ export const getExactHeight = (x, z, terrainGeo) => {
 
   const h0 = getZ(x0, y0) * (1 - tx) + getZ(x1, y0) * tx;
   const h1 = getZ(x0, y1) * (1 - tx) + getZ(x1, y1) * tx;
-
   return h0 * (1 - ty) + h1 * ty;
 };
 
@@ -66,7 +65,6 @@ export const getDistToRexPath = (x, z) => {
   return minDist;
 };
 
-// OPTIMIZATION: Wrap in React.memo to prevent expensive re-evaluations of the shader and noise logic
 const Terrain = memo(function Terrain({ setTerrainGeo }) {
   const [mossTex, mudTex, rockTex, lavaTex] = useLoader(THREE.TextureLoader, [
     '/textures/grass_mossy.png',
@@ -129,6 +127,7 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
 
       vertices.setZ(i, finalHeight);
     }
+    
     vertices.needsUpdate = true;
     geo.computeVertexNormals();
     return geo;
@@ -137,7 +136,7 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
   const obstacles = useMemo(() => {
     const obs = [];
     
-    // Apatosaurus parameters from Scene.jsx
+    // Reserve space for the Apatosaurus
     const dinoX = 20;
     const dinoZ = -200;
     const angle = -Math.PI / 4;
@@ -146,7 +145,8 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
       obs.push({
         x: dinoX + Math.sin(angle) * (i * 12),
         z: dinoZ + Math.cos(angle) * (i * 12),
-        radius: 14 
+        radius: 14,
+        type: 'dinosaur'
       });
     }
     return obs;
@@ -173,59 +173,53 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
         `#include <common>`, 
         `#include <common>\n varying float vHeight;\n varying vec2 vCustomUv;\n varying vec2 vWorldPos;`
       );
-
       shader.vertexShader = shader.vertexShader.replace(
         `#include <begin_vertex>`, 
         `#include <begin_vertex>\n vHeight = position.z;\n vCustomUv = uv;\n vWorldPos = vec2(position.x, -position.y);`
       );
-
       shader.fragmentShader = shader.fragmentShader.replace(
         `#include <common>`, 
-        `#include <common>\n 
-         uniform sampler2D mossTex;\n 
-         uniform sampler2D mudTex;\n 
-         uniform sampler2D rockTex;\n 
-         uniform sampler2D lavaTex;\n 
-         varying float vHeight;\n 
-         varying vec2 vCustomUv;\n 
-         varying vec2 vWorldPos;`
+        `#include <common>\n
+          uniform sampler2D mossTex;\n
+          uniform sampler2D mudTex;\n
+          uniform sampler2D rockTex;\n
+          uniform sampler2D lavaTex;\n
+          varying float vHeight;\n
+          varying vec2 vCustomUv;\n
+          varying vec2 vWorldPos;`
       );
-
       shader.fragmentShader = shader.fragmentShader.replace(
         `#include <color_fragment>`, 
-        `#include <color_fragment>\n 
-         vec2 texUv = vCustomUv * vec2(50.0, 160.0);           
-         
-         vec4 mossColor = texture2D(mossTex, texUv);
-         mossColor.rgb *= vec3(0.85, 1.25, 0.85);
+        `#include <color_fragment>\n
+          vec2 texUv = vCustomUv * vec2(50.0, 160.0);                      
+          vec4 mossColor = texture2D(mossTex, texUv);
+          mossColor.rgb *= vec3(0.85, 1.25, 0.85);
+          vec4 mudColor = texture2D(mudTex, texUv);
+          vec4 rockColor = texture2D(rockTex, texUv);
+          vec4 lavaMapColor = texture2D(lavaTex, texUv);
+          
+          vec4 sandColor = mudColor * vec4(1.6, 1.4, 0.9, 1.0);           
+          
+          float beachMix = smoothstep(375.0, 425.0, vWorldPos.y);
+          float forestMix = smoothstep(-25.0, 25.0, vWorldPos.y) * (1.0 - smoothstep(375.0, 425.0, vWorldPos.y));
+          float desertMix = smoothstep(-425.0, -375.0, vWorldPos.y) * (1.0 - smoothstep(-25.0, 25.0, vWorldPos.y));
+          float volcanoMix = 1.0 - smoothstep(-425.0, -375.0, vWorldPos.y);
 
-         vec4 mudColor = texture2D(mudTex, texUv);
-         vec4 rockColor = texture2D(rockTex, texUv);
-         vec4 lavaMapColor = texture2D(lavaTex, texUv);
-         
-         vec4 sandColor = mudColor * vec4(1.6, 1.4, 0.9, 1.0);           
+          float h = vHeight;
+          
+          vec4 fColor = mix(mudColor, mossColor, smoothstep(1.0, 1.2, h));
+          fColor = mix(fColor, rockColor, smoothstep(6.0, 6.5, h));           
+          
+          vec4 dColor = mix(sandColor, rockColor, smoothstep(16.0, 20.0, h));
+          vec4 bColor = sandColor;
+          vec4 vColor = lavaMapColor;
 
-         float beachMix = smoothstep(375.0, 425.0, vWorldPos.y);
-         float forestMix = smoothstep(-25.0, 25.0, vWorldPos.y) * (1.0 - smoothstep(375.0, 425.0, vWorldPos.y));
-         float desertMix = smoothstep(-425.0, -375.0, vWorldPos.y) * (1.0 - smoothstep(-25.0, 25.0, vWorldPos.y));
-         float volcanoMix = 1.0 - smoothstep(-425.0, -375.0, vWorldPos.y);
-
-         float h = vHeight;
-         
-         vec4 fColor = mix(mudColor, mossColor, smoothstep(1.0, 1.2, h));
-         fColor = mix(fColor, rockColor, smoothstep(6.0, 6.5, h)); 
-         
-         vec4 dColor = mix(sandColor, rockColor, smoothstep(16.0, 20.0, h));
-         vec4 bColor = sandColor;
-         vec4 vColor = lavaMapColor;
-
-         vec4 terrainColor = (fColor * forestMix) + (dColor * desertMix) + (bColor * beachMix) + (vColor * volcanoMix);
-         vec3 sceneTint = vec3(0.05, 0.07, 0.03); 
-         
-         diffuseColor = vec4(terrainColor.rgb + sceneTint, 1.0);`
+          vec4 terrainColor = (fColor * forestMix) + (dColor * desertMix) + (bColor * beachMix) + (vColor * volcanoMix);
+          vec3 sceneTint = vec3(0.05, 0.07, 0.03);           
+          
+          diffuseColor = vec4(terrainColor.rgb + sceneTint, 1.0);`
       );
     };
-
     return mat;
   }, [mossTex, mudTex, rockTex, lavaTex]);
 
@@ -237,26 +231,23 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
         </mesh>
       </RigidBody>
 
-      {/* Pass obstacles array into the mountain component! */}
       <BorderMountains obstacles={obstacles} />
-      
       <Ocean />
-
       <RigidBody type="fixed">
         <CuboidCollider position={[-205, 150, -100]} args={[1, 200, 700]} />
         <CuboidCollider position={[205, 150, -100]} args={[1, 200, 700]} />
         <CuboidCollider position={[0, 150, -805]} args={[250, 200, 1]} />
-        <CuboidCollider position={[0, 150, 480]} args={[250, 200, 1]} /> 
+        <CuboidCollider position={[0, 150, 480]} args={[250, 200, 1]} />
       </RigidBody>
 
-      {/* Model Scatters */}
+      {/* RENDER ORDER IS CRITICAL FOR THE PROXIMITY ALGORITHM */}
       <GrassModel count={500} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} />
       <RockModel count={220} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
       <TreeForest genericCount={180} forestCount={250} terrainGeo={geometry} treeScale={4.5} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
       <DesertDeadTrees terrainGeo={geometry} count={15} obstacles={obstacles} />
       <ForestFlora count={300} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
       
-      {/* NEW: Spawning the interactive Bushes */}
+      {/* BushScatter MUST execute last so trees and rocks exist as anchors */}
       <BushScatter count={40} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
     </group>
   );
@@ -264,8 +255,7 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
 
 export default Terrain;
 
-// OPTIMIZATION: Aggressively preload textures outside the component tree
-// This forces the browser to pull these heavy image files immediately
+// Aggressive texture preloading
 useLoader.preload(THREE.TextureLoader, '/textures/grass_mossy.png');
 useLoader.preload(THREE.TextureLoader, '/textures/mud.png');
 useLoader.preload(THREE.TextureLoader, '/textures/rock.png');

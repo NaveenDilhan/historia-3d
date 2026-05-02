@@ -4,17 +4,31 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF, Clone } from '@react-three/drei';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 
-// FLOWER FIX: Recalculated positions to wrap perfectly around the taller, 
-// spherical shape of the new stylized bush.
+// INCREASE THIS TO MAKE THE BUSH LARGER (1.5 = 50% larger)
+const BUSH_SIZE_MULTIPLIER = 1.5;
+
+// FLOWER ARRANGEMENT: Recalibrated to nestle perfectly into the leaves
+// 'p' = Position (x, y, z) - Brought slightly inward to prevent floating
+// 'r' = Rotation (x, y, z) - Softened angles for a natural resting look
+// 's' = Scale (Petal size remains unchanged)
 const flowerArrangement = [
-    // Top Center: Moved higher up (y: 0.95) to prevent clipping inside the core
-    { p: [0, 0.825, 0], r: [0, 0, 0], s: 0.35 },                
-    // Front Right: Pulled inward (x/z) and moved up (y) so it doesn't float
-    { p: [0.4, 0.6, 0.4], r: [0.6, 0.8, -0.4], s: 0.3 },  
-    // Front Left: Pulled inward and moved up
-    { p: [-0.45, 0.55, 0.35], r: [0.5, -0.8, 0.4], s: 0.3 },    
-    // Back Side: Pulled inward and moved up
-    { p: [0.25, 0.6, -0.65], r: [-0.5, 3, 0.6], s: 0.3 }    
+    // Top Cluster
+    { p: [0, 0.82, 0.05],       r: [0.1, 0, 0],          s: 0.35 },
+    { p: [0.3, 0.75, -0.15],    r: [-0.3, 0.5, -0.3],    s: 0.3  },
+    { p: [-0.3, 0.7, 0.15],     r: [0.3, -0.5, 0.3],     s: 0.3  },
+
+    // Upper-Mid Ring
+    { p: [0.45, 0.55, 0.35],    r: [0.6, 0.8, -0.3],     s: 0.32 },
+    { p: [-0.45, 0.5, 0.4],     r: [0.6, -0.8, 0.3],     s: 0.3  },
+    { p: [0.4, 0.55, -0.45],    r: [-0.6, 2.2, -0.3],    s: 0.32 },
+    { p: [-0.4, 0.5, -0.45],    r: [-0.6, -2.2, 0.3],    s: 0.3  },
+
+    // Lower Skirt
+    { p: [0.25, 0.35, 0.6],     r: [0.8, 0.3, -0.1],     s: 0.28 },
+    { p: [-0.25, 0.3, 0.6],     r: [0.8, -0.3, 0.1],     s: 0.28 }, 
+    { p: [0.6, 0.35, -0.2],     r: [-0.2, 1.5, -0.8],    s: 0.28 },
+    { p: [-0.6, 0.35, 0.15],    r: [0.2, -1.5, 0.8],     s: 0.28 },
+    { p: [0, 0.4, -0.65],       r: [-0.8, 3.14, 0],      s: 0.28 }  
 ];
 
 const InteractiveBush = memo(({ x, y, z, scale, rotY }) => {
@@ -96,29 +110,31 @@ const InteractiveBush = memo(({ x, y, z, scale, rotY }) => {
 
     return (
         <RigidBody type="fixed" colliders={false} position={[x, y, z]} rotation={[0, rotY, 0]}>
-            {/* Physical collision block so the player can't walk directly through the bush */}
-            <CuboidCollider position={[0, scale * 0.5, 0]} args={[scale * 0.8, scale * 0.5, scale * 0.8]} />
+            {/* Physical collision block scales with the bush multiplier */}
+            <CuboidCollider 
+                position={[0, scale * 0.5 * BUSH_SIZE_MULTIPLIER, 0]} 
+                args={[scale * 0.8 * BUSH_SIZE_MULTIPLIER, scale * 0.5 * BUSH_SIZE_MULTIPLIER, scale * 0.8 * BUSH_SIZE_MULTIPLIER]} 
+            />
             
             <group
                 onPointerOver={handlePointerOver}
                 onPointerOut={handlePointerOut}
                 onClick={handleClick}
-                position={[0, scale * 0.25, 0]} // Lift bush slightly from the ground
+                position={[0, scale * 0.25 * BUSH_SIZE_MULTIPLIER, 0]} // Lift bush slightly from the ground
             >
                 {/* 
                   INTERACTION FIX: 
                   A large transparent sphere that safely catches your mouse from any angle.
-                  Using opacity 0 with depthWrite false ensures it is perfectly invisible.
                 */}
-                <mesh position={[0, scale * 0.4, 0]} castShadow={false} receiveShadow={false}>
-                    <sphereGeometry args={[scale * 1.1, 12, 12]} />
+                <mesh position={[0, scale * 0.4 * BUSH_SIZE_MULTIPLIER, 0]} castShadow={false} receiveShadow={false}>
+                    <sphereGeometry args={[scale * 1.1 * BUSH_SIZE_MULTIPLIER, 12, 12]} />
                     <meshBasicMaterial transparent={true} opacity={0} depthWrite={false} />
                 </mesh>
 
                 {/* WIND ANIMATION WRAPPER: groups the bush and flowers so they sway together */}
                 <group ref={visualGroupRef}>
-                    {/* The New Stylized Bush */}
-                    <group scale={scale * 0.01}>
+                    {/* The New Stylized Bush - scaled by the multiplier */}
+                    <group scale={scale * 0.01 * BUSH_SIZE_MULTIPLIER}>
                         <mesh
                             castShadow
                             receiveShadow
@@ -135,8 +151,14 @@ const InteractiveBush = memo(({ x, y, z, scale, rotY }) => {
                             <Clone 
                                 key={index}
                                 object={flowerGLTF.scene} 
-                                position={[flower.p[0] * scale, flower.p[1] * scale, flower.p[2] * scale]}
+                                // Multiply position so they stay on the outside of the larger bush
+                                position={[
+                                    flower.p[0] * scale * BUSH_SIZE_MULTIPLIER, 
+                                    flower.p[1] * scale * BUSH_SIZE_MULTIPLIER, 
+                                    flower.p[2] * scale * BUSH_SIZE_MULTIPLIER
+                                ]}
                                 rotation={flower.r}
+                                // DO NOT multiply flower scale, so petals stay their original size
                                 scale={scale * flower.s} 
                             />
                         ))}

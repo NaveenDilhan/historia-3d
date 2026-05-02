@@ -10,9 +10,10 @@ const isPositionValid = (x, z, currentTrees, obstacles, minDist) => {
   for (let t of currentTrees) {
     if (Math.hypot(t.x - x, t.z - z) < minDist) return false;
   }
+
   if (obstacles) {
     for (let obs of obstacles) {
-      if (Math.hypot(obs.x - x, obs.z - z) < (obs.radius + minDist / 2)) return false;
+      if (Math.hypot(obs.x - x, obs.z - z) < (obs.radius + minDist)) return false;
     }
   }
   return true;
@@ -25,8 +26,8 @@ const DesertDeadTrees = memo(function DesertDeadTrees({ terrainGeo, count = 15, 
     useGLTF('/models/dead3.glb')
   ];
 
-  const MIN_DIST = 18; 
-  const MAX_HEIGHT = 16.0; 
+  const MIN_DIST = 18;
+  const MAX_HEIGHT = 16.0;
 
   const instances = useMemo(() => {
     if (!terrainGeo) return [];
@@ -50,7 +51,12 @@ const DesertDeadTrees = memo(function DesertDeadTrees({ terrainGeo, count = 15, 
       if (!isPositionValid(x, z, arr, obstacles, MIN_DIST)) continue;
       
       const model = genericModels[Math.floor(Math.random() * genericModels.length)];
-      arr.push({ x, y, z, model: model.scene, scale: 3 + Math.random() * 2, rot: Math.random() * Math.PI * 2 });
+      const scale = 3 + Math.random() * 2;
+      
+      arr.push({ x, y, z, model: model.scene, scale: scale, rot: Math.random() * Math.PI * 2 });
+      
+      // Fix: Register dead trees to obstacles so they don't clip!
+      obstacles.push({ x, z, radius: scale * 1.5, type: 'tree' });
     }
     
     return arr;
@@ -61,7 +67,6 @@ const DesertDeadTrees = memo(function DesertDeadTrees({ terrainGeo, count = 15, 
       {instances.map((inst, i) => {
         const colliderHeight = inst.scale * 5;
         const colliderRadius = inst.scale * 0.8;
-
         return (
           <RigidBody key={`deadtree-${i}`} type="fixed" colliders={false} position={[inst.x, inst.y, inst.z]}>
             <CuboidCollider position={[0, colliderHeight / 2, 0]} args={[colliderRadius, colliderHeight / 2, colliderRadius]} />
@@ -75,6 +80,7 @@ const DesertDeadTrees = memo(function DesertDeadTrees({ terrainGeo, count = 15, 
 
 export default DesertDeadTrees;
 
+// Aggressively preload models to eliminate mounting lag
 useGLTF.preload('/models/dead1.glb');
 useGLTF.preload('/models/dead2.glb');
 useGLTF.preload('/models/dead3.glb');

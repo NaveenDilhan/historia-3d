@@ -19,6 +19,7 @@ const GrassModel = memo(function GrassModel({ count = 200, bounds, terrainGeo })
       const z = bounds ? bounds.zMin + Math.random() * (bounds.zMax - bounds.zMin) : (Math.random() - 0.5) * 350;
       attempts++;
       
+      // Grass should stay off the T-Rex trail
       if (getDistToRexPath(x, z) < 4) continue;
       
       const y = getExactHeight(x, z, terrainGeo);
@@ -33,6 +34,7 @@ const GrassModel = memo(function GrassModel({ count = 200, bounds, terrainGeo })
   }, [count, bounds, terrainGeo]);
 
   const grassRefs = useRef([]);
+
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     grassRefs.current.forEach((grass, i) => {

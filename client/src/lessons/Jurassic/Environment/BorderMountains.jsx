@@ -33,9 +33,7 @@ const BorderMountains = memo(function BorderMountains({ obstacles = [] }) {
         }
         
         const y = -35 + Math.random() * 10;
-        const elementScale = type === 'volcano'
-          ? 300 + Math.random() * 75
-          : 55 + Math.random() * 25;
+        const elementScale = type === 'volcano' ? 300 + Math.random() * 75 : 55 + Math.random() * 25;
         
         elements.push({
           pos: [jx, y, jz],
@@ -44,10 +42,12 @@ const BorderMountains = memo(function BorderMountains({ obstacles = [] }) {
           type: type
         });
         
+        // INCREASED RADIUS: Prevents trees/rocks from spawning inside the slopes
         obstacles.push({
             x: jx,
             z: jz,
-            radius: elementScale * 0.45
+            radius: elementScale * 0.75, 
+            type: 'mountain'
         });
       }
     };
