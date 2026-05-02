@@ -34,7 +34,8 @@ export default function JurassicUI({ hasStarted }) {
 
   return (
     <div className="absolute inset-0 z-20 pointer-events-none">
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
+      {/* Subtitle Container - Expanded width for cinematic feel */}
+      <div className="absolute bottom-12 w-full px-8 flex justify-center pointer-events-none z-50">
         <DialogueBox />
       </div>
 
