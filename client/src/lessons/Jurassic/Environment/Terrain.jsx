@@ -12,6 +12,7 @@ import BorderMountains from './BorderMountains';
 import DesertDeadTrees from './DesertDeadTrees';
 import Ocean from './Ocean';
 import ForestFlora from './ForestFlora'; 
+import BushScatter from './BushScatter'; 
 
 // --- Shared Helper for Ground Alignment ---
 export const getExactHeight = (x, z, terrainGeo) => {
@@ -236,7 +237,7 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
         </mesh>
       </RigidBody>
 
-      {/* NEW: Pass obstacles array into the mountain component! */}
+      {/* Pass obstacles array into the mountain component! */}
       <BorderMountains obstacles={obstacles} />
       
       <Ocean />
@@ -254,6 +255,9 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
       <TreeForest genericCount={180} forestCount={250} terrainGeo={geometry} treeScale={4.5} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
       <DesertDeadTrees terrainGeo={geometry} count={15} obstacles={obstacles} />
       <ForestFlora count={300} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
+      
+      {/* NEW: Spawning the interactive Bushes */}
+      <BushScatter count={40} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
     </group>
   );
 });

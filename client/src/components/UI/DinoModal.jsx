@@ -8,9 +8,15 @@ const archiveData = {
     },
     trex: {
         title: "TYRANNOSAURUS REX",
+        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
     },
     apatosaurus: {
         title: "APATOSAURUS",
+        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+    },
+    angiosperm: {
+        title: "EARLY ANGIOSPERMS",
+        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
     }
 };
 
@@ -113,10 +119,10 @@ export default function DinoModal({ type, onClose }) {
                             </div>
                         </div>
                     ) : (
-                        /* --- INFORMATION VIEW (T-Rex / Apatosaurus) --- */
+                        /* --- INFORMATION VIEW (T-Rex / Apatosaurus / Angiosperm) --- */
                         <div className="flex flex-col items-center justify-center w-full h-full py-4">
                             
-                            {/* Dinosaur Name Header */}
+                            {/* Dinosaur/Plant Name Header */}
                             <div className="text-center mb-10 w-full">
                                 <div className="text-[10px] uppercase tracking-[0.3em] text-amber-600 font-bold mb-2">
                                     Historical Archive
@@ -127,25 +133,25 @@ export default function DinoModal({ type, onClose }) {
                                 <div className="w-32 h-1 bg-gradient-to-r from-transparent via-amber-600 to-transparent mx-auto mt-6"></div>
                             </div>
 
-                            {/* 3 Slanted Pictures using scroll.png placeholders */}
+                            {/* 3 Slanted Pictures dynamically loaded from archiveData */}
                             <div className="w-full flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 px-4">
                                 
                                 {/* Panel 1: Slanted Left */}
                                 <div className="w-full md:w-1/3 aspect-[4/5] max-w-[280px] bg-black border-2 border-amber-900/40 rounded-2xl overflow-hidden shadow-2xl transform -rotate-6 hover:rotate-0 hover:scale-105 transition-all duration-500 relative group cursor-pointer">
                                     <div className="absolute inset-0 bg-amber-900/20 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
-                                    <img src="/assets/scroll.png" alt="Archive 1" className="w-full h-full object-contain p-8 opacity-80 group-hover:opacity-100 transition-opacity" />
+                                    <img src={data.images[0]} alt="Archive 1" className="w-full h-full object-contain p-8 opacity-80 group-hover:opacity-100 transition-opacity" />
                                 </div>
 
                                 {/* Panel 2: Popped forward, slightly Slanted Right */}
                                 <div className="w-full md:w-1/3 aspect-[4/5] max-w-[280px] bg-black border-2 border-amber-500/50 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(245,158,11,0.2)] transform rotate-3 scale-110 hover:rotate-0 hover:scale-115 transition-all duration-500 relative z-10 group cursor-pointer">
                                     <div className="absolute inset-0 bg-amber-600/10 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
-                                    <img src="/assets/scroll.png" alt="Archive 2" className="w-full h-full object-contain p-8 opacity-100" />
+                                    <img src={data.images[1]} alt="Archive 2" className="w-full h-full object-contain p-8 opacity-100" />
                                 </div>
 
                                 {/* Panel 3: Slanted Left */}
                                 <div className="w-full md:w-1/3 aspect-[4/5] max-w-[280px] bg-black border-2 border-amber-900/40 rounded-2xl overflow-hidden shadow-2xl transform -rotate-3 hover:rotate-0 hover:scale-105 transition-all duration-500 relative group cursor-pointer">
                                     <div className="absolute inset-0 bg-amber-900/20 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
-                                    <img src="/assets/scroll.png" alt="Archive 3" className="w-full h-full object-contain p-8 opacity-80 group-hover:opacity-100 transition-opacity" />
+                                    <img src={data.images[2]} alt="Archive 3" className="w-full h-full object-contain p-8 opacity-80 group-hover:opacity-100 transition-opacity" />
                                 </div>
 
                             </div>
