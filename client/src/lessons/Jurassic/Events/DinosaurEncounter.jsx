@@ -1,8 +1,8 @@
 import React, { Suspense, useState, useRef, useEffect } from 'react';
+import { useGLTF, Preload } from '@react-three/drei';
 import useAI from '../../../hooks/useAI';
 import DinosaurModel from '../Environment/DinosaurModel';
 import { rexCurve } from '../Environment/Terrain';
-import { useGLTF } from '@react-three/drei';
 
 export default function DinosaurEncounter({ terrainGeo, hasStarted }) {
   const { getNarration } = useAI();
@@ -22,24 +22,28 @@ export default function DinosaurEncounter({ terrainGeo, hasStarted }) {
     }, 6000);
 
     return () => clearTimeout(timerRef.current);
-  }, [hasStarted, getNarration]);
+  }, [hasStarted, getNarration]); // Added getNarration to satisfy React's exhaustive-deps rule
 
   return (
     <group>
       <Suspense fallback={null}>
         {/*
-            OPTIMIZATION: Removed `visible={showDino}`. 
-            By keeping the model natively visible to the renderer (but un-animated), 
-            we force Three.js to pre-compile the shader during the loading screen. 
-            This completely eliminates the 6-second stutter.
+            OPTIMIZATION IMPROVED: 
+            Instead of leaving a frozen T-Rex visible at the origin for 6 seconds, 
+            we use the "Scale Trick". By setting scale to 0 when inactive, the renderer 
+            still processes the mesh (pre-compiling the shader to prevent stutter), 
+            but it remains completely invisible until `showDino` becomes true.
         */}
         <DinosaurModel
           curve={rexCurve}
           speed={0.02}
-          scale={2.8}
+          scale={showDino ? 2.8 : 0} 
           animate={showDino}
           terrainGeo={terrainGeo}
         />
+        
+        {/* Forces Three.js to pre-compile all shaders in this Suspense boundary */}
+        <Preload all />
       </Suspense>
     </group>
   );

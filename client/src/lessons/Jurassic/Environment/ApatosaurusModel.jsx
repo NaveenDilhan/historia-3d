@@ -73,6 +73,7 @@ const ApatosaurusModel = memo(function ApatosaurusModel({ terrainGeo, hasStarted
 
   return (
     <RigidBody type="fixed" colliders={false} position={[x, yPos, z]} rotation={rot}>
+      {/* Physics Colliders (Invisible to the mouse/raycaster) */}
       <CuboidCollider position={[0, 4.5 * scale, 0]} args={[0.7 * scale, 1.2 * scale, 2.4 * scale]} />
       <CylinderCollider position={[0.55 * scale, 1.5 * scale, 1.3 * scale]} args={[1.5 * scale, 0.35 * scale]} />
       <CylinderCollider position={[-0.55 * scale, 1.5 * scale, 1.3 * scale]} args={[1.5 * scale, 0.35 * scale]} />
@@ -81,12 +82,21 @@ const ApatosaurusModel = memo(function ApatosaurusModel({ terrainGeo, hasStarted
       <CylinderCollider position={[0, 6.0 * scale, 3.2 * scale]} args={[2.5 * scale, 0.5 * scale]} rotation={[Math.PI / 4, 0, 0]} />
       <CylinderCollider position={[0, 3.5 * scale, -4.0 * scale]} args={[3.0 * scale, 0.4 * scale]} rotation={[-Math.PI / 10, 0, 0]} />
       
+      {/* The Visual Model - Pointer events removed from here */}
       <primitive 
         ref={dinoRef} 
         object={scene} 
         scale={scale} 
         position={[0, -0.15, 0]} 
-        // NEW: Interactivity Dispatchers
+      />
+
+      {/* 
+        INTERACTION HITBOX
+        A massive, invisible Three.js box to catch mouse events.
+      */}
+      <mesh
+        position={[0, 5 * scale, 0]} 
+        scale={[scale * 6, scale * 15, scale * 25]} 
         onPointerOver={(e) => {
             e.stopPropagation();
             window.dispatchEvent(new CustomEvent('dino-hover', { detail: { isHovering: true } }));
@@ -98,7 +108,10 @@ const ApatosaurusModel = memo(function ApatosaurusModel({ terrainGeo, hasStarted
             e.stopPropagation();
             window.dispatchEvent(new CustomEvent('dino-click', { detail: { type: 'apatosaurus' } }));
         }}
-      />
+      >
+        <boxGeometry args={[1, 1, 1]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
     </RigidBody>
   );
 });

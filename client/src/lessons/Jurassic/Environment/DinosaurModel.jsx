@@ -4,7 +4,7 @@ import { useGLTF, useAnimations, PositionalAudio } from '@react-three/drei';
 import * as THREE from 'three';
 import { getExactHeight } from './Terrain';
 
-// Preload heavy audio files to prevent late Suspense fallbacks
+// Preload heavy audio files
 useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/footstep.ogg");
 useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/roar.mp3");
 
@@ -34,10 +34,15 @@ export default function DinosaurModel({ curve, speed = 0.02, scale = 3.0, animat
   useEffect(() => {
     if (!animations || animations.length === 0 || !curve) return;
     
+    // Enable shadows
     scene.traverse((child) => {
-      if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+      if (child.isMesh) { 
+        child.castShadow = true; 
+        child.receiveShadow = true; 
+      }
     });
     
+    // Map animations
     animations.forEach((clip) => {
       const name = clip.name.toLowerCase();
       if (name.includes('idle')) animRefs.current.idle = actions[clip.name];
@@ -47,7 +52,10 @@ export default function DinosaurModel({ curve, speed = 0.02, scale = 3.0, animat
 
     if (animate) {
       const idle = animRefs.current.idle;
-      if (idle) { idle.reset().fadeIn(0.8).play(); currentStateRef.current = 'idle'; }
+      if (idle) { 
+        idle.reset().fadeIn(0.8).play(); 
+        currentStateRef.current = 'idle'; 
+      }
       idleTimerRef.current = 3 + Math.random() * 3;
     }
     setLoaded(true);
@@ -68,6 +76,7 @@ export default function DinosaurModel({ curve, speed = 0.02, scale = 3.0, animat
   useFrame((state, delta) => {
     if (!groupRef.current || !dinoRef.current || !animate || !loaded || !curve) return;
 
+    // Audio Initialization Loop
     if (!isAudioInit.current) {
       if (footstepAudioRef.current) {
         footstepAudioRef.current.setRefDistance(5);
@@ -89,6 +98,7 @@ export default function DinosaurModel({ curve, speed = 0.02, scale = 3.0, animat
       isAudioInit.current = true;
     }
 
+    // Animation Logic
     idleTimerRef.current -= delta;
     if (idleTimerRef.current <= 0) {
       const current = currentStateRef.current;
@@ -103,6 +113,7 @@ export default function DinosaurModel({ curve, speed = 0.02, scale = 3.0, animat
       }
     }
 
+    // Movement & Rotation Logic
     const animState = currentStateRef.current;
     if (animState === 'walk' || animState === 'run') {
       progressRef.current += delta * speed;
@@ -122,6 +133,7 @@ export default function DinosaurModel({ curve, speed = 0.02, scale = 3.0, animat
       _targetQuat.setFromRotationMatrix(_mat4);
       groupRef.current.quaternion.slerp(_targetQuat, 0.08);
 
+      // Footstep audio logic
       if (state.clock.elapsedTime - lastStompTime.current > 1.2) {
         if (footstepAudioRef.current && !footstepAudioRef.current.isPlaying) {
           footstepAudioRef.current.setVolume(2.0);
@@ -131,6 +143,7 @@ export default function DinosaurModel({ curve, speed = 0.02, scale = 3.0, animat
       }
     }
 
+    // Roar audio logic
     if (state.clock.elapsedTime > nextRoarTime.current) {
       if (roarAudioRef.current && !roarAudioRef.current.isPlaying) {
         roarAudioRef.current.setVolume(3.0);
@@ -144,24 +157,47 @@ export default function DinosaurModel({ curve, speed = 0.02, scale = 3.0, animat
 
   return (
     <group ref={groupRef} visible={visible}>
+      {/* The visual T-Rex mesh. */}
       <primitive 
         ref={dinoRef} 
         object={scene} 
         scale={scale} 
         dispose={null} 
-        // NEW: Interactivity Dispatchers
+      />
+
+      {/* 
+        THE HITBOX (UPDATED)
+        We have drastically increased the vertical position and scale of this box 
+        so it engulfs the entire T-Rex, not just the feet.
+      */}
+      <mesh
+        // Positioned way up at the body core, not ground level.
+        position={[0, 4.5 * scale, 0]} 
+        
+        // Scaled to be very tall and long to cover the entire model.
+        scale={[scale * 10, scale * 10, scale * 10]} 
+        
         onPointerOver={(e) => {
-            e.stopPropagation();
-            window.dispatchEvent(new CustomEvent('dino-hover', { detail: { isHovering: true } }));
+          e.stopPropagation();
+          window.dispatchEvent(new CustomEvent('dino-hover', { detail: { isHovering: true } }));
         }}
         onPointerOut={(e) => {
-            window.dispatchEvent(new CustomEvent('dino-hover', { detail: { isHovering: false } }));
+          window.dispatchEvent(new CustomEvent('dino-hover', { detail: { isHovering: false } }));
         }}
         onClick={(e) => {
-            e.stopPropagation();
-            window.dispatchEvent(new CustomEvent('dino-click', { detail: { type: 'trex' } }));
+          e.stopPropagation();
+          window.dispatchEvent(new CustomEvent('dino-click', { detail: { type: 'trex' } }));
         }}
-      />
+      >
+        <boxGeometry args={[1, 1, 1]} />
+        {/* 
+          CURRENTLY IN DEBUG MODE: Semi-transparent red.
+          Change opacity={0.5} to opacity={0} and color="red" to something else (or remove) 
+          when you are happy with the size and the interaction works.
+        */}
+        <meshBasicMaterial transparent opacity={0} color="red" depthWrite={false} />
+      </mesh>
+
       <PositionalAudio ref={footstepAudioRef} url="/sounds/jurrasic/footstep.ogg" loop={false} autoplay={false} />
       <PositionalAudio ref={roarAudioRef} url="/sounds/jurrasic/roar.mp3" loop={false} autoplay={false} />
     </group>
