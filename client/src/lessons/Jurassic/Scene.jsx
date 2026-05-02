@@ -5,12 +5,17 @@ import { Physics } from '@react-three/rapier';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 
+// Environment Imports
 import Terrain from './Environment/Terrain';
 import Lighting from './Environment/Lighting';
 import DinosaurEncounter from './Events/DinosaurEncounter';
 import ApatosaurusModel from './Environment/ApatosaurusModel';
-import Player from '../../hooks/Player';
+import Player from './Player/Player';
 
+// UI Wrapper Import
+import JurassicUI from './UI/JurassicUI';
+
+// Preload Assets
 useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/forest.mp3");
 useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/volcano.mp3");
 useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/ocean.mp3");
@@ -57,64 +62,71 @@ export default function Scene({ hasStarted }) {
   const [terrainGeo, setTerrainGeo] = useState(null);
 
   return (
-    <Canvas shadows dpr={[1, 2]} camera={{ fov: 60, far: 10000 }} gl={{ antialias: true, toneMappingExposure: 1.1 }}>
-      <color attach="background" args={['#597a61']} />
-      <fogExp2 attach="fog" args={['#597a61', 0.012]} />
-      
-      <Suspense fallback={null}>
-        <Lighting />
+    <>
+      {/* 3D Scene Layer */}
+      <Canvas shadows dpr={[1, 2]} camera={{ fov: 60, far: 10000 }} gl={{ antialias: true, toneMappingExposure: 1.1 }}>
+        <color attach="background" args={['#597a61']} />
+        <fogExp2 attach="fog" args={['#597a61', 0.012]} />
         
-        {/* CRITICAL FIX: Removed timeStep="vary". It causes dynamic bodies to vibrate and jitter. */}
-        <Physics gravity={[0, -9.81, 0]}>
-          <Terrain setTerrainGeo={setTerrainGeo} />
+        <Suspense fallback={null}>
+          <Lighting />
           
-          {terrainGeo && (
-            <>
-              <DinosaurEncounter terrainGeo={terrainGeo} hasStarted={hasStarted} />
-              
-              <Suspense fallback={null}>
-                <ApatosaurusModel
-                    terrainGeo={terrainGeo}
-                    hasStarted={hasStarted}
-                    x={20}
-                    z={-200}
-                    scale={5.0}
-                />
-              </Suspense>
+          {/* Rapier Physics Engine */}
+          <Physics gravity={[0, -9.81, 0]}>
+            <Terrain setTerrainGeo={setTerrainGeo} />
+            
+            {terrainGeo && (
+              <>
+                <DinosaurEncounter terrainGeo={terrainGeo} hasStarted={hasStarted} />
+                
+                <Suspense fallback={null}>
+                  <ApatosaurusModel
+                      terrainGeo={terrainGeo}
+                      hasStarted={hasStarted}
+                      x={20}
+                      z={-200}
+                      scale={5.0}
+                  />
+                </Suspense>
 
-              <Suspense fallback={null}>
-                <Player terrainGeo={terrainGeo} />
-              </Suspense>
-            </>
-          )}
-        </Physics>
+                <Suspense fallback={null}>
+                  <Player />
+                </Suspense>
+              </>
+            )}
+          </Physics>
 
-        <BiomeAudio hasStarted={hasStarted} />
-        
-        <Sparkles count={1500} scale={300} size={4} speed={0.2} opacity={0.2} color="#ffddaa" />
-        <Cloud position={[-40, 50, -60]} speed={0.15} opacity={0.6} scale={2.5} color="#ffd8a8" />
-        <Cloud position={[50, 60, 30]} speed={0.1} opacity={0.4} scale={3} color="#ffebd6" />
-        <Cloud position={[0, 45, 80]} speed={0.2} opacity={0.5} scale={2} color="#e0cda6" />
-        
-        <Environment preset="forest" background={false} />
-        
-        <EffectComposer disableNormalPass>
-          <Bloom luminanceThreshold={0.8} mipmapBlur intensity={0.5} />
-        </EffectComposer>
-        
-        <Preload all />
-      </Suspense>
+          <BiomeAudio hasStarted={hasStarted} />
+          
+          {/* Atmosphere & Environment[cite: 1] */}
+          <Sparkles count={1500} scale={300} size={4} speed={0.2} opacity={0.2} color="#ffddaa" />
+          <Cloud position={[-40, 50, -60]} speed={0.15} opacity={0.6} scale={2.5} color="#ffd8a8" />
+          <Cloud position={[50, 60, 30]} speed={0.1} opacity={0.4} scale={3} color="#ffebd6" />
+          <Cloud position={[0, 45, 80]} speed={0.2} opacity={0.5} scale={2} color="#e0cda6" />
+          
+          <Environment preset="forest" background={false} />
+          
+          <EffectComposer disableNormalPass>
+            <Bloom luminanceThreshold={0.8} mipmapBlur intensity={0.5} />
+          </EffectComposer>
+          
+          <Preload all />
+        </Suspense>
 
-      <Sky
-        distance={450000}
-        sunPosition={[1500, 400, -500]}
-        inclination={0.48}
-        azimuth={0.25}
-        turbidity={20}
-        rayleigh={2.5}
-        mieCoefficient={0.06}
-        mieDirectionalG={0.85}
-      />
-    </Canvas>
+        <Sky
+          distance={450000}
+          sunPosition={[1500, 400, -500]}
+          inclination={0.48}
+          azimuth={0.25}
+          turbidity={20}
+          rayleigh={2.5}
+          mieCoefficient={0.06}
+          mieDirectionalG={0.85}
+        />
+      </Canvas>
+
+      {/* 2D UI Layer - Jurassic specific components moved here[cite: 1] */}
+      <JurassicUI hasStarted={hasStarted} />
+    </>
   );
 }

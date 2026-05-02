@@ -1,5 +1,5 @@
 import React from 'react'
-import useAI from '../../hooks/useAI'
+import useAI from '../../../hooks/useAI'
 
 export default function DialogueBox() {
   const { narration, loading } = useAI()

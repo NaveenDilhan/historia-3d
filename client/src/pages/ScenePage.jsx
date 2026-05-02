@@ -1,9 +1,6 @@
 import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import DialogueBox from '../components/UI/DialogueBox';
 import LoadingScreen from '../components/UI/LoadingScreen';
-import InteractHint from '../components/UI/InteractHint'; // NEW
-import DinoModal from '../components/UI/DinoModal';       // NEW
 import { ChevronLeft } from 'lucide-react';
 import { useProgress } from '@react-three/drei';
 import gsap from 'gsap';
@@ -45,10 +42,6 @@ export default function ScenePage() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
 
-  // NEW: UI State
-  const [hoveredDino, setHoveredDino] = useState(false);
-  const [activeModal, setActiveModal] = useState(null);
-
   const overlayRef = useRef(null);
   const canvasWrapperRef = useRef(null);
 
@@ -64,28 +57,6 @@ export default function ScenePage() {
       return () => clearTimeout(timer);
     }
   }, [active, progress, total, errors.length, hasLoaded]);
-
-  // NEW: Listen for Raycast events from the 3D models
-  useEffect(() => {
-    const handleHover = (e) => setHoveredDino(e.detail.isHovering);
-    const handleClick = (e) => setActiveModal(e.detail.type);
-
-    window.addEventListener('dino-hover', handleHover);
-    window.addEventListener('dino-click', handleClick);
-    return () => {
-        window.removeEventListener('dino-hover', handleHover);
-        window.removeEventListener('dino-click', handleClick);
-    };
-  }, []);
-
-  // NEW: Trigger Tutorial Modal when scene begins
-  useEffect(() => {
-    if (hasStarted) {
-        // Slight delay so the GSAP curtain effect finishes before popping the modal
-        const timer = setTimeout(() => setActiveModal('tutorial'), 2000);
-        return () => clearTimeout(timer);
-    }
-  }, [hasStarted]);
 
   const handleStart = () => {
     setIsRevealing(true); 
@@ -128,24 +99,6 @@ export default function ScenePage() {
         )}
       </div>
 
-      {/* UI Overlays */}
-      {ActiveScene && hasStarted && (
-        <div className="ui-overlay absolute inset-0 z-20 pointer-events-none">
-          
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
-            <DialogueBox />
-          </div>
-
-          {/* NEW: Interaction Crosshair Hint */}
-          <InteractHint visible={hoveredDino && !activeModal} />
-
-          {/* NEW: Archival Info Modal (pointer-events-auto re-enables clicking) */}
-          <div className="pointer-events-auto">
-             <DinoModal type={activeModal} onClose={() => setActiveModal(null)} />
-          </div>
-          
-        </div>
-      )}
     </div>
   );
 }
