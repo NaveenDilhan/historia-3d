@@ -11,7 +11,10 @@ export default function JurassicUI({ hasStarted }) {
   // Listen for Raycast events from the 3D models
   useEffect(() => {
     const handleHover = (e) => setHoveredDino(e.detail.isHovering);
-    const handleClick = (e) => setActiveModal(e.detail.type);
+    const handleClick = (e) => {
+        // Prevents triggering a new modal if one is currently up on the screen
+        setActiveModal(prev => prev ? prev : e.detail.type);
+    };
 
     window.addEventListener('dino-hover', handleHover);
     window.addEventListener('dino-click', handleClick);

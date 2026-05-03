@@ -37,13 +37,14 @@ const LessonNotFound = () => {
 export default function ScenePage() {
   const { lessonId } = useParams();
   const navigate = useNavigate();
+
   const ActiveScene = SceneMap[lessonId];
   const { active, progress, total, errors } = useProgress();
-  
+
   const [hasLoaded, setHasLoaded] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
-  
+
   // --- PAUSE MENU STATE ---
   const [isPaused, setIsPaused] = useState(false);
   const [soundMuted, setSoundMuted] = useState(window.__soundMuted || false);
@@ -100,6 +101,7 @@ export default function ScenePage() {
         setIsPaused(false);
       }
     };
+
     document.addEventListener('pointerlockchange', handlePointerLockChange);
     return () => document.removeEventListener('pointerlockchange', handlePointerLockChange);
   }, []);
@@ -115,6 +117,10 @@ export default function ScenePage() {
   }, [isPaused, soundMuted]);
 
   const handleStart = () => {
+    // CRITICAL FIX: Instantly request pointer lock exactly on click to satisfy browser security
+    const canvas = document.querySelector('canvas');
+    if (canvas) canvas.requestPointerLock();
+
     setIsRevealing(true);
     const tl = gsap.timeline({
       onComplete: () => {
@@ -196,7 +202,8 @@ export default function ScenePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+            // Bumped Z-index to 110 to ensure it always overlays Modals (which are 100)
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
           >
             <motion.div 
               initial={{ scale: 0.9, y: 20 }}
@@ -244,6 +251,7 @@ export default function ScenePage() {
           </motion.div>
         )}
       </AnimatePresence>
+
     </div>
   );
 }
