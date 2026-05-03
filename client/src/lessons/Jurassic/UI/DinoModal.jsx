@@ -13,6 +13,10 @@ const archiveData = {
         title: "APATOSAURUS",
         images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
     },
+    triceratops: {
+        title: "TRICERATOPS",
+        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+    },
     angiosperm: {
         title: "EARLY ANGIOSPERMS",
         images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]

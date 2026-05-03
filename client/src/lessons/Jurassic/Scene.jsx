@@ -11,6 +11,7 @@ import Lighting from './Environment/Lighting';
 import DinosaurEncounter from './Events/DinosaurEncounter';
 import ApatosaurusModel from './Environment/ApatosaurusModel';
 import Player from './Player/Player';
+import TriceratopsModel from './Environment/TriceratopsModel';
 
 // UI Wrapper Import
 import JurassicUI from './UI/JurassicUI';
@@ -86,6 +87,18 @@ export default function Scene({ hasStarted }) {
                       x={20} 
                       z={-200} 
                       scale={5.0} 
+                  />
+                </Suspense>
+                
+                {/* TRICERATOPS - Placed at the far left edge of the forest */}
+                <Suspense fallback={null}>
+                  <TriceratopsModel
+                      terrainGeo={terrainGeo}
+                      hasStarted={hasStarted}
+                      x={-100}          // Far left edge of the map
+                      z={80}             // Center forest biome
+                      scale={2}       // Bit smaller than T-Rex (2.8)
+                      rotationY={Math.PI / 4} // Rotated slightly towards the center
                   />
                 </Suspense>
 

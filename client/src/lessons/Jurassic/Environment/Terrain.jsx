@@ -16,7 +16,6 @@ import BushScatter from './BushScatter';
 import AmmoniteModel from './AmmoniteModel'; 
 import LargeBoneModel from './LargeBoneModel';
 
-// --- Shared Helper for Ground Alignment ---
 export const getExactHeight = (x, z, terrainGeo) => {
   if (!terrainGeo) return 0;
   const sizeX = 500; 
@@ -48,7 +47,6 @@ export const getExactHeight = (x, z, terrainGeo) => {
   return h0 * (1 - ty) + h1 * ty;
 };
 
-// --- Shared T-Rex Path Logic ---
 export const rexPathVectors = [
   new THREE.Vector3(50, 0, 100),
   new THREE.Vector3(150, 0, 200),
@@ -154,6 +152,15 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
       });
     }
 
+    // === CRITICAL FIX: HUGE EXCLUSION ZONE FOR TRICERATOPS ===
+    // Updated to exactly match the new location of x = -100, z = 80
+    obs.push({
+      x: -100,
+      z: 80,
+      radius: 35, // Massive 35-unit clearing so NO trees spawn inside or near it
+      type: 'triceratops'
+    });
+
     return obs;
   }, [geometry]);
 
@@ -252,17 +259,14 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
         <CuboidCollider position={[0, 150, 480]} args={[250, 200, 1]} />
       </RigidBody>
 
-      {/* RENDER ORDER IS CRITICAL FOR THE PROXIMITY ALGORITHM */}
       <GrassModel count={500} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} />
       <RockModel count={220} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
       <TreeForest genericCount={180} forestCount={250} terrainGeo={geometry} treeScale={4.5} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
       <DesertDeadTrees terrainGeo={geometry} count={15} obstacles={obstacles} />
       <ForestFlora count={300} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
       
-      {/* ADDED AMMONITE MODELS */}
       <AmmoniteModel count={25} terrainGeo={geometry} obstacles={obstacles} />
       <LargeBoneModel count={1} terrainGeo={geometry} obstacles={obstacles} />
-      {/* BushScatter MUST execute last so trees and rocks exist as anchors */}
       <BushScatter count={40} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
     </group>
   );
@@ -270,7 +274,6 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
 
 export default Terrain;
 
-// Aggressive texture preloading
 useLoader.preload(THREE.TextureLoader, '/textures/grass_mossy.png');
 useLoader.preload(THREE.TextureLoader, '/textures/mud.png');
 useLoader.preload(THREE.TextureLoader, '/textures/rock.png');
