@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { X } from 'lucide-react';
 
 const archiveData = {
     tutorial: {
@@ -20,6 +19,10 @@ const archiveData = {
     },
     ammonite: { 
         title: "AMMONITE FOSSILS",
+        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+    },
+    largebone: {
+        title: "LARGE BONE FOSSIL",
         images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
     }
 };
@@ -102,14 +105,6 @@ export default function DinoModal({ type, onClose }) {
                 {/* Decorative Top Line - added rounded-t-3xl to match the container's corners safely */}
                 <div className="h-1.5 w-full bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-80 animate-item rounded-t-3xl"></div>
                 
-                {/* Fallback Close Button (In case they want to click early, hidden by default but useful for debugging) */}
-                <button 
-                    onClick={onClose} 
-                    className="absolute top-6 right-6 z-50 p-2 bg-black/40 hover:bg-amber-900/50 text-amber-500 rounded-full transition-colors border border-amber-900/50 animate-item"
-                >
-                    <X size={24} />
-                </button>
-
                 <div className="flex-1 flex flex-col items-center justify-center p-8">
                     {type === 'tutorial' ? (
                         /* --- TUTORIAL VIEW --- */
@@ -215,8 +210,8 @@ export default function DinoModal({ type, onClose }) {
                 </div>
 
                 {/* 
-                   PRESS ENTER COMPONENT (Hangs off the bottom edge artistically)
-                   Styled identically to the Loading Screen start button, but pill-shaped.
+                    PRESS ENTER COMPONENT (Hangs off the bottom edge artistically)
+                    Styled identically to the Loading Screen start button, but pill-shaped.
                 */}
                 <div className={`absolute -bottom-7 left-1/2 -translate-x-1/2 transition-all duration-700 z-[110] ${canClose ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}>
                     <button 

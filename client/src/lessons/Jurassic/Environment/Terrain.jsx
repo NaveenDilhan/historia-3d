@@ -13,7 +13,8 @@ import DesertDeadTrees from './DesertDeadTrees';
 import Ocean from './Ocean';
 import ForestFlora from './ForestFlora'; 
 import BushScatter from './BushScatter'; 
-import AmmoniteModel from './AmmoniteModel'; // <--- NEW IMPORT
+import AmmoniteModel from './AmmoniteModel'; 
+import LargeBoneModel from './LargeBoneModel';
 
 // --- Shared Helper for Ground Alignment ---
 export const getExactHeight = (x, z, terrainGeo) => {
@@ -260,7 +261,7 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
       
       {/* ADDED AMMONITE MODELS */}
       <AmmoniteModel count={25} terrainGeo={geometry} obstacles={obstacles} />
-      
+      <LargeBoneModel count={1} terrainGeo={geometry} obstacles={obstacles} />
       {/* BushScatter MUST execute last so trees and rocks exist as anchors */}
       <BushScatter count={40} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
     </group>
