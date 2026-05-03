@@ -17,6 +17,10 @@ const archiveData = {
     angiosperm: {
         title: "EARLY ANGIOSPERMS",
         images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+    },
+    ammonite: { // <--- NEW AMMONITE ENTRY
+        title: "AMMONITE FOSSILS",
+        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
     }
 };
 
@@ -27,32 +31,28 @@ export default function DinoModal({ type, onClose }) {
     useEffect(() => {
         if (type) {
             // CRITICAL: Free the mouse cursor so the user can click the close button
-            document.exitPointerLock(); 
+            document.exitPointerLock();
             
             // Scope animations to the overlay container for clean cleanup
             let ctx = gsap.context(() => {
                 const tl = gsap.timeline();
-
                 // 1. Fade in the backdrop overlay
                 tl.fromTo(overlayRef.current, 
                     { opacity: 0 }, 
                     { opacity: 1, duration: 0.4, ease: "power2.out" }
                 );
-
                 // 2. 3D Unfold and spring up the main modal container
                 tl.fromTo(modalRef.current,
                     { opacity: 0, scale: 0.85, y: 60, rotationX: -15, transformPerspective: 1000 },
                     { opacity: 1, scale: 1, y: 0, rotationX: 0, duration: 0.8, ease: "back.out(1.5)" },
                     "<0.1" // Start slightly after the backdrop begins fading in
                 );
-
                 // 3. Stagger the appearance of all internal elements marked with 'animate-item'
                 tl.fromTo(".animate-item",
                     { opacity: 0, y: 20 },
                     { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" },
                     "-=0.5" // Overlap this animation with the container springing up
                 );
-
             }, overlayRef);
 
             // Cleanup function to kill animations when unmounted
@@ -69,7 +69,7 @@ export default function DinoModal({ type, onClose }) {
                 
                 {/* Decorative Top Line */}
                 <div className="h-1.5 w-full bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-80 animate-item"></div>
-
+                
                 <button 
                     onClick={onClose} 
                     className="absolute top-6 right-6 z-50 p-2 bg-black/40 hover:bg-amber-900/50 text-amber-500 rounded-full transition-colors border border-amber-900/50 animate-item"
@@ -87,7 +87,7 @@ export default function DinoModal({ type, onClose }) {
                                 </h2>
                                 <div className="w-24 h-px bg-amber-700/50 mx-auto mt-4 animate-item"></div>
                             </div>
-
+                            
                             <div className="flex flex-col md:flex-row items-center justify-center gap-12 md:gap-24 w-full">
                                 {/* WASD Cluster & Text */}
                                 <div className="flex flex-col items-center gap-2 animate-item">
@@ -95,7 +95,7 @@ export default function DinoModal({ type, onClose }) {
                                         src="/assets/keyboard_w.png" 
                                         alt="W Key" 
                                         className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]"
-                                        onError={(e) => { e.target.src = '/assets/w.png'; }} // Fallback if named differently
+                                        onError={(e) => { e.target.src = '/assets/w.png'; }} 
                                     />
                                     <div className="flex gap-2">
                                         <img 
@@ -125,14 +125,14 @@ export default function DinoModal({ type, onClose }) {
                                 
                                 {/* Visual Separator */}
                                 <div className="text-amber-700/50 text-4xl md:text-5xl font-black mb-8 md:mb-0 animate-item">+</div>
-
+                                
                                 {/* Mouse Icon & Text */}
                                 <div className="flex flex-col items-center animate-item">
                                     <img 
                                         src="/assets/left-click.png" 
                                         alt="Mouse Interaction" 
                                         className="w-32 h-32 md:w-48 md:h-48 object-contain drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]"
-                                        onError={(e) => { e.target.src = '/assets/scroll.png'; }} // Failsafe
+                                        onError={(e) => { e.target.src = '/assets/scroll.png'; }} 
                                     />
                                     <div className="mt-6 px-5 py-2 bg-amber-950/40 border border-amber-900/50 rounded-lg text-center shadow-inner">
                                         <p className="text-amber-400 font-bold tracking-widest text-sm uppercase">Survey & Extract</p>
@@ -142,10 +142,10 @@ export default function DinoModal({ type, onClose }) {
                             </div>
                         </div>
                     ) : (
-                        /* --- INFORMATION VIEW (T-Rex / Apatosaurus / Angiosperm) --- */
+                        /* --- INFORMATION VIEW (T-Rex / Apatosaurus / Angiosperm / Ammonite) --- */
                         <div className="flex flex-col items-center justify-center w-full h-full py-4">
                             
-                            {/* Dinosaur/Plant Name Header */}
+                            {/* Dinosaur/Plant/Fossil Name Header */}
                             <div className="text-center mb-10 w-full">
                                 <div className="text-[10px] uppercase tracking-[0.3em] text-amber-600 font-bold mb-2 animate-item">
                                     Historical Archive
@@ -164,19 +164,18 @@ export default function DinoModal({ type, onClose }) {
                                     <div className="absolute inset-0 bg-amber-900/20 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
                                     <img src={data.images[0]} alt="Archive 1" className="w-full h-full object-contain p-8 opacity-80 group-hover:opacity-100 transition-opacity" />
                                 </div>
-
+                                
                                 {/* Panel 2: Popped forward, slightly Slanted Right */}
                                 <div className="w-full md:w-1/3 aspect-[4/5] max-w-[280px] bg-black border-2 border-amber-500/50 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(245,158,11,0.2)] transform rotate-3 scale-110 hover:rotate-0 hover:scale-115 transition-all duration-500 relative z-10 group cursor-pointer animate-item">
                                     <div className="absolute inset-0 bg-amber-600/10 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
                                     <img src={data.images[1]} alt="Archive 2" className="w-full h-full object-contain p-8 opacity-100" />
                                 </div>
-
+                                
                                 {/* Panel 3: Slanted Left */}
                                 <div className="w-full md:w-1/3 aspect-[4/5] max-w-[280px] bg-black border-2 border-amber-900/40 rounded-2xl overflow-hidden shadow-2xl transform -rotate-3 hover:rotate-0 hover:scale-105 transition-all duration-500 relative group cursor-pointer animate-item">
                                     <div className="absolute inset-0 bg-amber-900/20 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
                                     <img src={data.images[2]} alt="Archive 3" className="w-full h-full object-contain p-8 opacity-80 group-hover:opacity-100 transition-opacity" />
                                 </div>
-
                             </div>
                         </div>
                     )}

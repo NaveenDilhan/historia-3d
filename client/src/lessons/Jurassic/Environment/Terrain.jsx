@@ -13,6 +13,7 @@ import DesertDeadTrees from './DesertDeadTrees';
 import Ocean from './Ocean';
 import ForestFlora from './ForestFlora'; 
 import BushScatter from './BushScatter'; 
+import AmmoniteModel from './AmmoniteModel'; // <--- NEW IMPORT
 
 // --- Shared Helper for Ground Alignment ---
 export const getExactHeight = (x, z, terrainGeo) => {
@@ -42,6 +43,7 @@ export const getExactHeight = (x, z, terrainGeo) => {
 
   const h0 = getZ(x0, y0) * (1 - tx) + getZ(x1, y0) * tx;
   const h1 = getZ(x0, y1) * (1 - tx) + getZ(x1, y1) * tx;
+
   return h0 * (1 - ty) + h1 * ty;
 };
 
@@ -52,6 +54,7 @@ export const rexPathVectors = [
   new THREE.Vector3(0, 0, 300),
   new THREE.Vector3(-100, 0, 200),
 ];
+
 export const rexCurve = new THREE.CatmullRomCurve3(rexPathVectors, true, 'centripetal', 0.5);
 export const curveSamples = rexCurve.getPoints(100); 
 
@@ -108,7 +111,7 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
 
       let desertH = noise.noise(worldX / 120, worldZ / 120, 0) * 12 + noise.noise(worldX / 40, worldZ / 40, 0) * 4 + 5;
       
-      let beachH = -2 + noise.noise(worldX / 80, worldZ / 80, 0) * 1.5;      
+      let beachH = -2 + noise.noise(worldX / 80, worldZ / 80, 0) * 1.5; 
       if (worldZ > 480) beachH -= (worldZ - 480) * 0.15; 
       if (worldZ > 380) {
         if (worldX > 180) beachH -= (worldX - 180) * 0.2;
@@ -149,6 +152,7 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
         type: 'dinosaur'
       });
     }
+
     return obs;
   }, [geometry]);
 
@@ -173,10 +177,12 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
         `#include <common>`, 
         `#include <common>\n varying float vHeight;\n varying vec2 vCustomUv;\n varying vec2 vWorldPos;`
       );
+
       shader.vertexShader = shader.vertexShader.replace(
         `#include <begin_vertex>`, 
         `#include <begin_vertex>\n vHeight = position.z;\n vCustomUv = uv;\n vWorldPos = vec2(position.x, -position.y);`
       );
+
       shader.fragmentShader = shader.fragmentShader.replace(
         `#include <common>`, 
         `#include <common>\n
@@ -188,17 +194,20 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
           varying vec2 vCustomUv;\n
           varying vec2 vWorldPos;`
       );
+
       shader.fragmentShader = shader.fragmentShader.replace(
         `#include <color_fragment>`, 
         `#include <color_fragment>\n
-          vec2 texUv = vCustomUv * vec2(50.0, 160.0);                      
+          vec2 texUv = vCustomUv * vec2(50.0, 160.0);
+          
           vec4 mossColor = texture2D(mossTex, texUv);
           mossColor.rgb *= vec3(0.85, 1.25, 0.85);
+
           vec4 mudColor = texture2D(mudTex, texUv);
           vec4 rockColor = texture2D(rockTex, texUv);
           vec4 lavaMapColor = texture2D(lavaTex, texUv);
           
-          vec4 sandColor = mudColor * vec4(1.6, 1.4, 0.9, 1.0);           
+          vec4 sandColor = mudColor * vec4(1.6, 1.4, 0.9, 1.0);
           
           float beachMix = smoothstep(375.0, 425.0, vWorldPos.y);
           float forestMix = smoothstep(-25.0, 25.0, vWorldPos.y) * (1.0 - smoothstep(375.0, 425.0, vWorldPos.y));
@@ -208,18 +217,19 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
           float h = vHeight;
           
           vec4 fColor = mix(mudColor, mossColor, smoothstep(1.0, 1.2, h));
-          fColor = mix(fColor, rockColor, smoothstep(6.0, 6.5, h));           
+          fColor = mix(fColor, rockColor, smoothstep(6.0, 6.5, h));
           
           vec4 dColor = mix(sandColor, rockColor, smoothstep(16.0, 20.0, h));
           vec4 bColor = sandColor;
           vec4 vColor = lavaMapColor;
 
           vec4 terrainColor = (fColor * forestMix) + (dColor * desertMix) + (bColor * beachMix) + (vColor * volcanoMix);
-          vec3 sceneTint = vec3(0.05, 0.07, 0.03);           
+          vec3 sceneTint = vec3(0.05, 0.07, 0.03);
           
           diffuseColor = vec4(terrainColor.rgb + sceneTint, 1.0);`
       );
     };
+
     return mat;
   }, [mossTex, mudTex, rockTex, lavaTex]);
 
@@ -233,6 +243,7 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
 
       <BorderMountains obstacles={obstacles} />
       <Ocean />
+
       <RigidBody type="fixed">
         <CuboidCollider position={[-205, 150, -100]} args={[1, 200, 700]} />
         <CuboidCollider position={[205, 150, -100]} args={[1, 200, 700]} />
@@ -246,6 +257,9 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
       <TreeForest genericCount={180} forestCount={250} terrainGeo={geometry} treeScale={4.5} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
       <DesertDeadTrees terrainGeo={geometry} count={15} obstacles={obstacles} />
       <ForestFlora count={300} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
+      
+      {/* ADDED AMMONITE MODELS */}
+      <AmmoniteModel count={25} terrainGeo={geometry} obstacles={obstacles} />
       
       {/* BushScatter MUST execute last so trees and rocks exist as anchors */}
       <BushScatter count={40} terrainGeo={geometry} bounds={{ xMin: -190, xMax: 190, zMin: 10, zMax: 390 }} obstacles={obstacles} />
