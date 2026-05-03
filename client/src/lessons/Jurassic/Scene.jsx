@@ -13,6 +13,10 @@ import ApatosaurusModel from './Environment/ApatosaurusModel';
 import Player from './Player/Player';
 import TriceratopsModel from './Environment/TriceratopsModel';
 
+// Event Imports
+import GeothermalVent from './Events/GeothermalVent';
+import MeteorEvent from './Events/MeteorEvent';
+
 // UI Wrapper Import
 import JurassicUI from './UI/JurassicUI';
 
@@ -20,6 +24,16 @@ import JurassicUI from './UI/JurassicUI';
 useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/forest.mp3");
 useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/volcano.mp3");
 useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/ocean.mp3");
+
+// Define scattered locations in the volcanic biome (Z < -400)
+const VENT_LOCATIONS = [
+  { x: -50, y: 15, z: -450, scale: 1.2 },
+  { x: 120, y: 22, z: -520, scale: 1.8 },
+  { x: -160, y: 18, z: -610, scale: 1.5 },
+  { x: 40, y: 28, z: -680, scale: 2.2 },
+  { x: -80, y: 35, z: -740, scale: 1.0 },
+  { x: 180, y: 20, z: -580, scale: 1.4 },
+];
 
 function BiomeAudio({ hasStarted }) {
   const forestRef = useRef();
@@ -67,6 +81,8 @@ export default function Scene({ hasStarted }) {
       {/* 3D Scene Layer */}
       <Canvas shadows dpr={[1, 2]} camera={{ fov: 60, far: 10000 }} gl={{ antialias: true, toneMappingExposure: 1.1 }}>
         <color attach="background" args={['#597a61']} />
+        
+        {/* FOG: The new Geothermal vents will now correctly respect this exact fog definition */}
         <fogExp2 attach="fog" args={['#597a61', 0.012]} />
         
         <Suspense fallback={null}>
@@ -80,13 +96,20 @@ export default function Scene({ hasStarted }) {
               <>
                 <DinosaurEncounter terrainGeo={terrainGeo} hasStarted={hasStarted} />
                 
+                {/* Scatter the new Procedural Steam Vents */}
+                {VENT_LOCATIONS.map((pos, index) => (
+                    <GeothermalVent key={`vent-${index}`} x={pos.x} y={pos.y} z={pos.z} scale={pos.scale} />
+                ))}
+
+                <MeteorEvent hasStarted={hasStarted} />
+                
                 <Suspense fallback={null}>
-                  <ApatosaurusModel 
-                      terrainGeo={terrainGeo} 
-                      hasStarted={hasStarted} 
-                      x={20} 
-                      z={-200} 
-                      scale={5.0} 
+                  <ApatosaurusModel
+                      terrainGeo={terrainGeo}
+                      hasStarted={hasStarted}
+                      x={20}
+                      z={-200}
+                      scale={5.0}
                   />
                 </Suspense>
                 
@@ -95,15 +118,14 @@ export default function Scene({ hasStarted }) {
                   <TriceratopsModel
                       terrainGeo={terrainGeo}
                       hasStarted={hasStarted}
-                      x={-100}          // Far left edge of the map
-                      z={80}             // Center forest biome
-                      scale={2}       // Bit smaller than T-Rex (2.8)
-                      rotationY={Math.PI / 4} // Rotated slightly towards the center
+                      x={-100}
+                      z={80}
+                      scale={2}
+                      rotationY={Math.PI / 4}
                   />
                 </Suspense>
 
                 <Suspense fallback={null}>
-                  {/* FIXED: Passing hasStarted to the Player */}
                   <Player hasStarted={hasStarted} />
                 </Suspense>
               </>

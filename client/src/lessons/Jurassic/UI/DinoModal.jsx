@@ -28,6 +28,14 @@ const archiveData = {
     largebone: {
         title: "LARGE BONE FOSSIL",
         images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+    },
+    geothermal: {
+        title: "GEOTHERMAL VENT",
+        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+    },
+    meteor: {
+        title: "METEOR STREAK",
+        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
     }
 };
 
