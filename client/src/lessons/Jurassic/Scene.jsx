@@ -56,6 +56,7 @@ function BiomeAudio({ hasStarted }) {
           }
         }
       };
+
       playAudioNode(forestRef, 150, 450, 1.5, 0.4);
       playAudioNode(volcanoRef, 120, 350, 2.0, 0.6);
       playAudioNode(oceanRef, 80, 200, 3.0, 0.6);
@@ -93,18 +94,24 @@ function BiomeTracker() {
   return null;
 }
 
+// HOISTED ATMOSPHERE COLORS TO PREVENT GC SPIKES
+const _fogNormal = new THREE.Color('#597a61');
+const _fogApocalyptic = new THREE.Color('#300800');
+
 function AtmosphereTransition({ active }) {
   const { scene } = useThree();
-  const targetColor = new THREE.Color(active ? '#300800' : '#597a61');
   const targetDensity = active ? 0.028 : 0.012; 
 
   useFrame((state, delta) => {
+    const targetColor = active ? _fogApocalyptic : _fogNormal;
+
     if (scene.background) scene.background.lerp(targetColor, delta * 0.5);
     if (scene.fog) {
       scene.fog.color.lerp(targetColor, delta * 0.5);
       scene.fog.density = THREE.MathUtils.lerp(scene.fog.density, targetDensity, delta * 0.5);
     }
   });
+
   return null;
 }
 

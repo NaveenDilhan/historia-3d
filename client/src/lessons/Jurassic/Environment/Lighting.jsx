@@ -2,6 +2,11 @@ import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+// HOIST CONSTANTS TO PREVENT GC SPIKES
+const _targetDirColor = new THREE.Color('#ff2200');
+const _targetHemiGround = new THREE.Color('#1a0500');
+const _targetHemiSky = new THREE.Color('#4a0a00');
+
 export default function Lighting({ meteorStrikeActive }) {
   const dirLightRef = useRef();
   const hemiLightRef = useRef();
@@ -9,18 +14,14 @@ export default function Lighting({ meteorStrikeActive }) {
   useFrame((state, delta) => {
     if (meteorStrikeActive) {
       // Transition to intense apocalyptic lighting
-      const targetDirColor = new THREE.Color('#ff2200');
-      const targetHemiGround = new THREE.Color('#1a0500');
-      const targetHemiSky = new THREE.Color('#4a0a00');
-
       if (dirLightRef.current) {
-        dirLightRef.current.color.lerp(targetDirColor, delta * 0.5);
+        dirLightRef.current.color.lerp(_targetDirColor, delta * 0.5);
         // Ramp up intensity for dramatic shadows
         dirLightRef.current.intensity = THREE.MathUtils.lerp(dirLightRef.current.intensity, 5.0, delta * 0.5); 
       }
       if (hemiLightRef.current) {
-        hemiLightRef.current.color.lerp(targetHemiSky, delta * 0.5);
-        hemiLightRef.current.groundColor.lerp(targetHemiGround, delta * 0.5);
+        hemiLightRef.current.color.lerp(_targetHemiSky, delta * 0.5);
+        hemiLightRef.current.groundColor.lerp(_targetHemiGround, delta * 0.5);
       }
     }
   });

@@ -1,10 +1,13 @@
 import React, { useMemo, memo } from 'react';
 import { useGLTF, Clone } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
+import * as THREE from 'three';
 import { getExactHeight } from './Terrain';
 
+const _ammoniteHitboxGeo = new THREE.SphereGeometry(1, 8, 8);
+const _hitboxMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+
 const AmmoniteModel = memo(function AmmoniteModel({ count = 25, terrainGeo, obstacles = [] }) {
-  // Make sure you have an ammonite.glb in your public/models folder
   const { scene } = useGLTF('/models/jurrasic/Ammonite.glb');
 
   const ammonites = useMemo(() => {
@@ -12,21 +15,17 @@ const AmmoniteModel = memo(function AmmoniteModel({ count = 25, terrainGeo, obst
     let attempts = 0;
     
     while (data.length < count && attempts < count * 5) {
-      // Beach biome is located roughly at worldZ > 375
       const x = (Math.random() - 0.5) * 350;
-      const z = 385 + Math.random() * 90; // Constrain to beach area
+      const z = 385 + Math.random() * 90; 
       attempts++;
-
-      let y = getExactHeight(x, z, terrainGeo);
       
-      // Prevent them from spawning on high cliffs near the beach
+      let y = getExactHeight(x, z, terrainGeo);
       if (y > 4.0) continue; 
 
-      // Varying sizes
       const scale = 0.5 + Math.random() * 1.2;
       const rotY = Math.random() * Math.PI * 2;
-      const rotX = (Math.random() - 0.5) * 0.4; // Slightly tilt them into the sand
-
+      const rotX = (Math.random() - 0.5) * 0.4; 
+      
       data.push({ x, y: y - 0.1, z, scale, rotX, rotY });
       obstacles.push({ x, z, radius: scale * 0.6, type: 'ammonite' });
     }
@@ -56,11 +55,11 @@ const AmmoniteModel = memo(function AmmoniteModel({ count = 25, terrainGeo, obst
             onPointerOut={handlePointerOut}
             onClick={handleClick}
           >
-            {/* An invisible, slightly larger hitbox to make clicking easier on small fossils */}
-            <mesh visible={false} scale={[a.scale * 2, a.scale * 2, a.scale * 2]}>
-              <sphereGeometry args={[1, 8, 8]} />
-            </mesh>
-            
+            <mesh 
+              scale={[a.scale * 2, a.scale * 2, a.scale * 2]} 
+              geometry={_ammoniteHitboxGeo} 
+              material={_hitboxMat} 
+            />
             <Clone object={scene} scale={a.scale} dispose={null} />
           </group>
         </RigidBody>

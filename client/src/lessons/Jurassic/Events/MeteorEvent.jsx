@@ -1,5 +1,5 @@
 import React, { useRef, useState, useMemo } from 'react';
-import { useFrame, extend } from '@react-three/fiber';
+import { useFrame, extend, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 import { shaderMaterial, PositionalAudio } from '@react-three/drei';
 
@@ -18,18 +18,25 @@ const MeteorTrailMaterial = shaderMaterial(
     uniform vec3 uGlow;
     varying vec2 vUv;
     void main() {
-        // UV.y represents length of cylinder (0 is tail end, 1 is head)
-        float intensity = pow(vUv.y, 3.0); // Extreme white hot core at the head
+        float intensity = pow(vUv.y, 3.0); 
         vec3 col = mix(uColor, uGlow, intensity);
-        
-        // Smoothly fade out the tail 
         float alpha = smoothstep(0.0, 0.2, vUv.y) * (vUv.y);
-        
         gl_FragColor = vec4(col, alpha * 0.9);
     }
     `
 );
 extend({ MeteorTrailMaterial });
+
+// HOISTED GEOMETRIES & MATERIALS: Eliminates 150 shader compilations
+const _meteorCoreGeo = new THREE.SphereGeometry(2, 12, 12);
+const _meteorCoreMat = new THREE.MeshBasicMaterial({ color: "#ffffff" });
+const _meteorGlowGeo = new THREE.SphereGeometry(4, 12, 12);
+const _meteorGlowMat = new THREE.MeshBasicMaterial({ color: "#ff5500", transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
+const _meteorTailGeo = new THREE.CylinderGeometry(2, 0.1, 60, 12, 1, true);
+const _meteorTailMat = new MeteorTrailMaterial({ transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+const _hitboxGeo = new THREE.SphereGeometry(1, 8, 8);
+const _hitboxMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+
 
 // Individual Meteor Component
 const Meteor = ({ startPos, targetPos, delay, speed, scale, isHero, hasAudio }) => {
@@ -44,12 +51,14 @@ const Meteor = ({ startPos, targetPos, delay, speed, scale, isHero, hasAudio }) 
     const hasExploded = useRef(false);
 
     useFrame((state, delta) => {
+        if (delay === Infinity) return; // Optimization: Stay dormant until activated
+
         if (state.clock.elapsedTime > delay && progress.current < 1) {
             if (!visible) setVisible(true);
             
             // 1. Play the falling whoosh sound
             if (hasAudio && !hasStartedSound.current && meteorSoundRef.current && meteorSoundRef.current.buffer) {
-                meteorSoundRef.current.setVolume(isHero ? 2.5 : 0.15); // Hero is deafening, background is ambient
+                meteorSoundRef.current.setVolume(isHero ? 2.5 : 0.15);
                 meteorSoundRef.current.setRefDistance(isHero ? 300 : 50);
                 meteorSoundRef.current.play();
                 hasStartedSound.current = true;
@@ -59,36 +68,34 @@ const Meteor = ({ startPos, targetPos, delay, speed, scale, isHero, hasAudio }) 
             progress.current += (delta * speed) / startPos.distanceTo(targetPos);
             
             if (progress.current >= 1) {
-                setVisible(false); // Hide the visual meshes
+                if (visible) setVisible(false); // Hide the visual meshes
                 
                 // 2. Play the impact explosion sound
                 if (hasAudio && !hasExploded.current && explosionSoundRef.current && explosionSoundRef.current.buffer) {
-                    // Cut the falling sound immediately upon impact
                     if (meteorSoundRef.current?.isPlaying) meteorSoundRef.current.stop();
-                    
                     explosionSoundRef.current.setVolume(isHero ? 4.0 : 0.3);
                     explosionSoundRef.current.setRefDistance(isHero ? 400 : 80);
                     explosionSoundRef.current.play();
                     hasExploded.current = true;
                 }
             } else {
-                // Animate position and rotation
                 ref.current.position.lerpVectors(startPos, targetPos, progress.current);
-                ref.current.lookAt(targetPos); // Point the meteor forward
+                ref.current.lookAt(targetPos);
             }
         }
     });
 
-    // Interaction handlers ONLY applied to the main Hero meteor to read the archive
     const handlePointerOver = (e) => {
         if(!isHero) return;
         e.stopPropagation();
         window.dispatchEvent(new CustomEvent('dino-hover', { detail: { isHovering: true } }));
     };
+
     const handlePointerOut = () => {
         if(!isHero) return;
         window.dispatchEvent(new CustomEvent('dino-hover', { detail: { isHovering: false } }));
     };
+
     const handleClick = (e) => {
         if(!isHero) return;
         e.stopPropagation();
@@ -97,40 +104,23 @@ const Meteor = ({ startPos, targetPos, delay, speed, scale, isHero, hasAudio }) 
 
     return (
         <group ref={ref} scale={scale}>
-            {/* 
-                Group visuals separately so we can set visible={false} upon impact 
-                WITHOUT unmounting/hiding the PositionalAudio nodes, letting the explosion ring out.
-            */}
             <group visible={visible}>
-                <mesh>
-                    <sphereGeometry args={[2, 16, 16]} />
-                    <meshBasicMaterial color="#ffffff" />
-                </mesh>
+                <mesh geometry={_meteorCoreGeo} material={_meteorCoreMat} />
+                <mesh geometry={_meteorGlowGeo} material={_meteorGlowMat} />
+                <mesh position={[0, 0, -30]} rotation={[-Math.PI / 2, 0, 0]} geometry={_meteorTailGeo} material={_meteorTailMat} />
                 
-                <mesh>
-                    <sphereGeometry args={[4, 16, 16]} />
-                    <meshBasicMaterial color="#ff5500" transparent opacity={0.6} blending={THREE.AdditiveBlending} depthWrite={false} />
-                </mesh>
-                
-                <mesh position={[0, 0, -30]} rotation={[-Math.PI / 2, 0, 0]}>
-                    <cylinderGeometry args={[2, 0.1, 60, 16, 1, true]} />
-                    <meteorTrailMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
-                </mesh>
-
                 {isHero && (
                     <mesh
                         scale={[20, 20, 20]}
+                        geometry={_hitboxGeo}
+                        material={_hitboxMat}
                         onPointerOver={handlePointerOver}
                         onPointerOut={handlePointerOut}
                         onClick={handleClick}
-                    >
-                        <sphereGeometry args={[1, 8, 8]} />
-                        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-                    </mesh>
+                    />
                 )}
             </group>
-
-            {/* Spatial Audio Attachments */}
+            
             {hasAudio && (
                 <>
                     <PositionalAudio ref={meteorSoundRef} url="/sounds/jurrasic/meteor.mp3" loop autoplay={false} />
@@ -145,15 +135,12 @@ export default function MeteorEvent({ active }) {
     const [startTime, setStartTime] = useState(0);
     const hasEmittedRef = useRef(false);
 
-    // Record precisely when the strike starts to base all delays off of it
     useFrame((state) => {
         if (active && startTime === 0) {
             setStartTime(state.clock.elapsedTime);
         }
-
-        // Trigger the end of the shower
+        
         if (startTime > 0 && !hasEmittedRef.current) {
-            // Shower duration is 25s + 5s buffer for the final meteors to hit the ground
             if (state.clock.elapsedTime > startTime + 30) {
                 hasEmittedRef.current = true;
                 window.dispatchEvent(new CustomEvent('meteor-shower-complete'));
@@ -164,29 +151,26 @@ export default function MeteorEvent({ active }) {
     const meteors = useMemo(() => {
         const arr = [];
         
-        // 1. Generate 150 Background Showers
         for(let i = 0; i < 150; i++) {
             const startX = (Math.random() - 0.5) * 3000;
             const startY = 800 + Math.random() * 600;
-            const startZ = -1000 - Math.random() * 1500; 
-
+            const startZ = -1000 - Math.random() * 1500;
             const endX = startX + (Math.random() - 0.5) * 1000;
-            const endY = -200; // Bury beneath terrain
-            const endZ = startZ + 1500 + Math.random() * 800; // Streaking towards the camera
+            const endY = -200; 
+            const endZ = startZ + 1500 + Math.random() * 800; 
 
             arr.push({
                 id: i,
                 startPos: new THREE.Vector3(startX, startY, startZ),
                 targetPos: new THREE.Vector3(endX, endY, endZ),
-                delay: Math.random() * 25, // Stagger over 25 massive seconds
+                delay: Math.random() * 25, 
                 speed: 300 + Math.random() * 200,
                 scale: 0.3 + Math.random() * 1.5,
                 isHero: false,
-                hasAudio: i % 7 === 0 // Optimization: Only ~14% of background meteors emit sound to prevent WebAudio limits crashing
+                hasAudio: i % 7 === 0 
             });
         }
         
-        // 2. The Hero Meteor (Massive, comes directly over the volcano early on)
         arr.push({
             id: 'hero',
             startPos: new THREE.Vector3(0, 1200, -1800),
@@ -201,9 +185,6 @@ export default function MeteorEvent({ active }) {
         return arr;
     }, []);
 
-    // Do not render anything until the countdown is over
-    if (startTime === 0) return null;
-
     return (
         <group>
             {meteors.map((m) => (
@@ -211,7 +192,7 @@ export default function MeteorEvent({ active }) {
                     key={m.id}
                     startPos={m.startPos}
                     targetPos={m.targetPos}
-                    delay={startTime + m.delay}
+                    delay={startTime > 0 ? startTime + m.delay : Infinity}
                     speed={m.speed}
                     scale={m.scale}
                     isHero={m.isHero}
@@ -221,3 +202,6 @@ export default function MeteorEvent({ active }) {
         </group>
     );
 }
+
+useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/meteor.mp3");
+useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/explosion.mp3");

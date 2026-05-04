@@ -1,7 +1,11 @@
 import React, { useMemo, memo } from 'react';
 import { useGLTF, Clone } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
+import * as THREE from 'three';
 import { getExactHeight } from './Terrain';
+
+const _boneHitboxGeo = new THREE.BoxGeometry(1, 1, 1);
+const _hitboxMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 
 const LargeBoneModel = memo(function LargeBoneModel({ count = 1, terrainGeo, obstacles = [] }) {
   const { scene } = useGLTF('/models/jurrasic/Largebone.glb');
@@ -9,25 +13,18 @@ const LargeBoneModel = memo(function LargeBoneModel({ count = 1, terrainGeo, obs
   const bones = useMemo(() => {
     const data = [];
     let attempts = 0;
-
-    // Increased attempts because finding a large open space is harder
+    
     while (data.length < count && attempts < count * 50) {
-      // Beach biome is roughly at worldZ > 375
       const x = (Math.random() - 0.5) * 350;
-      const z = 385 + Math.random() * 80; 
+      const z = 385 + Math.random() * 80;
       attempts++;
-
-      const y = getExactHeight(x, z, terrainGeo);
       
-      // Prevent spawning on steep cliffs
+      const y = getExactHeight(x, z, terrainGeo);
       if (y > 4.0) continue;
 
-      // Make it rather big
       const scale = 3.0 + Math.random() * 2.0;
-      // Large collision radius to prevent ammonites or other items from clipping
       const radius = scale * 2.5;
 
-      // STRICT COLLISION: Ensure it doesn't spawn on top of existing ammonites
       let isClipping = false;
       for (let obs of obstacles) {
         if (Math.hypot(obs.x - x, obs.z - z) < (obs.radius + radius)) {
@@ -38,9 +35,8 @@ const LargeBoneModel = memo(function LargeBoneModel({ count = 1, terrainGeo, obs
       if (isClipping) continue;
 
       const rotY = Math.random() * Math.PI * 2;
-      const rotX = (Math.random() - 0.5) * 0.2; // Slight tilt into the sand
-
-      // Sink it into the ground slightly
+      const rotX = (Math.random() - 0.5) * 0.2; 
+      
       data.push({ x, y: y - 0.8, z, scale, rotX, rotY });
       obstacles.push({ x, z, radius, type: 'largebone' });
     }
@@ -70,11 +66,11 @@ const LargeBoneModel = memo(function LargeBoneModel({ count = 1, terrainGeo, obs
             onPointerOut={handlePointerOut}
             onClick={handleClick}
           >
-            {/* Invisible, larger hitbox to make clicking easier */}
-            <mesh visible={false} scale={[b.scale * 3, b.scale * 1.5, b.scale * 3]}>
-              <boxGeometry args={[1, 1, 1]} />
-            </mesh>
-            
+            <mesh 
+              scale={[b.scale * 3, b.scale * 1.5, b.scale * 3]} 
+              geometry={_boneHitboxGeo} 
+              material={_hitboxMat} 
+            />
             <Clone object={scene} scale={b.scale} dispose={null} />
           </group>
         </RigidBody>
@@ -84,5 +80,4 @@ const LargeBoneModel = memo(function LargeBoneModel({ count = 1, terrainGeo, obs
 });
 
 export default LargeBoneModel;
-
 useGLTF.preload('/models/jurrasic/Largebone.glb');

@@ -10,27 +10,27 @@ import { PositionalAudio } from '@react-three/drei';
   useLoader.preload(THREE.AudioLoader, `/sounds/jurrasic/0${num}-footstep.ogg`);
 });
 
-// HOISTED VARIABLES: Prevents GC stuttering
+// HOISTED VARIABLES: Prevents extreme GC stuttering during physics checks
 const _direction = new THREE.Vector3();
 const _rotMatrix = new THREE.Matrix4();
 const _quaternion = new THREE.Quaternion();
 const _euler = new THREE.Euler(0, 0, 0, 'YXZ');
 const _linvelTarget = { x: 0, y: 0, z: 0 };
+const _rayOrigin = { x: 0, y: 0, z: 0 };
+const _rayDir = { x: 0, y: -1, z: 0 };
 
 export default function Player({ hasStarted }) {
   const playerRef = useRef();
   const keys = usePlayerControls();
   const { camera, gl } = useThree();
   const { rapier, world } = useRapier();
-
+  
   const speed = 18;
   const jumpStrength = 8;
   const audioIndexRef = useRef(1);
   const audioRefs = useRef([]);
   const lastStepTime = useRef(0);
 
-  // FIXED: Attach click listener directly to the canvas, NOT the window.
-  // This ensures clicking UI buttons doesn't accidentally lock the pointer.
   useEffect(() => {
     const handleClick = () => {
       if (hasStarted) {
@@ -69,7 +69,6 @@ export default function Player({ hasStarted }) {
     const isLocked = document.pointerLockElement === gl.domElement;
     const controls = keys.current || keys || {};
     
-    // CRITICAL FIX: Only register input if the game is currently "Locked" (Not Paused)
     const forward = isLocked && (controls.forward || false);
     const backward = isLocked && (controls.backward || false);
     const left = isLocked && (controls.left || false);
@@ -96,22 +95,23 @@ export default function Player({ hasStarted }) {
     
     const currentVelX = linvel.x || 0;
     const currentVelZ = linvel.z || 0;
-
+    
     const safeLerpFactor = 1.0 - Math.exp(-15 * delta);
     const smoothX = THREE.MathUtils.lerp(currentVelX, targetX, safeLerpFactor);
     const smoothZ = THREE.MathUtils.lerp(currentVelZ, targetZ, safeLerpFactor);
-
+    
     _linvelTarget.x = smoothX;
     _linvelTarget.y = linvel.y || 0;
     _linvelTarget.z = smoothZ;
 
-    const rayOrigin = { x: pos.x || 0, y: (pos.y || 0) - 0.9, z: pos.z || 0 };
-    const rayDir = { x: 0, y: -1, z: 0 };
-    const ray = new rapier.Ray(rayOrigin, rayDir);
+    // Utilize hoisted objects to heavily reduce memory footprint
+    _rayOrigin.x = pos.x || 0;
+    _rayOrigin.y = (pos.y || 0) - 0.9;
+    _rayOrigin.z = pos.z || 0;
     
+    const ray = new rapier.Ray(_rayOrigin, _rayDir);
     const hit = world.castRay(ray, 0.5, false);
     const isGrounded = hit && hit.toi < 0.3;
-
     const isMoving = (forward || backward || left || right);
 
     if (isMoving && isGrounded && state.clock.elapsedTime - lastStepTime.current > 0.4) {
@@ -141,8 +141,8 @@ export default function Player({ hasStarted }) {
       camera.quaternion.copy(_quaternion);
     }
     
-    if (pos && typeof pos.x === 'number') { 
-       camera.position.set(pos.x, pos.y + 0.8, pos.z);
+    if (pos && typeof pos.x === 'number') {
+        camera.position.set(pos.x, pos.y + 0.8, pos.z);
     }
   });
 
