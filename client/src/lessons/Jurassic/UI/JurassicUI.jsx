@@ -8,8 +8,8 @@ export default function JurassicUI({ hasStarted }) {
   const [hoveredDino, setHoveredDino] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [currentBiome, setCurrentBiome] = useState('dense forest');
-  
   const { getNarration } = useAI();
+  
   const previousModal = useRef(null);
   const hasFinishedIntro = useRef(false);
 
@@ -21,7 +21,6 @@ export default function JurassicUI({ hasStarted }) {
     const handleBiomeChange = (e) => {
         const newBiome = e.detail.biome;
         setCurrentBiome(newBiome);
-
         // Biome Announcement: Only play if intro is done and they aren't reading a modal
         if (hasFinishedIntro.current && activeModal === null) {
             getNarration(
@@ -82,10 +81,18 @@ export default function JurassicUI({ hasStarted }) {
 
   return (
     <div className="absolute inset-0 z-20 pointer-events-none">
-      <div className="absolute bottom-12 w-full px-8 flex justify-center pointer-events-none z-50">
+      
+      {/* 
+        Dynamic Subtitle Positioning: 
+        Rests at bottom-12 normally, but pushes down to bottom-4 when a modal opens 
+        so it doesn't overlap the modal's bottom edge or the enter button.
+      */}
+      <div className={`absolute w-full px-8 flex justify-center pointer-events-none z-[150] transition-all duration-500 ease-in-out ${activeModal ? 'bottom-4' : 'bottom-12'}`}>
         <DialogueBox currentBiome={currentBiome} />
       </div>
+
       <InteractHint visible={hoveredDino && !activeModal} />
+
       <div className="pointer-events-auto">
          <DinoModal type={activeModal} onClose={() => setActiveModal(null)} />
       </div>

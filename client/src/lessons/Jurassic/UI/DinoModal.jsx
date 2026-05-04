@@ -45,41 +45,58 @@ export default function DinoModal({ type, onClose }) {
     const [canClose, setCanClose] = useState(false);
 
     useEffect(() => {
+        let delayTimer;
+        let failsafeTimer;
+
         if (type) {
             // Reset ability to close
             setCanClose(false);
 
-            // Dynamic timer: 3 seconds for tutorial, 10 seconds for historical archives
-            const delay = type === 'tutorial' ? 3000 : 10000;
-            const timer = setTimeout(() => {
+            // Wait for the narration to finish, then wait exactly 3 more seconds
+            const handleNarrationEnded = () => {
+                delayTimer = setTimeout(() => {
+                    setCanClose(true);
+                }, 3000);
+            };
+            window.addEventListener('narration-ended', handleNarrationEnded);
+
+            // Extended failsafe to 60 seconds. This prevents the button from showing up 
+            // before long narrations finish while still providing a fallback if audio crashes.
+            failsafeTimer = setTimeout(() => {
                 setCanClose(true);
-            }, delay);
+            }, 60000); 
 
             // Scope animations to the overlay container for clean cleanup
             let ctx = gsap.context(() => {
                 const tl = gsap.timeline();
+                
                 // 1. Fade in the backdrop overlay
                 tl.fromTo(overlayRef.current, 
                     { opacity: 0 }, 
                     { opacity: 1, duration: 0.4, ease: "power2.out" }
                 );
+
                 // 2. 3D Unfold and spring up the main modal container
                 tl.fromTo(modalRef.current,
                     { opacity: 0, scale: 0.85, y: 60, rotationX: -15, transformPerspective: 1000 },
                     { opacity: 1, scale: 1, y: 0, rotationX: 0, duration: 0.8, ease: "back.out(1.5)" },
                     "<0.1" 
                 );
+
                 // 3. Stagger the appearance of all internal elements marked with 'animate-item'
                 tl.fromTo(".animate-item",
                     { opacity: 0, y: 20 },
                     { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" },
                     "-=0.5" 
                 );
+
             }, overlayRef);
 
-            // Cleanup function to kill animations when unmounted
+            // Cleanup function to kill timers and animations when unmounted
             return () => {
-                clearTimeout(timer);
+                window.removeEventListener('narration-ended', handleNarrationEnded);
+                clearTimeout(delayTimer);
+                clearTimeout(failsafeTimer);
                 ctx.revert();
             };
         }
@@ -101,20 +118,14 @@ export default function DinoModal({ type, onClose }) {
     }, [type, canClose, onClose]);
 
     if (!type) return null;
-
     const data = archiveData[type];
 
     return (
         <div ref={overlayRef} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
             
-            {/* 
-               MODAL CONTAINER: 
-               Restored to max-w-4xl and min-h-[50vh] for a tighter fit. 
-               Changed to overflow-visible so the enter button can hang off the edge.
-            */}
             <div ref={modalRef} className="relative w-[90vw] max-w-4xl min-h-[50vh] bg-[#1a120b] border border-amber-900/50 rounded-3xl shadow-[0_0_60px_rgba(245,158,11,0.15)] flex flex-col overflow-visible">
                 
-                {/* Decorative Top Line - added rounded-t-3xl to match the container's corners safely */}
+                {/* Decorative Top Line */}
                 <div className="h-1.5 w-full bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-80 animate-item rounded-t-3xl"></div>
                 
                 <div className="flex-1 flex flex-col items-center justify-center p-8">
@@ -216,21 +227,15 @@ export default function DinoModal({ type, onClose }) {
                                     <img src={data.images[2]} alt="Archive 3" className="w-full h-full object-contain p-6 opacity-80 group-hover:opacity-100 transition-opacity" />
                                 </div>
                             </div>
-
                         </div>
                     )}
                 </div>
 
-                {/* 
-                    PRESS ENTER COMPONENT (Hangs off the bottom edge artistically)
-                    Styled identically to the Loading Screen start button, but pill-shaped.
-                */}
                 <div className={`absolute -bottom-7 left-1/2 -translate-x-1/2 transition-all duration-700 z-[110] ${canClose ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}>
                     <button 
                         onClick={() => canClose && onClose()}
                         className="group relative px-8 py-3 bg-gradient-to-r from-amber-700 to-amber-900 text-amber-50 rounded-full font-bold tracking-widest uppercase overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(245,158,11,0.4)] hover:shadow-[0_0_40px_rgba(245,158,11,0.7)] transition-all duration-300 hover:scale-105 active:scale-95 border-2 border-amber-500/50 flex items-center gap-3 animate-pulse hover:animate-none"
                     >
-                        {/* Sweeping shine hover effect */}
                         <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full -translate-x-full transition-transform duration-700 ease-out skew-x-12"></div>
                         
                         <span className="relative z-10 flex items-center gap-3">
@@ -245,7 +250,6 @@ export default function DinoModal({ type, onClose }) {
                         </span>
                     </button>
                 </div>
-
             </div>
         </div>
     );

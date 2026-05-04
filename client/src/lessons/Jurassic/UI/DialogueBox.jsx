@@ -51,17 +51,25 @@ export default function DialogueBox({ currentBiome }) {
       return;
     }
 
+    if (!narration) {
+        // If we finished loading but there is no text, dispatch end event to unlock UI immediately
+        window.dispatchEvent(new CustomEvent('narration-ended'));
+        return;
+    }
+
     if (narration) {
       setVisible(true);
       window.__isSpeaking = true;
       
       const wordCount = narration.split(' ').length;
-      const fallbackTime = Math.max(8000, (wordCount * 600) + 5000);
+      
+      // Slightly extended the fallback multiplier to ensure it doesn't cut off slow speakers
+      const fallbackTime = Math.max(8000, (wordCount * 800) + 5000);
 
       if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
 
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); 
+        window.speechSynthesis.cancel();
         
         const sentences = narration.match(/[^.!?]+[.!?]*/g) || [narration];
         const validSentences = sentences.map(s => s.trim()).filter(Boolean);
@@ -73,10 +81,10 @@ export default function DialogueBox({ currentBiome }) {
 
         const voices = window.speechSynthesis.getVoices();
         const scholarVoice = voices.find(v => 
-           v.name.includes('UK') || 
-           v.name.includes('Great Britain') || 
-           v.name.includes('Google UK') ||
-           v.name.includes('English (United Kingdom)')
+            v.name.includes('UK') || 
+            v.name.includes('Great Britain') || 
+            v.name.includes('Google UK') ||
+            v.name.includes('English (United Kingdom)')
         );
 
         validSentences.forEach((text, index) => {
@@ -91,11 +99,13 @@ export default function DialogueBox({ currentBiome }) {
               setVisible(false);
               window.__isSpeaking = false;
               if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
+              window.dispatchEvent(new CustomEvent('narration-ended')); // Unlock UI safely
             };
             utterance.onerror = () => {
               setVisible(false);
               window.__isSpeaking = false;
               if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
+              window.dispatchEvent(new CustomEvent('narration-ended')); // Unlock UI on error safely
             };
           }
 
@@ -108,6 +118,7 @@ export default function DialogueBox({ currentBiome }) {
           setVisible(false);
           window.__isSpeaking = false;
           window.speechSynthesis.cancel();
+          window.dispatchEvent(new CustomEvent('narration-ended'));
         }, fallbackTime);
 
       } else {
@@ -115,6 +126,7 @@ export default function DialogueBox({ currentBiome }) {
         masterTimerRef.current = setTimeout(() => {
           setVisible(false);
           window.__isSpeaking = false;
+          window.dispatchEvent(new CustomEvent('narration-ended'));
         }, readTime);
       }
     }
@@ -124,9 +136,9 @@ export default function DialogueBox({ currentBiome }) {
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
+          exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
           className="subtitle-box"
         >
