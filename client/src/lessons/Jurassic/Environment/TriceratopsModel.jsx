@@ -7,14 +7,15 @@ import { getExactHeight } from './Terrain';
 
 const TriceratopsModel = memo(function TriceratopsModel({ terrainGeo, hasStarted, x = -100, z = 80, scale = 2, rotationY = 4 }) {
   const groupRef = useRef();
-  
+
   // Load Models
   const { scene, animations } = useGLTF('/models/jurrasic/Triceratops.glb');
   const { scene: fernScene } = useGLTF('/models/jurrasic/Fern.glb');
   const { actions, mixer } = useAnimations(animations, groupRef);
-  
+
   // State
   const [yPos, setYPos] = useState(0);
+  const [rot, setRot] = useState([0, rotationY, 0]);
   const [fernY, setFernY] = useState(0);
   const [action, setAction] = useState('idle'); // 'idle', 'eating', 'attack'
   const neckBone = useRef(null);
@@ -24,15 +25,62 @@ const TriceratopsModel = memo(function TriceratopsModel({ terrainGeo, hasStarted
   const fernX = x + Math.sin(rotationY) * fernDist;
   const fernZ = z + Math.cos(rotationY) * fernDist;
 
-  // 1. Terrain Height Alignment (Fixed for proportional scaling so legs don't float)
+  // 1. Terrain Height & Slope Alignment (Fixes floating legs)
   useEffect(() => {
     if (terrainGeo && scene) {
-      // Set flat on the ground. scale * 0.34 ensures the toes touch perfectly regardless of the scale.
-      setYPos(getExactHeight(x, z, terrainGeo) + (scale * 0.34)); 
+      const yawEuler = new THREE.Euler(0, rotationY, 0);
+
+      // Approximate spacing for the Triceratops legs
+      const width = 0.5 * scale;
+      const lengthFront = 0.9 * scale;
+      const lengthBack = -1.1 * scale;
+
+      // Map local feet positions
+      const localFL = new THREE.Vector3(width, 0, lengthFront).applyEuler(yawEuler);
+      const localFR = new THREE.Vector3(-width, 0, lengthFront).applyEuler(yawEuler);
+      const localBL = new THREE.Vector3(width, 0, lengthBack).applyEuler(yawEuler);
+      const localBR = new THREE.Vector3(-width, 0, lengthBack).applyEuler(yawEuler);
+
+      // Get exact terrain height at all 4 feet
+      const hFL = getExactHeight(x + localFL.x, z + localFL.z, terrainGeo);
+      const hFR = getExactHeight(x + localFR.x, z + localFR.z, terrainGeo);
+      const hBL = getExactHeight(x + localBL.x, z + localBL.z, terrainGeo);
+      const hBR = getExactHeight(x + localBR.x, z + localBR.z, terrainGeo);
+
+      const pFL = new THREE.Vector3(x + localFL.x, hFL, z + localFL.z);
+      const pFR = new THREE.Vector3(x + localFR.x, hFR, z + localFR.z);
+      const pBL = new THREE.Vector3(x + localBL.x, hBL, z + localBL.z);
+      const pBR = new THREE.Vector3(x + localBR.x, hBR, z + localBR.z);
+
+      // Calculate average height for the body center
+      const avgH = (hFL + hFR + hBL + hBR) / 4;
+
+      // Calculate the surface normal (the slope)
+      const diag1 = new THREE.Vector3().subVectors(pFL, pBR);
+      const diag2 = new THREE.Vector3().subVectors(pFR, pBL);
+      const normal = new THREE.Vector3().crossVectors(diag1, diag2).normalize();
+
+      if (normal.y < 0) normal.negate();
+
+      const alignQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
+      const baseQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
+
+      // Manual pitch offset to lift the back legs up slightly, making sure they touch the surface
+      // Positive X rotation dips the head down and lifts the back/tail up.
+      const pitchOffset = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.12); 
+
+      alignQuat.multiply(pitchOffset);
+      alignQuat.multiply(baseQuat);
+
+      const finalEuler = new THREE.Euler().setFromQuaternion(alignQuat, 'YXZ');
+
+      setRot([finalEuler.x, finalEuler.y, finalEuler.z]);
+      setYPos(avgH + (scale * 0.15)); // Adjusted base offset to prevent clipping after rotating
+
       // Sink the fern roots slightly into the soil
-      setFernY(getExactHeight(fernX, fernZ, terrainGeo) - 0.2); 
+      setFernY(getExactHeight(fernX, fernZ, terrainGeo) - 0.2);
     }
-  }, [terrainGeo, x, z, fernX, fernZ, scene, scale]);
+  }, [terrainGeo, x, z, fernX, fernZ, scene, scale, rotationY]);
 
   // 2. Bone Discovery
   useEffect(() => {
@@ -54,7 +102,6 @@ const TriceratopsModel = memo(function TriceratopsModel({ terrainGeo, hasStarted
   // 3. Robust Animation State Machine
   useEffect(() => {
     if (!hasStarted || animations.length === 0) return;
-
     const idleName = animations.find(a => a.name.toLowerCase().includes('idle'))?.name || animations[0]?.name;
     
     // Strictly search ONLY for "attack"
@@ -91,6 +138,7 @@ const TriceratopsModel = memo(function TriceratopsModel({ terrainGeo, hasStarted
         return Math.random() > 0.5 ? 'eating' : 'idle'; 
       });
     }, 5000 + Math.random() * 4000); 
+
     return () => clearInterval(interval);
   }, [hasStarted]);
 
@@ -114,7 +162,7 @@ const TriceratopsModel = memo(function TriceratopsModel({ terrainGeo, hasStarted
   return (
     <group>
       {/* TRICERATOPS */}
-      <RigidBody type="fixed" colliders={false} position={[x, yPos, z]} rotation={[0, rotationY, 0]}>
+      <RigidBody type="fixed" colliders={false} position={[x, yPos, z]} rotation={rot}>
         
         {/* Physics Hitbox: Made much thicker/longer to completely prevent walking through it */}
         <CuboidCollider position={[0, 1.5 * scale, 0]} args={[scale * 1.5, scale * 1.8, scale * 3.5]} />
