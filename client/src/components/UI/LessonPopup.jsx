@@ -5,6 +5,19 @@ import { X, Play, Award, BarChart3, Clock, BookOpen } from 'lucide-react';
 export default function LessonPopup({ lesson, onClose, onPlay }) {
   if (!lesson) return null;
 
+  // Map the string values to their respective filenames
+  const medalAssetMap = {
+      gold: 'medal1',
+      silver: 'medal2',
+      bronze: 'medal3'
+  };
+
+  // Safely resolve the filename, defaulting to the raw prop if no match is found
+  const getMedalFilename = (medalName) => {
+      if (!medalName) return null;
+      return medalAssetMap[medalName.toLowerCase()] || medalName;
+  };
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[100] p-4">
       {/* 1. Backdrop Overlay */}
@@ -23,19 +36,26 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
         className="relative w-full max-w-lg bg-[#1a120b] border border-amber-900/50 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]"
       >
-        {/* Decorative Top Border */}
         <div className="h-1.5 w-full bg-gradient-to-r from-transparent via-amber-600 to-transparent" />
 
-        {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full bg-amber-900/20 text-amber-500 hover:bg-amber-500 hover:text-amber-950 transition-all z-10"
+          className="absolute top-5 right-5 p-2 rounded-full bg-amber-900/20 text-amber-500 hover:bg-amber-500 hover:text-amber-950 transition-all z-20"
         >
           <X size={20} />
         </button>
 
-        <div className="p-8 md:p-10">
-          {/* Header */}
+        {lesson.medal && (
+          <div className="absolute top-6 right-16 z-20 flex items-center justify-center bg-[#1a120b]/80 p-2 rounded-full border border-amber-500/30 backdrop-blur-md shadow-lg">
+             <img 
+                src={`/assets/${getMedalFilename(lesson.medal)}.png`} 
+                alt={`${lesson.medal} medal`} 
+                className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]" 
+             />
+          </div>
+        )}
+
+        <div className="p-8 md:p-10 relative z-10">
           <div className="mb-6">
             <div className="flex items-center gap-2 text-amber-500 mb-2">
               <BookOpen size={16} />
@@ -46,12 +66,10 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
             </h2>
           </div>
 
-          {/* Description */}
           <p className="text-amber-200/60 leading-relaxed mb-8 font-body italic border-l-2 border-amber-900/50 pl-4">
             "{lesson.description}"
           </p>
 
-          {/* Stats Grid */}
           <div className="grid grid-cols-2 gap-4 mb-10">
             <div className="bg-black/30 p-4 rounded-2xl border border-amber-900/30">
               <div className="flex items-center gap-2 text-amber-500/70 mb-2">
@@ -69,7 +87,6 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
                 />
               </div>
             </div>
-
             <div className="bg-black/30 p-4 rounded-2xl border border-amber-900/30">
               <div className="flex items-center gap-2 text-amber-500/70 mb-2">
                 <Award size={14} />
@@ -80,7 +97,6 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
             <button
               onClick={onClose}
@@ -99,7 +115,6 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
           </div>
         </div>
 
-        {/* Decorative corner accent */}
         <div className="absolute bottom-0 right-0 opacity-5 pointer-events-none">
           <Clock size={120} className="text-amber-100 -mb-8 -mr-8" />
         </div>

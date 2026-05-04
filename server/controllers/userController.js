@@ -1,8 +1,8 @@
 import User from '../models/User.js';
 
-// @desc    Get user profile
-// @route   GET /api/users/profile
-// @access  Private
+// @desc   Get user profile
+// @route  GET /api/users/profile
+// @access Private
 export const getUserProfile = async (req, res) => {
   const user = await User.findById(req.user._id);
   if (user) {
@@ -13,16 +13,17 @@ export const getUserProfile = async (req, res) => {
       avatarSeed: user.avatarSeed,
       title: user.title,
       bio: user.bio,
-      stats: user.stats
+      stats: user.stats,
+      achievements: user.achievements
     });
   } else {
     res.status(404).json({ message: 'User not found' });
   }
 };
 
-// @desc    Update user profile
-// @route   PUT /api/users/profile
-// @access  Private
+// @desc   Update user profile
+// @route  PUT /api/users/profile
+// @access Private
 export const updateUserProfile = async (req, res) => {
   const user = await User.findById(req.user._id);
 
@@ -45,9 +46,51 @@ export const updateUserProfile = async (req, res) => {
       avatarSeed: updatedUser.avatarSeed,
       title: updatedUser.title,
       bio: updatedUser.bio,
-      stats: updatedUser.stats
+      stats: updatedUser.stats,
+      achievements: updatedUser.achievements
     });
   } else {
     res.status(404).json({ message: 'User not found' });
+  }
+};
+
+// @desc   Update user achievements from a lesson
+// @route  POST /api/users/achievements
+// @access Private
+export const updateAchievements = async (req, res) => {
+  try {
+    const { lessonId, eventsFound, totalEvents, medal } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const existingIndex = user.achievements.findIndex(a => a.lessonId === lessonId);
+
+    if (existingIndex !== -1) {
+      // Only update if they found MORE events than their previous best run
+      if (eventsFound > user.achievements[existingIndex].eventsFound) {
+        user.achievements[existingIndex].eventsFound = eventsFound;
+        user.achievements[existingIndex].medal = medal;
+        user.achievements[existingIndex].unlockedAt = Date.now();
+      }
+    } else {
+      // First time completing this specific lesson
+      user.achievements.push({ lessonId, eventsFound, totalEvents, medal });
+      user.stats.erasExplored += 1;
+    }
+
+    // Add newly found artifacts to their total global stats
+    user.stats.artifactsFound += eventsFound;
+    
+    await user.save();
+    
+    res.status(200).json({ 
+      achievements: user.achievements, 
+      stats: user.stats 
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to record achievement.', error: error.message });
   }
 };

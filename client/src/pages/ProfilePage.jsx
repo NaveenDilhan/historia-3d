@@ -8,23 +8,21 @@ import {
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  
-  // State
+
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState(null);
-  
-  // User Data State
+
   const [profile, setProfile] = useState({
     name: "",
     email: "",
     bio: "",
     avatarSeed: "",
     title: "",
-    stats: { knowledgePoints: 0, erasExplored: 0, artifactsFound: 0 }
+    stats: { knowledgePoints: 0, erasExplored: 0, artifactsFound: 0 },
+    achievements: [] // Added achievements array
   });
 
-  // Edit Form State
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -32,7 +30,19 @@ export default function ProfilePage() {
     avatarSeed: ""
   });
 
-  // 1. Fetch Profile on Mount
+  // Map the string values to their respective filenames
+  const medalAssetMap = {
+      gold: 'medal1',
+      silver: 'medal2',
+      bronze: 'medal3'
+  };
+
+  // Safely resolve the filename, defaulting to the raw prop if no match is found
+  const getMedalFilename = (medalName) => {
+      if (!medalName) return null;
+      return medalAssetMap[medalName.toLowerCase()] || medalName;
+  };
+
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -41,14 +51,16 @@ export default function ProfilePage() {
     try {
       const res = await fetch("http://localhost:5000/api/users/profile", {
         method: "GET", 
-        // ✅ CRITICAL FIX: Include credentials to send the HTTP-only cookie
         credentials: "include", 
-        headers: { "Content-Type": "application/json" } 
+        headers: { "Content-Type": "application/json" }
       });
 
       if (res.ok) {
         const data = await res.json();
-        setProfile(data);
+        setProfile({
+            ...data,
+            achievements: data.achievements || []
+        });
         setFormData({
           name: data.name,
           email: data.email,
@@ -56,7 +68,6 @@ export default function ProfilePage() {
           avatarSeed: data.avatarSeed
         });
       } else {
-        // If 401 Unauthorized, redirect to login
         navigate("/login");
       }
     } catch (error) {
@@ -67,21 +78,22 @@ export default function ProfilePage() {
     }
   };
 
-  // 2. Handle Profile Update
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
       const res = await fetch("http://localhost:5000/api/users/profile", {
         method: "PUT",
-        credentials: "include", // ✅ Must also include credentials here
+        credentials: "include", 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
       if (res.ok) {
         const updatedData = await res.json();
-        setProfile(updatedData);
-        // Update local storage for immediate UI consistency elsewhere
+        setProfile({
+            ...updatedData,
+            achievements: updatedData.achievements || []
+        });
         localStorage.setItem("userInfo", JSON.stringify({ 
           name: updatedData.name, 
           email: updatedData.email 
@@ -98,12 +110,11 @@ export default function ProfilePage() {
     setTimeout(() => setMessage(null), 3000);
   };
 
-  // 3. Handle Logout
   const handleLogout = async () => {
     try {
         await fetch("http://localhost:5000/api/auth/logout", { 
             method: "POST",
-            credentials: "include" // ✅ Include credentials to delete the cookie on server
+            credentials: "include" 
         });
     } catch (error) {
         console.error("Logout failed", error);
@@ -196,6 +207,7 @@ export default function ProfilePage() {
                 <>
                   <h2 className="text-2xl font-heading font-bold text-amber-100">{profile.name}</h2>
                   <p className="text-amber-500 text-sm uppercase tracking-widest font-bold mt-1 mb-4">{profile.title}</p>
+                  
                   <div className="inline-block bg-amber-950/40 px-4 py-2 rounded-lg border border-amber-900/30 text-amber-200/60 text-sm italic">
                     "{profile.bio}"
                   </div>
@@ -227,6 +239,7 @@ export default function ProfilePage() {
 
           {/* RIGHT COLUMN */}
           <div className="lg:col-span-2 space-y-8">
+            
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -309,11 +322,35 @@ export default function ProfilePage() {
                     <h3 className="font-heading text-xl text-amber-100">Scholarly Achievements</h3>
                   </div>
                   
-                  <div className="text-center py-10 opacity-60">
-                     <Trophy className="w-12 h-12 text-amber-900 mx-auto mb-3" />
-                     <p className="text-amber-200/50 text-sm">No major achievements recorded in the archives yet.</p>
-                     <p className="text-amber-500/40 text-xs mt-1">Complete lessons to earn badges.</p>
-                  </div>
+                  {profile.achievements && profile.achievements.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-2">
+                      {profile.achievements.map((ach) => (
+                        <div key={ach.lessonId} className="bg-black/30 p-4 rounded-2xl border border-amber-900/30 flex flex-col items-center justify-center hover:border-amber-500/50 transition-colors shadow-inner">
+                          <img 
+                            src={`/assets/${getMedalFilename(ach.medal)}.png`} 
+                            alt={`${ach.medal} medal`} 
+                            className="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(245,158,11,0.3)] mb-3" 
+                          />
+                          <p className="text-amber-100 font-bold text-sm capitalize font-heading tracking-wider">{ach.lessonId}</p>
+                          <p className={`text-[10px] uppercase tracking-widest mt-1 font-bold ${
+                              ach.medal === 'gold' ? 'text-yellow-400' : 
+                              ach.medal === 'silver' ? 'text-gray-300' : 'text-orange-400'
+                          }`}>
+                            {ach.medal} Medal
+                          </p>
+                          <p className="text-[10px] text-amber-200/40 mt-2">
+                            {ach.eventsFound} / {ach.totalEvents} Events
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 opacity-60">
+                      <Trophy className="w-12 h-12 text-amber-900 mx-auto mb-3" />
+                      <p className="text-amber-200/50 text-sm">No major achievements recorded in the archives yet.</p>
+                      <p className="text-amber-500/40 text-xs mt-1">Complete lessons to earn medals.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>
@@ -335,5 +372,5 @@ function StatCard({ icon, value, label }) {
         <p className="text-[10px] uppercase tracking-widest text-amber-500 font-bold">{label}</p>
       </div>
     </div>
-  )
+  );
 }

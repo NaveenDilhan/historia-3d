@@ -1,70 +1,92 @@
-import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Compass, ChevronLeft, Star, PlayCircle, Clock, LogIn } from 'lucide-react'
-import LessonPopup from '../components/UI/LessonPopup'
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Compass, ChevronLeft, Star, PlayCircle, Clock, LogIn } from 'lucide-react';
+import LessonPopup from '../components/UI/LessonPopup';
 
 export default function ExplorePage() {
-  const [lessons, setLessons] = useState([])
-  const [selectedLesson, setSelectedLesson] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const navigate = useNavigate()
+  const [lessons, setLessons] = useState([]);
+  const [userAchievements, setUserAchievements] = useState([]);
+  const [selectedLesson, setSelectedLesson] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // --- AUTH STATE ---
+  const navigate = useNavigate();
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState({
     name: "",
     avatar: ""
   });
 
-  // 1. Check Local Storage for User on Mount
+  // Map the string values to their respective filenames
+  const medalAssetMap = {
+      gold: 'medal1',
+      silver: 'medal2',
+      bronze: 'medal3'
+  };
+
+  // Safely resolve the filename, defaulting to the raw prop if no match is found
+  const getMedalFilename = (medalName) => {
+      if (!medalName) return null;
+      return medalAssetMap[medalName.toLowerCase()] || medalName;
+  };
+
   useEffect(() => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-
     if (userInfo) {
       setIsLoggedIn(true);
       setUser({
         name: userInfo.name,
-        // Generate consistent avatar based on name
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.name}`
       });
+
+      // Fetch user achievements to attach medals to the lesson cards
+      fetch("http://localhost:5000/api/users/profile", { credentials: "include" })
+        .then(res => res.json())
+        .then(data => {
+            if (data.achievements) setUserAchievements(data.achievements);
+        })
+        .catch(console.error);
     }
   }, []);
 
-  // 2. Fetch Lessons
   useEffect(() => {
     const fetchLessons = async () => {
       try {
-        setLoading(true)
-        // Ensure this matches your backend route
-        const response = await fetch('http://localhost:5000/api/lessons') 
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/lessons');
         
         if (!response.ok) {
-          throw new Error('Failed to fetch from the Great Library')
+          throw new Error('Failed to fetch from the Great Library');
         }
-
-        const lessonData = await response.json()
-        setLessons(lessonData)
+        
+        const lessonData = await response.json();
+        setLessons(lessonData);
       } catch (err) {
-        console.error('Error fetching lessons:', err)
-        setError(err.message)
+        console.error('Error fetching lessons:', err);
+        setError(err.message);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    fetchLessons()
-  }, [])
+    };
+    fetchLessons();
+  }, []);
+
+  // Helper to check if a user has a medal for a given lesson
+  const getMedalForLesson = (lesson) => {
+      const lessonId = lesson.slug || lesson.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      const ach = userAchievements.find(a => a.lessonId === lessonId);
+      return ach ? ach.medal : null;
+  };
 
   return (
     <div className="min-h-screen text-amber-50 font-body overflow-x-hidden selection:bg-amber-500/30 relative">
       
-      {/* ---------------- GLOBAL STYLES ---------------- */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Lato:wght@400;700&display=swap');
         .font-heading { font-family: 'Cinzel', serif; }
         .font-body { font-family: 'Lato', sans-serif; }
-
         .ancient-wall-bg {
           background-color: #1a120b;
           background-image: 
@@ -75,15 +97,12 @@ export default function ExplorePage() {
         }
       `}</style>
 
-      {/* Background Layers */}
       <div className="fixed inset-0 ancient-wall-bg z-[-2]"></div>
       <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/40 to-black z-[-1]"></div>
 
-      {/* ---------------- NAVIGATION ---------------- */}
       <nav className="sticky top-0 w-full z-50 px-6 py-4">
         <div className="max-w-7xl mx-auto bg-[#1a120b]/80 backdrop-blur-xl border border-amber-900/30 shadow-2xl rounded-2xl px-6 py-3 flex justify-between items-center">
           
-          {/* Logo */}
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate("/")}>
             <div className="group-hover:rotate-6 transition-transform flex items-center justify-center">
                <img src="assets/scroll.png" alt="Scroll Icon" className="w-9 h-9 object-contain rounded-lg" />
@@ -91,13 +110,11 @@ export default function ExplorePage() {
             <h1 className="text-xl font-heading font-bold text-amber-100 tracking-widest">HISTORIA</h1>
           </div>
 
-          {/* Right Actions */}
           <div className="hidden md:flex items-center space-x-8">
             <button onClick={() => navigate("/")} className="text-amber-200/70 hover:text-amber-100 flex items-center gap-2 transition-colors">
               <ChevronLeft size={16} /> Back
             </button>
             
-            {/* Dynamic Profile Button */}
             {isLoggedIn ? (
               <button 
                 onClick={() => navigate("/profile")}
@@ -121,7 +138,6 @@ export default function ExplorePage() {
         </div>
       </nav>
 
-      {/* ---------------- MAIN CONTENT ---------------- */}
       <main className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-10">
         
         <header className="mb-16 text-center">
@@ -159,59 +175,67 @@ export default function ExplorePage() {
             }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
-            {lessons.map((lesson) => (
-              <motion.div
-                key={lesson._id}
-                variants={{
-                  hidden: { opacity: 0, scale: 0.9 },
-                  visible: { opacity: 1, scale: 1 }
-                }}
-                whileHover={{ y: -10 }}
-                onClick={() => setSelectedLesson(lesson)}
-                className="group cursor-pointer relative bg-[#1a130e]/60 backdrop-blur-sm border border-amber-900/40 rounded-2xl overflow-hidden hover:border-amber-500/50 transition-all duration-300 shadow-xl"
-              >
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-700 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
-
-                <div className="p-8">
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-[10px] uppercase tracking-[0.3em] text-amber-600 font-bold border border-amber-900/50 px-2 py-1 rounded">
-                      Era {lesson.era || 'I'}
-                    </span>
-                    <Star className="w-4 h-4 text-amber-500 fill-amber-500/20" />
-                  </div>
-
-                  <h3 className="text-2xl font-heading font-bold text-amber-100 mb-3 group-hover:text-amber-400 transition-colors">
-                    {lesson.title}
-                  </h3>
+            {lessons.map((lesson) => {
+              const medal = getMedalForLesson(lesson);
+              return (
+                <motion.div
+                  key={lesson._id}
+                  variants={{
+                    hidden: { opacity: 0, scale: 0.9 },
+                    visible: { opacity: 1, scale: 1 }
+                  }}
+                  whileHover={{ y: -10 }}
+                  onClick={() => setSelectedLesson({ ...lesson, medal })}
+                  className="group cursor-pointer relative bg-[#1a130e]/60 backdrop-blur-sm border border-amber-900/40 rounded-2xl overflow-hidden hover:border-amber-500/50 transition-all duration-300 shadow-xl"
+                >
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-700 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                   
-                  <p className="text-amber-200/50 text-sm leading-relaxed mb-6 line-clamp-3">
-                    {lesson.description}
-                  </p>
+                  {medal && (
+                      <div className="absolute top-4 right-4 z-10">
+                          <img src={`/assets/${getMedalFilename(medal)}.png`} alt={`${medal} badge`} className="w-8 h-8 drop-shadow-lg opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all" />
+                      </div>
+                  )}
 
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-amber-700">
-                      <span>Scholarly Progress</span>
-                      <span>{lesson.progress || 0}%</span>
+                  <div className="p-8">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[10px] uppercase tracking-[0.3em] text-amber-600 font-bold border border-amber-900/50 px-2 py-1 rounded">
+                        Era {lesson.era || 'I'}
+                      </span>
                     </div>
-                    <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden border border-amber-950">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${lesson.progress || 0}%` }}
-                        className="h-full bg-gradient-to-r from-amber-900 via-amber-600 to-amber-400"
-                      ></motion.div>
+                    
+                    <h3 className="text-2xl font-heading font-bold text-amber-100 mb-3 group-hover:text-amber-400 transition-colors">
+                      {lesson.title}
+                    </h3>
+                    
+                    <p className="text-amber-200/50 text-sm leading-relaxed mb-6 line-clamp-3">
+                      {lesson.description}
+                    </p>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-amber-700">
+                        <span>Scholarly Progress</span>
+                        <span>{lesson.progress || 0}%</span>
+                      </div>
+                      <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden border border-amber-950">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${lesson.progress || 0}%` }}
+                          className="h-full bg-gradient-to-r from-amber-900 via-amber-600 to-amber-400"
+                        ></motion.div>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="px-8 py-4 bg-amber-950/20 border-t border-amber-900/30 flex items-center justify-between group-hover:bg-amber-900/30 transition-colors">
-                  <div className="flex items-center gap-2 text-amber-200/40 text-xs">
-                    <Clock size={12} />
-                    <span>{lesson.readTime || '15 min read'}</span>
+                  
+                  <div className="px-8 py-4 bg-amber-950/20 border-t border-amber-900/30 flex items-center justify-between group-hover:bg-amber-900/30 transition-colors">
+                    <div className="flex items-center gap-2 text-amber-200/40 text-xs">
+                      <Clock size={12} />
+                      <span>{lesson.readTime || '15 min read'}</span>
+                    </div>
+                    <PlayCircle className="text-amber-500 group-hover:scale-110 transition-transform" size={24} />
                   </div>
-                  <PlayCircle className="text-amber-500 group-hover:scale-110 transition-transform" size={24} />
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </motion.div>
         )}
       </main>
@@ -226,14 +250,12 @@ export default function ExplorePage() {
         </div>
       </footer>
 
-<AnimatePresence>
+      <AnimatePresence>
         {selectedLesson && (
-          <LessonPopup
+          <LessonPopup 
             lesson={selectedLesson}
             onClose={() => setSelectedLesson(null)}
             onPlay={() => {
-              // 1. Strictly use the database slug.
-              // 2. If it's an old DB entry missing a slug, dynamically create one to prevent a crash.
               const routeId = selectedLesson.slug || selectedLesson.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
               setSelectedLesson(null);
               navigate(`/scene/${routeId}`);
@@ -242,5 +264,5 @@ export default function ExplorePage() {
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

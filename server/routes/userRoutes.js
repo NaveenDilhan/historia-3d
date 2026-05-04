@@ -1,5 +1,9 @@
 import express from 'express';
-import { getUserProfile, updateUserProfile } from '../controllers/userController.js';
+import { 
+  getUserProfile, 
+  updateUserProfile, 
+  updateAchievements 
+} from '../controllers/userController.js';
 import protect from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -8,5 +12,9 @@ const router = express.Router();
 router.route('/profile')
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
+
+// Route for logging completed lesson achievements
+router.route('/achievements')
+  .post(protect, updateAchievements);
 
 export default router;

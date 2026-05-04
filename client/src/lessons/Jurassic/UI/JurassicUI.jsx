@@ -11,12 +11,16 @@ export default function JurassicUI({ hasStarted }) {
   const [currentBiome, setCurrentBiome] = useState('dense forest');
   const [showLessonComplete, setShowLessonComplete] = useState(false);
   
+  // --- ACHIEVEMENT TRACKING ---
+  const [discoveredEvents, setDiscoveredEvents] = useState(new Set());
+  const [earnedMedal, setEarnedMedal] = useState(null);
+  const totalEvents = 8; 
+
   const { getNarration } = useAI();
-  
   const previousModal = useRef(null);
   const hasFinishedIntro = useRef(false);
   const hasTriggeredCongratsRef = useRef(false);
-  const isApocalypseRef = useRef(false); // Sequence block
+  const isApocalypseRef = useRef(false); 
 
   // Custom Modal Close Handler to track sequences
   const handleModalClose = () => {
@@ -28,9 +32,32 @@ export default function JurassicUI({ hasStarted }) {
           isApocalypseRef.current = true;
           window.dispatchEvent(new CustomEvent('geothermal-modal-closed'));
       } else if (closedType === 'meteor') {
-          // The Chicxulub modal just closed. Trigger the final congratulations.
+          // The Chicxulub modal just closed. Trigger the final congratulations and calculate achievement.
           setTimeout(() => {
               hasTriggeredCongratsRef.current = true;
+
+              // CALCULATE MEDAL
+              const score = discoveredEvents.size;
+              let medal = null;
+              if (score === totalEvents) medal = 'gold';
+              else if (score >= Math.floor(totalEvents * 0.6)) medal = 'silver';
+              else if (score > 0) medal = 'bronze';
+              
+              setEarnedMedal(medal);
+
+              // UPDATE DATABASE
+              fetch("http://localhost:5000/api/users/achievements", {
+                  method: "POST",
+                  credentials: "include",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                      lessonId: "jurassic",
+                      eventsFound: score,
+                      totalEvents: totalEvents,
+                      medal: medal
+                  })
+              }).catch(console.error);
+
               getNarration(
                   "The lesson has concluded.",
                   "Warmly congratulate the user on surviving the cataclysm and completing the Late Cretaceous simulation. Tell them their findings have been safely recorded in the Historia archives.",
@@ -53,8 +80,6 @@ export default function JurassicUI({ hasStarted }) {
     const handleBiomeChange = (e) => {
         const newBiome = e.detail.biome;
         setCurrentBiome(newBiome);
-
-        // Do not announce biomes if the apocalypse sequence has begun
         if (hasFinishedIntro.current && activeModal === null && !showLessonComplete && !isApocalypseRef.current) {
             getNarration(
                 `The user just crossed the border into the ${newBiome} biome.`,
@@ -64,7 +89,6 @@ export default function JurassicUI({ hasStarted }) {
         }
     };
 
-    // SEQUENCE STEP 2: The sky turns red, meteors fall, start narration
     const handleStrikeStarted = () => {
         getNarration(
             "The meteor strike has begun.",
@@ -73,14 +97,12 @@ export default function JurassicUI({ hasStarted }) {
         );
     };
 
-    // SEQUENCE STEP 3: The 30s shower finishes. Wait 2 seconds, pop the Meteor Info Modal
     const handleShowerComplete = () => {
         setTimeout(() => {
             setActiveModal('meteor');
         }, 2000);
     };
     
-    // SEQUENCE STEP 5: The Congratulatory Audio finishes -> Wait 5s -> Show End Screen
     const handleNarrationEnded = () => {
         if (hasTriggeredCongratsRef.current) {
             hasTriggeredCongratsRef.current = false;
@@ -107,7 +129,6 @@ export default function JurassicUI({ hasStarted }) {
     };
   }, [getNarration, showLessonComplete]);
 
-  // The Tutorial Voiceover Trigger
   useEffect(() => {
     if (hasStarted) {
       const timer = setTimeout(() => {
@@ -122,10 +143,17 @@ export default function JurassicUI({ hasStarted }) {
     }
   }, [hasStarted, getNarration]);
 
-  // Grand Greeting & General Artifact Interactions
   useEffect(() => {
+      // TRACK EVENTS FOR ACHIEVEMENTS
+      if (activeModal && activeModal !== 'tutorial') {
+          setDiscoveredEvents(prev => {
+              const newSet = new Set(prev);
+              newSet.add(activeModal);
+              return newSet;
+          });
+      }
+
       if (previousModal.current === 'tutorial' && activeModal === null) {
-          // Tutorial closed -> Grand Welcome
           hasFinishedIntro.current = true;
           getNarration(
               "The tutorial just closed and the user is looking at the world.",
@@ -133,14 +161,12 @@ export default function JurassicUI({ hasStarted }) {
               true
           );
       } else if (activeModal === 'meteor') {
-          // Meteor Modal opened -> Scientific Explanation
           getNarration(
               "The user is reading about the Chicxulub Meteorite.",
               "Give a brief, scientific explanation of the Chicxulub impactor (e.g. its estimated size, the crater it left, or its atmospheric effects). DO NOT repeat the dramatic description of the falling meteors, as you just did that.",
               true
           );
       } else if (activeModal !== null && activeModal !== 'tutorial') {
-          // General artifact logic
           getNarration(
               `The user just interacted with a ${activeModal} and opened its archive.`,
               `Smoothly pivot and provide a fascinating, conversational fact about ${activeModal} in the Late Cretaceous period.`,
@@ -154,6 +180,13 @@ export default function JurassicUI({ hasStarted }) {
 
   return (
     <div className="absolute inset-0 z-20 pointer-events-none">
+      {/* HUD Tracker */}
+      {!showLessonComplete && (
+          <div className="absolute top-6 left-6 z-[150] bg-[#1a120b]/80 border border-amber-900/50 rounded-2xl p-4 backdrop-blur-md shadow-lg pointer-events-auto">
+              <p className="text-amber-500 font-bold uppercase tracking-widest text-[10px] mb-1">Events Found</p>
+              <p className="text-amber-100 font-heading text-xl">{discoveredEvents.size} / {totalEvents}</p>
+          </div>
+      )}
       
       <div className={`absolute w-full px-8 flex justify-center pointer-events-none z-[150] transition-all duration-500 ease-in-out ${activeModal ? 'bottom-4' : 'bottom-12'}`}>
         <DialogueBox currentBiome={currentBiome} />
@@ -166,8 +199,9 @@ export default function JurassicUI({ hasStarted }) {
       </div>
 
       <LessonCompleteOverlay 
-         show={showLessonComplete} 
-         message="You have witnessed the cataclysm that ended the Cretaceous period. The simulation has successfully concluded."
+          show={showLessonComplete} 
+          message="You have witnessed the cataclysm that ended the Cretaceous period. The simulation has successfully concluded."
+          medal={earnedMedal}
       />
     </div>
   );

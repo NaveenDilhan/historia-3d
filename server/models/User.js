@@ -14,15 +14,20 @@ const userSchema = new mongoose.Schema({
     erasExplored: { type: Number, default: 0 },
     artifactsFound: { type: Number, default: 0 },
     knowledgePoints: { type: Number, default: 0 }
-  }
+  },
+  // Achievement tracking
+  achievements: [{
+    lessonId: { type: String, required: true },
+    medal: { type: String, enum: ['gold', 'silver', 'bronze', null] },
+    eventsFound: { type: Number, default: 0 },
+    totalEvents: { type: Number, default: 0 },
+    unlockedAt: { type: Date, default: Date.now }
+  }]
 }, { timestamps: true });
 
-// ✅ FIXED: Removed 'next' parameter
+// Hash password before saving
 userSchema.pre('save', async function () {
-  // If password is not modified, simply return (exits the function)
   if (!this.isModified('password')) return;
-
-  // Otherwise, hash the password
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
