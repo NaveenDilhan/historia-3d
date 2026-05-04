@@ -10,7 +10,7 @@ const archiveData = {
         images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
     },
     apatosaurus: {
-        title: "APATOSAURUS",
+        title: "ALAMOSAURUS",
         images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
     },
     triceratops: {
@@ -34,7 +34,7 @@ const archiveData = {
         images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
     },
     meteor: {
-        title: "METEOR STREAK",
+        title: "CHICXULUB METEORITE",
         images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
     }
 };
