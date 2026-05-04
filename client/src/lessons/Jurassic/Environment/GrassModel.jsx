@@ -5,10 +5,10 @@ import { getExactHeight, getDistToRexPath } from './Terrain';
 
 const GrassModel = memo(function GrassModel({ count = 200, bounds, terrainGeo }) {
   const grassModels = [
-    useGLTF('/models/grass1.glb'),
-    useGLTF('/models/grass2.glb'),
-    useGLTF('/models/grass3.glb'),
-    useGLTF('/models/grass4.glb'),
+    useGLTF('/models/jurrasic/grass1.glb'),
+    useGLTF('/models/jurrasic/grass2.glb'),
+    useGLTF('/models/jurrasic/grass3.glb'),
+    useGLTF('/models/jurrasic/grass4.glb'),
   ];
 
   const grasses = useMemo(() => {
@@ -66,7 +66,7 @@ const GrassModel = memo(function GrassModel({ count = 200, bounds, terrainGeo })
 
 export default GrassModel;
 
-useGLTF.preload('/models/grass1.glb');
-useGLTF.preload('/models/grass2.glb');
-useGLTF.preload('/models/grass3.glb');
-useGLTF.preload('/models/grass4.glb');
+useGLTF.preload('/models/jurrasic/grass1.glb');
+useGLTF.preload('/models/jurrasic/grass2.glb');
+useGLTF.preload('/models/jurrasic/grass3.glb');
+useGLTF.preload('/models/jurrasic/grass4.glb');

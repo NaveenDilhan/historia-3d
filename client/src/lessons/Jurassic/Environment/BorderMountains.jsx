@@ -3,8 +3,8 @@ import { useGLTF, Clone } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
 
 const BorderMountains = memo(function BorderMountains({ obstacles = [] }) {
-  const { scene: mountainScene } = useGLTF('/models/mountain1.glb');
-  const { scene: volcanoScene } = useGLTF('/models/volcano.glb');
+  const { scene: mountainScene } = useGLTF('/models/jurrasic/mountain1.glb');
+  const { scene: volcanoScene } = useGLTF('/models/jurrasic/volcano.glb');
 
   const borderElements = useMemo(() => {
     const elements = [];
@@ -88,5 +88,5 @@ const BorderMountains = memo(function BorderMountains({ obstacles = [] }) {
 
 export default BorderMountains;
 
-useGLTF.preload('/models/mountain1.glb');
-useGLTF.preload('/models/volcano.glb');
+useGLTF.preload('/models/jurrasic/mountain1.glb');
+useGLTF.preload('/models/jurrasic/volcano.glb');

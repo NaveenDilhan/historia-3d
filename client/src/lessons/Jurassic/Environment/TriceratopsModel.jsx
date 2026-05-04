@@ -9,8 +9,8 @@ const TriceratopsModel = memo(function TriceratopsModel({ terrainGeo, hasStarted
   const groupRef = useRef();
   
   // Load Models
-  const { scene, animations } = useGLTF('/models/Triceratops.glb');
-  const { scene: fernScene } = useGLTF('/models/Fern.glb');
+  const { scene, animations } = useGLTF('/models/jurrasic/Triceratops.glb');
+  const { scene: fernScene } = useGLTF('/models/jurrasic/Fern.glb');
   const { actions, mixer } = useAnimations(animations, groupRef);
   
   // State
@@ -163,5 +163,5 @@ const TriceratopsModel = memo(function TriceratopsModel({ terrainGeo, hasStarted
 
 export default TriceratopsModel;
 
-useGLTF.preload('/models/Triceratops.glb');
-useGLTF.preload('/models/Fern.glb');
+useGLTF.preload('/models/jurrasic/Triceratops.glb');
+useGLTF.preload('/models/jurrasic/Fern.glb');

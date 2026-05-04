@@ -5,9 +5,9 @@ import { getExactHeight, getDistToRexPath } from './Terrain';
 
 const RockModel = memo(function RockModel({ count = 100, bounds, terrainGeo, obstacles = [] }) {
   const rockModels = [
-    useGLTF('/models/rock1.glb'),
-    useGLTF('/models/rock2.glb'),
-    useGLTF('/models/rock3.glb'),
+    useGLTF('/models/jurrasic/rock1.glb'),
+    useGLTF('/models/jurrasic/rock2.glb'),
+    useGLTF('/models/jurrasic/rock3.glb'),
   ];
 
   const rocks = useMemo(() => {
@@ -58,6 +58,6 @@ const RockModel = memo(function RockModel({ count = 100, bounds, terrainGeo, obs
 
 export default RockModel;
 
-useGLTF.preload('/models/rock1.glb');
-useGLTF.preload('/models/rock2.glb');
-useGLTF.preload('/models/rock3.glb');
+useGLTF.preload('/models/jurrasic/rock1.glb');
+useGLTF.preload('/models/jurrasic/rock2.glb');
+useGLTF.preload('/models/jurrasic/rock3.glb');

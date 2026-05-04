@@ -49,4 +49,4 @@ export default function DinosaurEncounter({ terrainGeo, hasStarted }) {
   );
 }
 
-useGLTF.preload('/models/T-Rex.glb');
+useGLTF.preload('/models/jurrasic/T-Rex.glb');

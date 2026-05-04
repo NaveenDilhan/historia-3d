@@ -6,7 +6,7 @@ import { getExactHeight } from './Terrain';
 
 const ApatosaurusModel = memo(function ApatosaurusModel({ terrainGeo, hasStarted, x = 20, z = -200, scale = 5.0 }) {
   const dinoRef = useRef();
-  const { scene, animations } = useGLTF('/models/Apatosaurus.glb');
+  const { scene, animations } = useGLTF('/models/jurrasic/Apatosaurus.glb');
   const { actions } = useAnimations(animations, dinoRef);
   
   const [yPos, setYPos] = useState(0);
@@ -117,4 +117,4 @@ const ApatosaurusModel = memo(function ApatosaurusModel({ terrainGeo, hasStarted
 });
 
 export default ApatosaurusModel;
-useGLTF.preload('/models/Apatosaurus.glb');
+useGLTF.preload('/models/jurrasic/Apatosaurus.glb');

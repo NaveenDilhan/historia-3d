@@ -33,8 +33,8 @@ const flowerArrangement = [
 
 const InteractiveBush = memo(({ x, y, z, scale, rotY }) => {
     // 1. Load the models
-    const { nodes, materials } = useGLTF('/models/Bush.glb');
-    const flowerGLTF = useGLTF('/models/FlowerPetal1.glb');
+    const { nodes, materials } = useGLTF('/models/jurrasic/Bush.glb');
+    const flowerGLTF = useGLTF('/models/jurrasic/FlowerPetal1.glb');
     
     // 2. Fix the material transparency & shadow casting
     useEffect(() => {
@@ -172,5 +172,5 @@ const InteractiveBush = memo(({ x, y, z, scale, rotY }) => {
 export default InteractiveBush;
 
 // Make sure these match your actual public folder paths
-useGLTF.preload('/models/Bush.glb');
-useGLTF.preload('/models/FlowerPetal1.glb');
+useGLTF.preload('/models/jurrasic/Bush.glb');
+useGLTF.preload('/models/jurrasic/FlowerPetal1.glb');

@@ -16,7 +16,7 @@ const _up = new THREE.Vector3(0, 1, 0);
 export default function DinosaurModel({ curve, speed = 0.02, scale = 3.0, animate = true, visible = true, terrainGeo }) {
   const groupRef = useRef();
   const dinoRef = useRef();
-  const { scene, animations } = useGLTF('/models/T-Rex.glb');
+  const { scene, animations } = useGLTF('/models/jurrasic/T-Rex.glb');
   const { actions, mixer } = useAnimations(animations, dinoRef);
   
   const progressRef = useRef(0);
@@ -204,4 +204,4 @@ export default function DinosaurModel({ curve, speed = 0.02, scale = 3.0, animat
   );
 }
 
-useGLTF.preload('/models/T-Rex.glb');
+useGLTF.preload('/models/jurrasic/T-Rex.glb');

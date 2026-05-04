@@ -12,9 +12,9 @@ const isPositionValid = (x, z, obstacles, minDist) => {
 };
 
 const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 200, bounds, terrainGeo, treeScale = 1, obstacles = [] }) {
-  const genericModels = [useGLTF('/models/tree1.glb'), useGLTF('/models/tree2.glb'), useGLTF('/models/tree3.glb'), useGLTF('/models/tree4.glb'), useGLTF('/models/tree5.glb')];
-  const pineModels = [useGLTF('/models/pine1.glb'), useGLTF('/models/pine2.glb'), useGLTF('/models/pine3.glb'), useGLTF('/models/pine4.glb')];
-  const deadModels = [useGLTF('/models/dead1.glb'), useGLTF('/models/dead2.glb'), useGLTF('/models/dead3.glb'), useGLTF('/models/dead4.glb'), useGLTF('/models/dead5.glb')];
+  const genericModels = [useGLTF('/models/jurrasic/tree1.glb'), useGLTF('/models/jurrasic/tree2.glb'), useGLTF('/models/jurrasic/tree3.glb'), useGLTF('/models/jurrasic/tree4.glb'), useGLTF('/models/jurrasic/tree5.glb')];
+  const pineModels = [useGLTF('/models/jurrasic/pine1.glb'), useGLTF('/models/jurrasic/pine2.glb'), useGLTF('/models/jurrasic/pine3.glb'), useGLTF('/models/jurrasic/pine4.glb')];
+  const deadModels = [useGLTF('/models/jurrasic/dead1.glb'), useGLTF('/models/jurrasic/dead2.glb'), useGLTF('/models/jurrasic/dead3.glb'), useGLTF('/models/jurrasic/dead4.glb'), useGLTF('/models/jurrasic/dead5.glb')];
 
   const MAX_HEIGHT = 8.5;
 
@@ -112,17 +112,17 @@ const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 2
 
 export default TreeForest;
 
-useGLTF.preload('/models/tree1.glb');
-useGLTF.preload('/models/tree2.glb');
-useGLTF.preload('/models/tree3.glb');
-useGLTF.preload('/models/tree4.glb');
-useGLTF.preload('/models/tree5.glb');
-useGLTF.preload('/models/pine1.glb');
-useGLTF.preload('/models/pine2.glb');
-useGLTF.preload('/models/pine3.glb');
-useGLTF.preload('/models/pine4.glb');
-useGLTF.preload('/models/dead1.glb');
-useGLTF.preload('/models/dead2.glb');
-useGLTF.preload('/models/dead3.glb');
-useGLTF.preload('/models/dead4.glb');
-useGLTF.preload('/models/dead5.glb');
+useGLTF.preload('/models/jurrasic/tree1.glb');
+useGLTF.preload('/models/jurrasic/tree2.glb');
+useGLTF.preload('/models/jurrasic/tree3.glb');
+useGLTF.preload('/models/jurrasic/tree4.glb');
+useGLTF.preload('/models/jurrasic/tree5.glb');
+useGLTF.preload('/models/jurrasic/pine1.glb');
+useGLTF.preload('/models/jurrasic/pine2.glb');
+useGLTF.preload('/models/jurrasic/pine3.glb');
+useGLTF.preload('/models/jurrasic/pine4.glb');
+useGLTF.preload('/models/jurrasic/dead1.glb');
+useGLTF.preload('/models/jurrasic/dead2.glb');
+useGLTF.preload('/models/jurrasic/dead3.glb');
+useGLTF.preload('/models/jurrasic/dead4.glb');
+useGLTF.preload('/models/jurrasic/dead5.glb');

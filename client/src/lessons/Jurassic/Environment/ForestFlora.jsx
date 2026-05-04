@@ -5,10 +5,10 @@ import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { getExactHeight, getDistToRexPath } from './Terrain';
 
 const ForestFlora = memo(function ForestFlora({ count = 300, bounds, terrainGeo, obstacles = [] }) {
-  const fernModel = useGLTF('/models/Fern.glb');
-  const clover1Model = useGLTF('/models/Clover1.glb');
-  const clover2Model = useGLTF('/models/Clover2.glb');
-  const mushroomModel = useGLTF('/models/Mushroom.glb');
+  const fernModel = useGLTF('/models/jurrasic/Fern.glb');
+  const clover1Model = useGLTF('/models/jurrasic/Clover1.glb');
+  const clover2Model = useGLTF('/models/jurrasic/Clover2.glb');
+  const mushroomModel = useGLTF('/models/jurrasic/Mushroom.glb');
 
   const models = [
     { scene: fernModel.scene, type: 'fern', scaleFactor: 1.5, sway: true, radius: 1.0 },
@@ -96,7 +96,7 @@ const ForestFlora = memo(function ForestFlora({ count = 300, bounds, terrainGeo,
 
 export default ForestFlora;
 
-useGLTF.preload('/models/Fern.glb');
-useGLTF.preload('/models/Clover1.glb');
-useGLTF.preload('/models/Clover2.glb');
-useGLTF.preload('/models/Mushroom.glb');
+useGLTF.preload('/models/jurrasic/Fern.glb');
+useGLTF.preload('/models/jurrasic/Clover1.glb');
+useGLTF.preload('/models/jurrasic/Clover2.glb');
+useGLTF.preload('/models/jurrasic/Mushroom.glb');

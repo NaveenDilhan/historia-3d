@@ -21,9 +21,9 @@ const isPositionValid = (x, z, currentTrees, obstacles, minDist) => {
 
 const DesertDeadTrees = memo(function DesertDeadTrees({ terrainGeo, count = 15, obstacles = [] }) {
   const genericModels = [
-    useGLTF('/models/dead1.glb'),
-    useGLTF('/models/dead2.glb'),
-    useGLTF('/models/dead3.glb')
+    useGLTF('/models/jurrasic/dead1.glb'),
+    useGLTF('/models/jurrasic/dead2.glb'),
+    useGLTF('/models/jurrasic/dead3.glb')
   ];
 
   const MIN_DIST = 18;
@@ -81,6 +81,6 @@ const DesertDeadTrees = memo(function DesertDeadTrees({ terrainGeo, count = 15, 
 export default DesertDeadTrees;
 
 // Aggressively preload models to eliminate mounting lag
-useGLTF.preload('/models/dead1.glb');
-useGLTF.preload('/models/dead2.glb');
-useGLTF.preload('/models/dead3.glb');
+useGLTF.preload('/models/jurrasic/dead1.glb');
+useGLTF.preload('/models/jurrasic/dead2.glb');
+useGLTF.preload('/models/jurrasic/dead3.glb');

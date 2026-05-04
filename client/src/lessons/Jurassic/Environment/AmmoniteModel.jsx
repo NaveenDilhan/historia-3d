@@ -5,7 +5,7 @@ import { getExactHeight } from './Terrain';
 
 const AmmoniteModel = memo(function AmmoniteModel({ count = 25, terrainGeo, obstacles = [] }) {
   // Make sure you have an ammonite.glb in your public/models folder
-  const { scene } = useGLTF('/models/Ammonite.glb');
+  const { scene } = useGLTF('/models/jurrasic/Ammonite.glb');
 
   const ammonites = useMemo(() => {
     const data = [];
@@ -70,4 +70,4 @@ const AmmoniteModel = memo(function AmmoniteModel({ count = 25, terrainGeo, obst
 });
 
 export default AmmoniteModel;
-useGLTF.preload('/models/Ammonite.glb');
+useGLTF.preload('/models/jurrasic/Ammonite.glb');

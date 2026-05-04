@@ -4,7 +4,7 @@ import { RigidBody } from '@react-three/rapier';
 import { getExactHeight } from './Terrain';
 
 const LargeBoneModel = memo(function LargeBoneModel({ count = 1, terrainGeo, obstacles = [] }) {
-  const { scene } = useGLTF('/models/Largebone.glb');
+  const { scene } = useGLTF('/models/jurrasic/Largebone.glb');
 
   const bones = useMemo(() => {
     const data = [];
@@ -85,4 +85,4 @@ const LargeBoneModel = memo(function LargeBoneModel({ count = 1, terrainGeo, obs
 
 export default LargeBoneModel;
 
-useGLTF.preload('/models/Largebone.glb');
+useGLTF.preload('/models/jurrasic/Largebone.glb');
