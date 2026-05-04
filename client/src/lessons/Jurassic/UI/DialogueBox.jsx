@@ -5,8 +5,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function DialogueBox({ currentBiome }) {
   const { narration, loading, getNarration } = useAI();
   const [visible, setVisible] = useState(false);
+  
+  // Kill switch for ambient facts
+  const [ambientActive, setAmbientActive] = useState(true);
+  
   const masterTimerRef = useRef(null);
   const ambientTimerRef = useRef(null);
+
+  // Stop ambient loop when the apocalypse begins
+  useEffect(() => {
+    const handleGeothermalClosed = () => {
+      setAmbientActive(false); // Permanently stop random facts
+      if (ambientTimerRef.current) clearTimeout(ambientTimerRef.current);
+    };
+    
+    window.addEventListener('geothermal-modal-closed', handleGeothermalClosed);
+    return () => window.removeEventListener('geothermal-modal-closed', handleGeothermalClosed);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -21,7 +36,8 @@ export default function DialogueBox({ currentBiome }) {
 
   // THE 10-SECOND AMBIENT LOOP
   useEffect(() => {
-    if (visible || loading) {
+    // If the apocalypse has started, or we are already speaking, cancel the timer
+    if (!ambientActive || visible || loading) {
       if (ambientTimerRef.current) clearTimeout(ambientTimerRef.current);
       return;
     }
@@ -31,7 +47,7 @@ export default function DialogueBox({ currentBiome }) {
     ambientTimerRef.current = setTimeout(() => {
       if (!window.__isAILoading && !window.__isSpeaking) {
         getNarration(
-          `The player is exploring the ${currentBiome} biome.`, 
+          `The user is exploring the ${currentBiome} biome.`, 
           `Share a fascinating, conversational fact about what the ${currentBiome} would have looked like in the Late Cretaceous period. Keep it fresh, human-like, and highly immersive.`,
           false // Normal ambient facts do not force-interrupt
         );
@@ -39,7 +55,7 @@ export default function DialogueBox({ currentBiome }) {
     }, delay);
 
     return () => clearTimeout(ambientTimerRef.current);
-  }, [visible, loading, getNarration, currentBiome]);
+  }, [visible, loading, getNarration, currentBiome, ambientActive]);
 
   // CUTOFF PREVENTION & AUDIO ENGINE
   useEffect(() => {
@@ -52,7 +68,6 @@ export default function DialogueBox({ currentBiome }) {
     }
 
     if (!narration) {
-        // If we finished loading but there is no text, dispatch end event to unlock UI immediately
         window.dispatchEvent(new CustomEvent('narration-ended'));
         return;
     }
@@ -62,8 +77,6 @@ export default function DialogueBox({ currentBiome }) {
       window.__isSpeaking = true;
       
       const wordCount = narration.split(' ').length;
-      
-      // Slightly extended the fallback multiplier to ensure it doesn't cut off slow speakers
       const fallbackTime = Math.max(8000, (wordCount * 800) + 5000);
 
       if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
@@ -72,18 +85,18 @@ export default function DialogueBox({ currentBiome }) {
         window.speechSynthesis.cancel();
         
         const sentences = narration.match(/[^.!?]+[.!?]*/g) || [narration];
-        const validSentences = sentences.map(s => s.trim()).filter(Boolean);
+        // Strip out all quotes so the TTS engine doesn't say "quote"
+        const validSentences = sentences.map(s => s.replace(/["“”]/g, '').trim()).filter(Boolean);
         
         if (validSentences.length === 0) return;
 
-        // Global array prevents Chrome Garbage Collection bug from muting audio
         window.__speechUtterances = []; 
 
         const voices = window.speechSynthesis.getVoices();
         const scholarVoice = voices.find(v => 
-            v.name.includes('UK') || 
-            v.name.includes('Great Britain') || 
-            v.name.includes('Google UK') ||
+             v.name.includes('UK') || 
+             v.name.includes('Great Britain') || 
+             v.name.includes('Google UK') ||
             v.name.includes('English (United Kingdom)')
         );
 
@@ -93,19 +106,18 @@ export default function DialogueBox({ currentBiome }) {
           utterance.pitch = 0.8;
           if (scholarVoice) utterance.voice = scholarVoice;
 
-          // Strictly use native onend so it waits until the audio completely finishes
           if (index === validSentences.length - 1) {
             utterance.onend = () => {
               setVisible(false);
               window.__isSpeaking = false;
               if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
-              window.dispatchEvent(new CustomEvent('narration-ended')); // Unlock UI safely
+              window.dispatchEvent(new CustomEvent('narration-ended'));
             };
             utterance.onerror = () => {
               setVisible(false);
               window.__isSpeaking = false;
               if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
-              window.dispatchEvent(new CustomEvent('narration-ended')); // Unlock UI on error safely
+              window.dispatchEvent(new CustomEvent('narration-ended'));
             };
           }
 
@@ -113,7 +125,6 @@ export default function DialogueBox({ currentBiome }) {
           window.speechSynthesis.speak(utterance);
         });
 
-        // Failsafe timer just in case browser API bugs out
         masterTimerRef.current = setTimeout(() => {
           setVisible(false);
           window.__isSpeaking = false;
@@ -143,7 +154,7 @@ export default function DialogueBox({ currentBiome }) {
           className="subtitle-box"
         >
           <div className="subtitle-text">
-            {narration}
+            {narration.replace(/["“”]/g, '')}
           </div>
         </motion.div>
       )}

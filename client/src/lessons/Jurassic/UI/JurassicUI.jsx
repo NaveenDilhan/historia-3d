@@ -12,9 +12,11 @@ export default function JurassicUI({ hasStarted }) {
   const [showLessonComplete, setShowLessonComplete] = useState(false);
   
   const { getNarration } = useAI();
+  
   const previousModal = useRef(null);
   const hasFinishedIntro = useRef(false);
   const hasTriggeredCongratsRef = useRef(false);
+  const isApocalypseRef = useRef(false); // Sequence block
 
   // Custom Modal Close Handler to track sequences
   const handleModalClose = () => {
@@ -22,16 +24,16 @@ export default function JurassicUI({ hasStarted }) {
       setActiveModal(null);
       
       if (closedType === 'geothermal') {
-          // Tell the Scene to start the 10-second countdown for the meteor
+          // Tell the Scene to start the meteor sequence and block ambient events
+          isApocalypseRef.current = true;
           window.dispatchEvent(new CustomEvent('geothermal-modal-closed'));
       } else if (closedType === 'meteor') {
-          // The user finished reading about the meteor. 
-          // Wait a few seconds, then play the congratulation message.
+          // The Chicxulub modal just closed. Trigger the final congratulations.
           setTimeout(() => {
               hasTriggeredCongratsRef.current = true;
               getNarration(
                   "The lesson has concluded.",
-                  "Warmly congratulate the student on surviving the cataclysm and completing the Late Cretaceous lesson. Tell them their findings have been safely recorded in the Historia archives.",
+                  "Warmly congratulate the user on surviving the cataclysm and completing the Late Cretaceous simulation. Tell them their findings have been safely recorded in the Historia archives.",
                   true
               );
           }, 3000);
@@ -43,7 +45,6 @@ export default function JurassicUI({ hasStarted }) {
     
     // Normal interaction clicks
     const handleClick = (e) => {
-        // Prevent opening modals if the lesson complete screen is up
         if (!showLessonComplete) {
             setActiveModal(prev => prev ? prev : e.detail.type);
         }
@@ -52,10 +53,12 @@ export default function JurassicUI({ hasStarted }) {
     const handleBiomeChange = (e) => {
         const newBiome = e.detail.biome;
         setCurrentBiome(newBiome);
-        if (hasFinishedIntro.current && activeModal === null && !showLessonComplete) {
+
+        // Do not announce biomes if the apocalypse sequence has begun
+        if (hasFinishedIntro.current && activeModal === null && !showLessonComplete && !isApocalypseRef.current) {
             getNarration(
-                `The student just crossed the border into the ${newBiome} biome.`,
-                `Conversationaly announce that they have entered the ${newBiome} biome. Give them an exciting hint about what type of terrain, plants, or dinosaurs they can expect to see here in the Late Cretaceous.`,
+                `The user just crossed the border into the ${newBiome} biome.`,
+                `Conversationally announce that they have entered the ${newBiome} biome. Give them an exciting hint about what type of terrain, plants, or dinosaurs they can expect to see here in the Late Cretaceous.`,
                 true 
             );
         }
@@ -110,8 +113,8 @@ export default function JurassicUI({ hasStarted }) {
       const timer = setTimeout(() => {
           setActiveModal('tutorial');
           getNarration(
-              "The student just started the simulation and is looking at the control tutorial.",
-              "Briefly instruct the student to use WASD to navigate the terrain and the mouse to look around and extract artifacts.",
+              "Tutorial Instructions.",
+              "STRICT RULES: NO greetings. NO pleasantries. NO introductory words. ONLY state: Use the W, A, S, and D keys to move, the mouse to look around, and Left Click to interact with artifacts.",
               true
           );
       }, 2000);
@@ -122,16 +125,24 @@ export default function JurassicUI({ hasStarted }) {
   // Grand Greeting & General Artifact Interactions
   useEffect(() => {
       if (previousModal.current === 'tutorial' && activeModal === null) {
+          // Tutorial closed -> Grand Welcome
           hasFinishedIntro.current = true;
           getNarration(
-              "The tutorial just closed and the student is looking at the world.",
-              "Warmly welcome the traveler to the Late Cretaceous Period. Set a grand, cinematic, and adventurous tone.",
+              "The tutorial just closed and the user is looking at the world.",
+              "Warmly welcome them to the Late Cretaceous Period. Set a grand, cinematic, and adventurous tone.",
               true
           );
-      } else if (activeModal !== null && activeModal !== 'tutorial' && activeModal !== 'meteor') {
+      } else if (activeModal === 'meteor') {
+          // Meteor Modal opened -> Scientific Explanation
+          getNarration(
+              "The user is reading about the Chicxulub Meteorite.",
+              "Give a brief, scientific explanation of the Chicxulub impactor (e.g. its estimated size, the crater it left, or its atmospheric effects). DO NOT repeat the dramatic description of the falling meteors, as you just did that.",
+              true
+          );
+      } else if (activeModal !== null && activeModal !== 'tutorial') {
           // General artifact logic
           getNarration(
-              `The student just interacted with a ${activeModal} and opened its archive.`,
+              `The user just interacted with a ${activeModal} and opened its archive.`,
               `Smoothly pivot and provide a fascinating, conversational fact about ${activeModal} in the Late Cretaceous period.`,
               true
           );
@@ -151,15 +162,13 @@ export default function JurassicUI({ hasStarted }) {
       <InteractHint visible={hoveredDino && !activeModal} />
       
       <div className="pointer-events-auto">
-         {/* Pass our custom handleModalClose so we can track when specific modals close */}
          <DinoModal type={activeModal} onClose={handleModalClose} />
       </div>
 
       <LessonCompleteOverlay 
-        show={showLessonComplete} 
-        message="You have witnessed the cataclysm that ended the Cretaceous period. The simulation has successfully concluded."
+         show={showLessonComplete} 
+         message="You have witnessed the cataclysm that ended the Cretaceous period. The simulation has successfully concluded."
       />
-
     </div>
   );
 }

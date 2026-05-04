@@ -9,11 +9,11 @@ export default function useAI() {
       setNarration(e.detail.narration);
       setLoading(e.detail.loading);
     };
+
     window.addEventListener('ai-narration-update', handleAIUpdate);
     return () => window.removeEventListener('ai-narration-update', handleAIUpdate);
   }, []);
 
-  // forceInterrupt ensures we can cleanly cut off ambient facts when the user clicks something
   const getNarration = useCallback(async (userAction, context = '', forceInterrupt = false) => {
     if (window.__isAILoading && !forceInterrupt) return;
     if (window.__isSpeaking && !forceInterrupt) return;
@@ -27,16 +27,21 @@ export default function useAI() {
       window.__isAILoading = true;
       setLoading(true);
       
-      window.dispatchEvent(new CustomEvent('ai-narration-update', { 
-         detail: { narration: '', loading: true } 
-       }));
+      window.dispatchEvent(new CustomEvent('ai-narration-update', {
+          detail: { narration: '', loading: true }
+        }));
 
-      // PERSONA: Human-like, Late Cretaceous, never repeats facts.
       const scholarContext = `
-        SYSTEM PROMPT: You are a passionate, conversational historical scholar acting as an interactive tour guide for a student in a Late Cretaceous period simulation. 
-        TONE: Extremely human-like, warm, observant, and engaging. Speak as if you are walking right beside them on this adventure.
+        SYSTEM PROMPT: You are a passionate, conversational historical scholar acting as an interactive tour guide in a Late Cretaceous period simulation.
+        
+        TONE: Human-like, warm, observant, and engaging.
+        
         RULE 1: 1 to 2 short sentences maximum.
         RULE 2: NEVER repeat a fact or phrase you have already shared. Keep it fresh.
+        RULE 3: NEVER use terms like "young traveler", "traveler", "student", or "explorer".
+        RULE 4: NEVER wrap your response in quotes. Return raw text only.
+        RULE 5: If the prompt asks for instructions, provide ONLY the instructions. No greetings, no pleasantries, no "hello", no "welcome", no conversational filler.
+        
         CURRENT ENVIRONMENT/ACTION: ${userAction} - ${context}
       `;
 
@@ -49,9 +54,9 @@ export default function useAI() {
       const data = await res.json();
       const newText = data.narration || '';
       
-      window.dispatchEvent(new CustomEvent('ai-narration-update', { 
-         detail: { narration: newText, loading: false } 
-       }));
+      window.dispatchEvent(new CustomEvent('ai-narration-update', {
+          detail: { narration: newText, loading: false }
+        }));
 
     } catch (err) {
       console.error('AI call failed', err);
