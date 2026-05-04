@@ -1,5 +1,5 @@
 import React, { Suspense, useState, useRef, useEffect } from 'react';
-import { Canvas, useLoader } from '@react-three/fiber';
+import { Canvas, useLoader, useFrame, useThree } from '@react-three/fiber';
 import { Sky, Environment, Cloud, Sparkles, PositionalAudio, Preload } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
@@ -25,7 +25,6 @@ useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/forest.mp3");
 useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/volcano.mp3");
 useLoader.preload(THREE.AudioLoader, "/sounds/jurrasic/ocean.mp3");
 
-// Define scattered locations in the volcanic biome (Z < -400)
 const VENT_LOCATIONS = [
   { x: -50, y: 15, z: -450, scale: 1.2 },
   { x: 120, y: 22, z: -520, scale: 1.8 },
@@ -73,22 +72,45 @@ function BiomeAudio({ hasStarted }) {
   );
 }
 
+// Tracks the player's Z position and triggers biome-change events
+function BiomeTracker() {
+  const { camera } = useThree();
+  const lastBiome = useRef('dense forest');
+
+  useFrame(() => {
+    const z = camera.position.z;
+    let currentBiome = 'dense forest';
+    
+    // Thresholds matched perfectly to the Terrain blending logic
+    if (z >= 360) currentBiome = 'coastal beach';
+    else if (z >= -50 && z < 360) currentBiome = 'dense forest';
+    else if (z >= -400 && z < -50) currentBiome = 'arid desert';
+    else if (z < -400) currentBiome = 'active volcanic';
+
+    if (currentBiome !== lastBiome.current) {
+      lastBiome.current = currentBiome;
+      window.dispatchEvent(new CustomEvent('biome-change', { detail: { biome: currentBiome } }));
+    }
+  });
+
+  return null;
+}
+
 export default function Scene({ hasStarted }) {
   const [terrainGeo, setTerrainGeo] = useState(null);
 
   return (
     <>
-      {/* 3D Scene Layer */}
       <Canvas shadows dpr={[1, 2]} camera={{ fov: 60, far: 10000 }} gl={{ antialias: true, toneMappingExposure: 1.1 }}>
         <color attach="background" args={['#597a61']} />
-        
-        {/* FOG: The new Geothermal vents will now correctly respect this exact fog definition */}
         <fogExp2 attach="fog" args={['#597a61', 0.012]} />
+        
+        {/* Invisible Biome Tracker */}
+        <BiomeTracker />
         
         <Suspense fallback={null}>
           <Lighting />
           
-          {/* Rapier Physics Engine */}
           <Physics gravity={[0, -9.81, 0]}>
             <Terrain setTerrainGeo={setTerrainGeo} />
             
@@ -96,7 +118,6 @@ export default function Scene({ hasStarted }) {
               <>
                 <DinosaurEncounter terrainGeo={terrainGeo} hasStarted={hasStarted} />
                 
-                {/* Scatter the new Procedural Steam Vents */}
                 {VENT_LOCATIONS.map((pos, index) => (
                     <GeothermalVent key={`vent-${index}`} x={pos.x} y={pos.y} z={pos.z} scale={pos.scale} />
                 ))}
@@ -104,25 +125,11 @@ export default function Scene({ hasStarted }) {
                 <MeteorEvent hasStarted={hasStarted} />
                 
                 <Suspense fallback={null}>
-                  <ApatosaurusModel
-                      terrainGeo={terrainGeo}
-                      hasStarted={hasStarted}
-                      x={20}
-                      z={-200}
-                      scale={5.0}
-                  />
+                  <ApatosaurusModel terrainGeo={terrainGeo} hasStarted={hasStarted} x={20} z={-200} scale={5.0} />
                 </Suspense>
                 
-                {/* TRICERATOPS - Placed at the far left edge of the forest */}
                 <Suspense fallback={null}>
-                  <TriceratopsModel
-                      terrainGeo={terrainGeo}
-                      hasStarted={hasStarted}
-                      x={-100}
-                      z={80}
-                      scale={2}
-                      rotationY={Math.PI / 4}
-                  />
+                  <TriceratopsModel terrainGeo={terrainGeo} hasStarted={hasStarted} x={-100} z={80} scale={2} rotationY={Math.PI / 4} />
                 </Suspense>
 
                 <Suspense fallback={null}>
@@ -134,7 +141,6 @@ export default function Scene({ hasStarted }) {
 
           <BiomeAudio hasStarted={hasStarted} />
           
-          {/* Atmosphere & Environment */}
           <Sparkles count={1500} scale={300} size={4} speed={0.2} opacity={0.2} color="#ffddaa" />
           <Cloud position={[-40, 50, -60]} speed={0.15} opacity={0.6} scale={2.5} color="#ffd8a8" />
           <Cloud position={[50, 60, 30]} speed={0.1} opacity={0.4} scale={3} color="#ffebd6" />
@@ -149,18 +155,9 @@ export default function Scene({ hasStarted }) {
           <Preload all />
         </Suspense>
 
-        <Sky
-          distance={450000}
-          sunPosition={[1500, 400, -500]}
-          inclination={0.48}
-          azimuth={0.25}
-          turbidity={20}
-          rayleigh={2.5}
-          mieCoefficient={0.06}
-          mieDirectionalG={0.85}
-        />
+        <Sky distance={450000} sunPosition={[1500, 400, -500]} inclination={0.48} azimuth={0.25} turbidity={20} rayleigh={2.5} mieCoefficient={0.06} mieDirectionalG={0.85} />
       </Canvas>
-
+      
       {/* 2D UI Layer */}
       <JurassicUI hasStarted={hasStarted} />
     </>
