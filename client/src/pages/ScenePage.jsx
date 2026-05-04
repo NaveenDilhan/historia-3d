@@ -37,10 +37,9 @@ const LessonNotFound = () => {
 export default function ScenePage() {
   const { lessonId } = useParams();
   const navigate = useNavigate();
-
+  
   const ActiveScene = SceneMap[lessonId];
   const { active, progress, total, errors } = useProgress();
-
   const [hasLoaded, setHasLoaded] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
@@ -49,7 +48,7 @@ export default function ScenePage() {
   const [isPaused, setIsPaused] = useState(false);
   const [soundMuted, setSoundMuted] = useState(window.__soundMuted || false);
   const [subsMuted, setSubsMuted] = useState(window.__subtitlesMuted || false);
-
+  
   const overlayRef = useRef(null);
   const canvasWrapperRef = useRef(null);
   const hasStartedRef = useRef(false);
@@ -74,19 +73,13 @@ export default function ScenePage() {
 
   // --- PREVENT BROWSER BACK BUTTON ---
   useEffect(() => {
-    // Push an initial state to hijack the back button
     window.history.pushState(null, '', window.location.pathname);
-
     const handlePopState = (event) => {
-      // Push state again so they remain on this page
       window.history.pushState(null, '', window.location.pathname);
-      
-      // Force the game to pause when they attempt to leave via browser back button
-      if (hasStartedRef.current) {
-         document.exitPointerLock(); 
+      if (hasStartedRef.current) { 
+        document.exitPointerLock(); 
       }
     };
-
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -94,33 +87,40 @@ export default function ScenePage() {
   // --- PAUSE LOGIC (ESC KEY DETECTION) ---
   useEffect(() => {
     const handlePointerLockChange = () => {
-      // If the browser loses pointer lock (ESC pressed) and the game has started -> PAUSE
       if (!document.pointerLockElement && hasStartedRef.current) {
         setIsPaused(true);
       } else {
         setIsPaused(false);
       }
     };
-
     document.addEventListener('pointerlockchange', handlePointerLockChange);
     return () => document.removeEventListener('pointerlockchange', handlePointerLockChange);
   }, []);
 
-  // --- AUDIO SUSPENSION LOGIC ---
+  // --- AUDIO & VOICE SUSPENSION LOGIC ---
   useEffect(() => {
     const ctx = THREE.AudioContext.getContext();
-    if (isPaused || soundMuted) {
+    if (isPaused) {
+      // Pause environment audio
       if (ctx.state === 'running') ctx.suspend();
+      // Pause voice narration mid-sentence
+      if ('speechSynthesis' in window) window.speechSynthesis.pause(); 
     } else {
-      if (ctx.state === 'suspended') ctx.resume();
+      // Only resume if sound is not explicitly muted
+      if (!soundMuted && ctx.state === 'suspended') ctx.resume();
+      if (!soundMuted && 'speechSynthesis' in window) window.speechSynthesis.resume();
+    }
+    
+    // Hard cancel if muted
+    if (soundMuted && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
     }
   }, [isPaused, soundMuted]);
 
   const handleStart = () => {
-    // CRITICAL FIX: Instantly request pointer lock exactly on click to satisfy browser security
     const canvas = document.querySelector('canvas');
     if (canvas) canvas.requestPointerLock();
-
+    
     setIsRevealing(true);
     const tl = gsap.timeline({
       onComplete: () => {
@@ -145,7 +145,7 @@ export default function ScenePage() {
   // --- MENU ACTIONS ---
   const handleResume = () => {
     const canvas = document.querySelector('canvas');
-    if (canvas) canvas.requestPointerLock(); // requesting pointer lock auto-closes menu via event listener
+    if (canvas) canvas.requestPointerLock(); 
   };
 
   const toggleSound = () => {
@@ -166,17 +166,15 @@ export default function ScenePage() {
 
   const handleQuit = () => {
     const ctx = THREE.AudioContext.getContext();
-    if (ctx.state === 'suspended') ctx.resume(); // Ensure audio runs for other pages
+    if (ctx.state === 'suspended') ctx.resume(); 
     window.__isSpeaking = false;
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     document.exitPointerLock();
-    // Using { replace: true } prevents them from going "forward" back into the hijacked state
     navigate('/explore', { replace: true });
   };
 
   return (
     <div className="scene-page relative w-full h-screen overflow-hidden bg-black">
-      
       {/* Intro Loading Screen */}
       {!hasStarted && ActiveScene && (
         <div ref={overlayRef} className="absolute inset-0 z-50 bg-[#1a120b] shadow-[0_20px_50px_rgba(0,0,0,1)] flex items-center justify-center">

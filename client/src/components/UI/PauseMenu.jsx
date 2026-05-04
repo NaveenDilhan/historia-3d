@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Volume2, VolumeX, MessageSquare, LogOut } from 'lucide-react';
+import { Play, Volume2, VolumeX, MessageSquare, LogOut, Maximize, Minimize } from 'lucide-react';
 
 // Reusable Pause Menu Button Component
 function MenuButton({ icon, label, onClick, highlight, isDanger }) {
@@ -10,10 +10,10 @@ function MenuButton({ icon, label, onClick, highlight, isDanger }) {
       className={`
         w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-bold text-sm tracking-widest uppercase transition-all duration-300
         ${highlight 
-          ? 'bg-gradient-to-r from-amber-700 to-amber-900 text-amber-50 shadow-lg hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] border border-amber-500/30' 
-          : isDanger 
-            ? 'bg-red-950/20 text-red-400 hover:bg-red-900/40 border border-red-900/30'
-            : 'bg-black/40 text-amber-200/80 hover:bg-amber-900/40 hover:text-amber-100 border border-amber-900/40'}
+           ? 'bg-gradient-to-r from-amber-700 to-amber-900 text-amber-50 shadow-lg hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] border border-amber-500/30' 
+           : isDanger 
+             ? 'bg-red-950/20 text-red-400 hover:bg-red-900/40 border border-red-900/30'
+             : 'bg-black/40 text-amber-200/80 hover:bg-amber-900/40 hover:text-amber-100 border border-amber-900/40'}
         hover:scale-[1.02] active:scale-95
       `}
     >
@@ -32,6 +32,29 @@ export default function PauseMenu({
   toggleSubs, 
   handleQuit 
 }) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Sync state with native browser fullscreen changes (e.g. F11 press)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error(`Error attempting to toggle fullscreen: ${err.message}`);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isPaused && (
@@ -39,8 +62,8 @@ export default function PauseMenu({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          // Bumped Z-index to 110 to ensure it always overlays Modals (which are 100)
-          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+          // Bumped Z-index to 999 to guarantee it covers subtitles (z-[150]) and everything else
+          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-lg p-4"
         >
           <motion.div 
             initial={{ scale: 0.9, y: 20 }}
@@ -62,7 +85,12 @@ export default function PauseMenu({
                 icon={<Play size={18} />} 
                 label="Resume Simulation" 
                 onClick={handleResume} 
-                highlight
+                highlight 
+              />
+              <MenuButton 
+                icon={isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />} 
+                label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"} 
+                onClick={toggleFullscreen} 
               />
               <MenuButton 
                 icon={soundMuted ? <VolumeX size={18} /> : <Volume2 size={18} />} 
@@ -81,7 +109,7 @@ export default function PauseMenu({
                 icon={<LogOut size={18} />} 
                 label="Abandon Quest" 
                 onClick={handleQuit} 
-                isDanger
+                isDanger 
               />
             </div>
           </motion.div>
