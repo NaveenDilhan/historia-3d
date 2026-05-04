@@ -13,7 +13,6 @@ const TriceratopsModel = memo(function TriceratopsModel({ terrainGeo, hasStarted
   const { scene, animations } = useGLTF('/models/jurrasic/Triceratops.glb');
   const { scene: fernScene } = useGLTF('/models/jurrasic/Fern.glb');
   const { actions, mixer } = useAnimations(animations, groupRef);
-  
   const [action, setAction] = useState('idle');
   const neckBone = useRef(null);
 
@@ -55,17 +54,24 @@ const TriceratopsModel = memo(function TriceratopsModel({ terrainGeo, hasStarted
     
     const alignQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
     const baseQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
-    const pitchOffset = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.12);
+    
+    // Pitch offset to keep the tail down properly
+    const pitchOffset = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.15);
+    
+    // NEW: Severely reduced the roll offset so it doesn't seesaw the right legs into the air
+    const rollOffset = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -0.05);
     
     alignQuat.multiply(pitchOffset);
+    alignQuat.multiply(rollOffset); 
     alignQuat.multiply(baseQuat);
     
     const finalEuler = new THREE.Euler().setFromQuaternion(alignQuat, 'YXZ');
     
     return {
-        yPos: avgH + (scale * 0.15),
+        // NEW: Bumped height multiplier slightly up from 0.05 to 0.08 to pull the left foot out of the dirt
+        yPos: avgH + (scale * 0.08),
         rot: [finalEuler.x, finalEuler.y, finalEuler.z],
-        fernY: getExactHeight(fX, fZ, terrainGeo) - 0.2,
+        fernY: getExactHeight(fX, fZ, terrainGeo) + 0.3,
         fernX: fX,
         fernZ: fZ
     };
@@ -157,8 +163,8 @@ const TriceratopsModel = memo(function TriceratopsModel({ terrainGeo, hasStarted
               if (action === 'attack') return;
               
               setAction('attack'); 
-              setTimeout(() => { 
-                 window.dispatchEvent(new CustomEvent('dino-click', { detail: { type: 'triceratops' } }));
+              setTimeout(() => {
+                  window.dispatchEvent(new CustomEvent('dino-click', { detail: { type: 'triceratops' } }));
               }, 3500); 
             }}
             onPointerOver={(e) => {
