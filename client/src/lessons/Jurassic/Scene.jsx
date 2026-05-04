@@ -56,7 +56,6 @@ function BiomeAudio({ hasStarted }) {
           }
         }
       };
-
       playAudioNode(forestRef, 150, 450, 1.5, 0.4);
       playAudioNode(volcanoRef, 120, 350, 2.0, 0.6);
       playAudioNode(oceanRef, 80, 200, 3.0, 0.6);
@@ -72,7 +71,6 @@ function BiomeAudio({ hasStarted }) {
   );
 }
 
-// Tracks the player's Z position and triggers biome-change events
 function BiomeTracker() {
   const { camera } = useThree();
   const lastBiome = useRef('dense forest');
@@ -81,7 +79,6 @@ function BiomeTracker() {
     const z = camera.position.z;
     let currentBiome = 'dense forest';
     
-    // Thresholds matched perfectly to the Terrain blending logic
     if (z >= 360) currentBiome = 'coastal beach';
     else if (z >= -50 && z < 360) currentBiome = 'dense forest';
     else if (z >= -400 && z < -50) currentBiome = 'arid desert';
@@ -96,8 +93,38 @@ function BiomeTracker() {
   return null;
 }
 
+function AtmosphereTransition({ active }) {
+  const { scene } = useThree();
+  const targetColor = new THREE.Color(active ? '#300800' : '#597a61');
+  const targetDensity = active ? 0.028 : 0.012; 
+
+  useFrame((state, delta) => {
+    if (scene.background) scene.background.lerp(targetColor, delta * 0.5);
+    if (scene.fog) {
+      scene.fog.color.lerp(targetColor, delta * 0.5);
+      scene.fog.density = THREE.MathUtils.lerp(scene.fog.density, targetDensity, delta * 0.5);
+    }
+  });
+  return null;
+}
+
 export default function Scene({ hasStarted }) {
   const [terrainGeo, setTerrainGeo] = useState(null);
+  const [meteorStrikeActive, setMeteorStrikeActive] = useState(false);
+
+  // CORE SEQUENCE FIX: 10 seconds AFTER the Geothermal modal is CLOSED
+  useEffect(() => {
+    const handleGeothermalClosed = () => {
+      setTimeout(() => {
+        setMeteorStrikeActive(true);
+        // Alert the UI that the strike is visually starting right now
+        window.dispatchEvent(new CustomEvent('meteor-strike-started'));
+      }, 10000); 
+    };
+
+    window.addEventListener('geothermal-modal-closed', handleGeothermalClosed);
+    return () => window.removeEventListener('geothermal-modal-closed', handleGeothermalClosed);
+  }, []);
 
   return (
     <>
@@ -105,11 +132,11 @@ export default function Scene({ hasStarted }) {
         <color attach="background" args={['#597a61']} />
         <fogExp2 attach="fog" args={['#597a61', 0.012]} />
         
-        {/* Invisible Biome Tracker */}
+        <AtmosphereTransition active={meteorStrikeActive} />
         <BiomeTracker />
         
         <Suspense fallback={null}>
-          <Lighting />
+          <Lighting meteorStrikeActive={meteorStrikeActive} />
           
           <Physics gravity={[0, -9.81, 0]}>
             <Terrain setTerrainGeo={setTerrainGeo} />
@@ -122,7 +149,7 @@ export default function Scene({ hasStarted }) {
                     <GeothermalVent key={`vent-${index}`} x={pos.x} y={pos.y} z={pos.z} scale={pos.scale} />
                 ))}
 
-                <MeteorEvent hasStarted={hasStarted} />
+                <MeteorEvent hasStarted={hasStarted} active={meteorStrikeActive} />
                 
                 <Suspense fallback={null}>
                   <ApatosaurusModel terrainGeo={terrainGeo} hasStarted={hasStarted} x={20} z={-200} scale={5.0} />
@@ -158,7 +185,6 @@ export default function Scene({ hasStarted }) {
         <Sky distance={450000} sunPosition={[1500, 400, -500]} inclination={0.48} azimuth={0.25} turbidity={20} rayleigh={2.5} mieCoefficient={0.06} mieDirectionalG={0.85} />
       </Canvas>
       
-      {/* 2D UI Layer */}
       <JurassicUI hasStarted={hasStarted} />
     </>
   );
