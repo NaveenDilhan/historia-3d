@@ -1,18 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-// Existing Pages
 import HomePage from './pages/HomePage';
 import ExplorePage from './pages/ExplorePage';
 import ScenePage from './pages/ScenePage';
-
-// New Auth & Profile Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
-
-// New Community Page
 import CommunityPage from './pages/CommunityPage';
+import CreditsPage from './pages/CreditsPage';
 
 export default function App() {
   return (
@@ -33,6 +29,9 @@ export default function App() {
           
           {/* Community Route */}
           <Route path="/community" element={<CommunityPage />} />
+          
+          {/* Credits Route */}
+          <Route path="/credits" element={<CreditsPage />} />
         </Routes>
       </div>
     </Router>

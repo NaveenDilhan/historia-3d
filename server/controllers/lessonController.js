@@ -1,12 +1,25 @@
 import Lesson from '../models/Lesson.js';
 
-// @desc    Get all lessons for the Explore Page
+// @desc    Get all lessons (supports optional search/filter queries)
 // @route   GET /api/lessons
-// @access  Public (or Private depending on your setup)
+// @access  Public
 export const getLessons = async (req, res) => {
   try {
-    // Fetches all lessons and sorts them by newest first
-    const lessons = await Lesson.find({}).sort({ createdAt: -1 });
+    const { search, era, region } = req.query;
+    let query = {};
+
+    // Optional Server-Side Filtering (if query params are provided)
+    if (search) {
+        query.$or = [
+            { title: { $regex: search, $options: 'i' } },
+            { description: { $regex: search, $options: 'i' } },
+            { tags: { $regex: search, $options: 'i' } }
+        ];
+    }
+    if (era && era !== 'All') query.era = era;
+    if (region && region !== 'All') query.region = region;
+
+    const lessons = await Lesson.find(query).sort({ createdAt: -1 });
     return res.status(200).json(lessons);
   } catch (error) {
     return res.status(500).json({ 
@@ -23,12 +36,12 @@ export const createLesson = async (req, res) => {
   try {
     const lessonData = req.body;
     
-    // Auto-generate a URL-friendly slug from the title if one isn't explicitly provided
+    // Auto-generate a URL-friendly slug from the title if one isn't provided
     if (!lessonData.slug && lessonData.title) {
         lessonData.slug = lessonData.title
             .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-') // replace spaces & special chars with hyphens
-            .replace(/(^-|-$)+/g, '');   // remove leading/trailing hyphens
+            .replace(/[^a-z0-9]+/g, '-') 
+            .replace(/(^-|-$)+/g, '');   
     }
 
     const newLesson = new Lesson(lessonData);

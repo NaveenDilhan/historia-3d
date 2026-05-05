@@ -1,8 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { X, Play, Award, BarChart3, Clock, BookOpen } from 'lucide-react';
+import { X, Play, Award, Clock, BookOpen } from 'lucide-react';
 
 export default function LessonPopup({ lesson, onClose, onPlay }) {
+  const navigate = useNavigate();
+
   if (!lesson) return null;
 
   // Map the string values to their respective filenames
@@ -45,16 +48,6 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
           <X size={20} />
         </button>
 
-        {lesson.medal && (
-          <div className="absolute top-6 right-16 z-20 flex items-center justify-center bg-[#1a120b]/80 p-2 rounded-full border border-amber-500/30 backdrop-blur-md shadow-lg">
-             <img 
-                src={`/assets/${getMedalFilename(lesson.medal)}.png`} 
-                alt={`${lesson.medal} medal`} 
-                className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]" 
-             />
-          </div>
-        )}
-
         <div className="p-8 md:p-10 relative z-10">
           <div className="mb-6">
             <div className="flex items-center gap-2 text-amber-500 mb-2">
@@ -71,30 +64,51 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
           </p>
 
           <div className="grid grid-cols-2 gap-4 mb-10">
-            <div className="bg-black/30 p-4 rounded-2xl border border-amber-900/30">
-              <div className="flex items-center gap-2 text-amber-500/70 mb-2">
-                <BarChart3 size={14} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Mastery</span>
-              </div>
-              <div className="flex items-end gap-2">
-                <span className="text-2xl font-heading font-bold text-amber-100">{lesson.progress}%</span>
-              </div>
-              <div className="w-full bg-amber-900/30 h-1 rounded-full mt-2 overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${lesson.progress}%` }}
-                  className="h-full bg-amber-500" 
-                />
-              </div>
-            </div>
-            <div className="bg-black/30 p-4 rounded-2xl border border-amber-900/30">
-              <div className="flex items-center gap-2 text-amber-500/70 mb-2">
+            
+            {/* LEFT BOX: Completion / Medal */}
+            <div className="bg-black/30 p-4 rounded-2xl border border-amber-900/30 flex flex-col justify-center">
+              <div className="flex items-center gap-2 text-amber-500/70 mb-3">
                 <Award size={14} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Relics</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Completion</span>
               </div>
-              <span className="text-2xl font-heading font-bold text-amber-100">{lesson.achievements}</span>
-              <p className="text-[10px] text-amber-200/30 mt-1 uppercase">Earned Artifacts</p>
+              
+              {lesson.medal ? (
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={`/assets/${getMedalFilename(lesson.medal)}.png`} 
+                    alt={`${lesson.medal} medal`} 
+                    className="w-12 h-12 object-contain drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]" 
+                  />
+                  <div>
+                    <span className="text-xl font-heading font-bold text-amber-100 capitalize block leading-none">
+                      {lesson.medal}
+                    </span>
+                    <span className="text-[10px] text-amber-200/40 uppercase tracking-widest">
+                      Medal Earned
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-2">
+                  <p className="text-[10px] text-amber-200/40 uppercase tracking-widest leading-relaxed">
+                    No medal acquired yet. Play to earn.
+                  </p>
+                </div>
+              )}
             </div>
+
+            {/* RIGHT BOX: Start Scene */}
+            <button 
+              onClick={onPlay}
+              className="group relative bg-black/30 p-4 rounded-2xl border border-amber-900/30 hover:border-amber-500/50 hover:bg-amber-900/20 transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden shadow-inner"
+            >
+              <div className="absolute inset-0 bg-gradient-to-t from-amber-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Play size={32} className="text-amber-500 fill-amber-500 mb-2 group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-100 group-hover:text-amber-400 transition-colors">
+                Start Scene
+              </span>
+            </button>
+
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
@@ -105,12 +119,12 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
               Back to Map
             </button>
             <button
-              onClick={onPlay}
+              onClick={() => navigate('/credits')}
               className="flex-[1.5] group relative overflow-hidden px-6 py-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-800 text-white font-bold text-sm uppercase tracking-widest shadow-lg hover:shadow-amber-500/20 transition-all flex items-center justify-center gap-2"
             >
               <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
-              <Play size={18} className="fill-current" />
-              <span>Enter Simulation</span>
+              <BookOpen size={18} />
+              <span>Credits</span>
             </button>
           </div>
         </div>

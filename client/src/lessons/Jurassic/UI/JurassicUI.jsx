@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import DialogueBox from './DialogueBox';
 import InteractHint from './InteractHint';
 import DinoModal from './DinoModal';
+import HUD from './HUD';
 import LessonCompleteOverlay from '../../../components/UI/LessonCompleteOverlay';
 import useAI from '../../../hooks/useAI';
 
@@ -180,13 +181,13 @@ export default function JurassicUI({ hasStarted }) {
 
   return (
     <div className="absolute inset-0 z-20 pointer-events-none">
-      {/* HUD Tracker */}
-      {!showLessonComplete && (
-          <div className="absolute top-6 left-6 z-[150] bg-[#1a120b]/80 border border-amber-900/50 rounded-2xl p-4 backdrop-blur-md shadow-lg pointer-events-auto">
-              <p className="text-amber-500 font-bold uppercase tracking-widest text-[10px] mb-1">Events Found</p>
-              <p className="text-amber-100 font-heading text-xl">{discoveredEvents.size} / {totalEvents}</p>
-          </div>
-      )}
+      
+      {/* HUD Tracker Component */}
+      <HUD 
+        current={discoveredEvents.size} 
+        total={totalEvents} 
+        visible={!showLessonComplete} 
+      />
       
       <div className={`absolute w-full px-8 flex justify-center pointer-events-none z-[150] transition-all duration-500 ease-in-out ${activeModal ? 'bottom-4' : 'bottom-12'}`}>
         <DialogueBox currentBiome={currentBiome} />

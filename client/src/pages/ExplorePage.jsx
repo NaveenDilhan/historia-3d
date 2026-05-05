@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Compass, ChevronLeft, Star, PlayCircle, Clock, LogIn } from 'lucide-react';
+import { Compass, Users, ChevronLeft, PlayCircle, Clock, LogIn, Calendar, Search, Filter, Globe } from 'lucide-react';
 import LessonPopup from '../components/UI/LessonPopup';
 
 export default function ExplorePage() {
@@ -11,6 +11,11 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // --- SEARCH & FILTER STATE ---
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedEra, setSelectedEra] = useState('All');
+  const [selectedRegion, setSelectedRegion] = useState('All');
+
   const navigate = useNavigate();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -19,17 +24,23 @@ export default function ExplorePage() {
     avatar: ""
   });
 
-  // Map the string values to their respective filenames
   const medalAssetMap = {
       gold: 'medal1',
       silver: 'medal2',
       bronze: 'medal3'
   };
 
-  // Safely resolve the filename, defaulting to the raw prop if no match is found
   const getMedalFilename = (medalName) => {
       if (!medalName) return null;
       return medalAssetMap[medalName.toLowerCase()] || medalName;
+  };
+
+  // Helper to convert medal to progress percentage
+  const getProgressFromMedal = (medal) => {
+      if (medal === 'gold') return 100;
+      if (medal === 'silver') return 50;
+      if (medal === 'bronze') return 25;
+      return 0;
   };
 
   useEffect(() => {
@@ -41,7 +52,6 @@ export default function ExplorePage() {
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.name}`
       });
 
-      // Fetch user achievements to attach medals to the lesson cards
       fetch("http://localhost:5000/api/users/profile", { credentials: "include" })
         .then(res => res.json())
         .then(data => {
@@ -57,9 +67,7 @@ export default function ExplorePage() {
         setLoading(true);
         const response = await fetch('http://localhost:5000/api/lessons');
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch from the Great Library');
-        }
+        if (!response.ok) throw new Error('Failed to fetch from the Great Library');
         
         const lessonData = await response.json();
         setLessons(lessonData);
@@ -73,12 +81,49 @@ export default function ExplorePage() {
     fetchLessons();
   }, []);
 
-  // Helper to check if a user has a medal for a given lesson
-  const getMedalForLesson = (lesson) => {
+  const getLessonStats = (lesson) => {
       const lessonId = lesson.slug || lesson.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
       const ach = userAchievements.find(a => a.lessonId === lessonId);
-      return ach ? ach.medal : null;
+      
+      const timeSpent = ach?.timeSpent ? ach.timeSpent : (ach ? ach.eventsFound * 5 : 0);
+      
+      return {
+          medal: ach ? ach.medal : null,
+          timeSpent: `${timeSpent}m`,
+          lastPlayed: ach?.unlockedAt 
+            ? new Date(ach.unlockedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) 
+            : 'Never played'
+      };
   };
+
+  // --- FILTERING LOGIC ---
+  
+  // 1. Dynamically extract unique categories from the database payload
+  const availableEras = useMemo(() => {
+      const eras = lessons.map(l => l.era).filter(Boolean);
+      return [...new Set(eras)];
+  }, [lessons]);
+
+  const availableRegions = useMemo(() => {
+      const regions = lessons.map(l => l.region).filter(Boolean);
+      return [...new Set(regions)];
+  }, [lessons]);
+
+  // 2. Filter the lessons array based on active criteria
+  const filteredLessons = useMemo(() => {
+      return lessons.filter(lesson => {
+          const matchesSearch = 
+            lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            lesson.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (lesson.tags && lesson.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
+            
+          const matchesEra = selectedEra === 'All' || lesson.era === selectedEra;
+          const matchesRegion = selectedRegion === 'All' || lesson.region === selectedRegion;
+
+          return matchesSearch && matchesEra && matchesRegion;
+      });
+  }, [lessons, searchQuery, selectedEra, selectedRegion]);
+
 
   return (
     <div className="min-h-screen text-amber-50 font-body overflow-x-hidden selection:bg-amber-500/30 relative">
@@ -95,6 +140,8 @@ export default function ExplorePage() {
           background-blend-mode: screen, overlay;
           background-attachment: fixed;
         }
+        /* Custom Scrollbar for select elements */
+        select option { background-color: #1a120b; color: #fef3c7; }
       `}</style>
 
       <div className="fixed inset-0 ancient-wall-bg z-[-2]"></div>
@@ -105,15 +152,21 @@ export default function ExplorePage() {
           
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate("/")}>
             <div className="group-hover:rotate-6 transition-transform flex items-center justify-center">
-               <img src="assets/scroll.png" alt="Scroll Icon" className="w-9 h-9 object-contain rounded-lg" />
+               <img src="/assets/scroll.png" alt="Scroll Icon" className="w-9 h-9 object-contain rounded-lg" />
             </div>
-            <h1 className="text-xl font-heading font-bold text-amber-100 tracking-widest">HISTORIA</h1>
+            <img 
+               src="/assets/dark_brown.png" 
+               alt="Historia Banner" 
+               className="h-6 md:h-8 object-contain drop-shadow-md"
+               style={{ filter: "brightness(0) invert(1) sepia(1) saturate(5) hue-rotate(5deg)" }}
+            />
           </div>
 
           <div className="hidden md:flex items-center space-x-8">
-            <button onClick={() => navigate("/")} className="text-amber-200/70 hover:text-amber-100 flex items-center gap-2 transition-colors">
-              <ChevronLeft size={16} /> Back
-            </button>
+            <NavLink onClick={() => navigate("/explore")} icon={<Compass size={16} />} label="Explore" isActive={true} />
+            <NavLink onClick={() => navigate("/community")} icon={<Users size={16} />} label="Community" isActive={false} />
+            
+            <div className="w-px h-6 bg-amber-900/50 mx-2"></div>
             
             {isLoggedIn ? (
               <button 
@@ -140,7 +193,7 @@ export default function ExplorePage() {
 
       <main className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-10">
         
-        <header className="mb-16 text-center">
+        <header className="mb-10 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -156,6 +209,56 @@ export default function ExplorePage() {
           </motion.div>
         </header>
 
+        {/* --- SEARCH AND FILTER WIDGET --- */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="flex flex-col md:flex-row gap-4 mb-12 items-center justify-between bg-[#150f0a]/60 p-4 rounded-2xl border border-amber-900/40 shadow-lg backdrop-blur-md"
+        >
+          {/* Text Search */}
+          <div className="relative w-full md:w-1/2">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-700" />
+            <input
+              type="text"
+              placeholder="Search archives by keyword..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-black/40 border border-amber-900/50 rounded-xl py-3 pl-12 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all placeholder:text-amber-900/60"
+            />
+          </div>
+
+          {/* Category Dropdowns */}
+          <div className="flex w-full md:w-auto gap-4">
+            <div className="relative w-full md:w-48 group">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700 group-focus-within:text-amber-400 transition-colors" />
+              <select
+                value={selectedEra}
+                onChange={(e) => setSelectedEra(e.target.value)}
+                className="w-full bg-black/40 border border-amber-900/50 rounded-xl py-3 pl-10 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all appearance-none cursor-pointer"
+              >
+                <option value="All">All Time Periods</option>
+                {availableEras.map(era => <option key={era} value={era}>{era}</option>)}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-amber-700">▼</div>
+            </div>
+
+            <div className="relative w-full md:w-48 group">
+              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700 group-focus-within:text-amber-400 transition-colors" />
+              <select
+                value={selectedRegion}
+                onChange={(e) => setSelectedRegion(e.target.value)}
+                className="w-full bg-black/40 border border-amber-900/50 rounded-xl py-3 pl-10 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all appearance-none cursor-pointer"
+              >
+                <option value="All">All Regions</option>
+                {availableRegions.map(region => <option key={region} value={region}>{region}</option>)}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-amber-700">▼</div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* --- DYNAMIC RENDER AREA --- */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
@@ -166,6 +269,12 @@ export default function ExplorePage() {
                 <p className="text-red-400 font-heading tracking-widest mb-4">The scrolls are missing: {error}</p>
                 <button onClick={() => window.location.reload()} className="text-amber-500 underline">Try again</button>
             </div>
+        ) : filteredLessons.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20 border border-amber-900/20 border-dashed rounded-3xl bg-black/20">
+                <Compass className="w-12 h-12 text-amber-900/50 mx-auto mb-4" />
+                <p className="text-amber-200/40 font-heading tracking-widest text-lg">No records match your criteria.</p>
+                <button onClick={() => { setSearchQuery(''); setSelectedEra('All'); setSelectedRegion('All'); }} className="mt-2 text-amber-500 text-sm hover:underline">Clear all filters</button>
+            </motion.div>
         ) : (
           <motion.div 
             initial="hidden"
@@ -175,8 +284,14 @@ export default function ExplorePage() {
             }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           >
-            {lessons.map((lesson) => {
-              const medal = getMedalForLesson(lesson);
+            {filteredLessons.map((lesson, index) => {
+              const stats = getLessonStats(lesson);
+              const calculatedProgress = getProgressFromMedal(stats.medal);
+              
+              // Calculate a dynamic background position to "break apart" the map across cards
+              const bgPosX = (index % 3) * 50;
+              const bgPosY = Math.floor(index / 3) * 50;
+
               return (
                 <motion.div
                   key={lesson._id}
@@ -185,25 +300,38 @@ export default function ExplorePage() {
                     visible: { opacity: 1, scale: 1 }
                   }}
                   whileHover={{ y: -10 }}
-                  onClick={() => setSelectedLesson({ ...lesson, medal })}
-                  className="group cursor-pointer relative bg-[#1a130e]/60 backdrop-blur-sm border border-amber-900/40 rounded-2xl overflow-hidden hover:border-amber-500/50 transition-all duration-300 shadow-xl"
+                  // Pass calculated progress so the popup also uses the medal-based percentage
+                  onClick={() => setSelectedLesson({ ...lesson, medal: stats.medal, progress: calculatedProgress })}
+                  className="group cursor-pointer relative bg-[#1a130e]/80 border border-amber-900/40 rounded-2xl overflow-hidden hover:border-amber-500/50 transition-all duration-300 shadow-xl flex flex-col"
                 >
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-700 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                  {/* Map Background Fragment */}
+                  <div 
+                    className="absolute inset-0 z-0 opacity-30 mix-blend-screen pointer-events-none transition-opacity duration-500 group-hover:opacity-60"
+                    style={{
+                      backgroundImage: `url("/assets/map.webp")`,
+                      backgroundSize: '300% 300%',
+                      backgroundPosition: `${bgPosX}% ${bgPosY}%`
+                    }}
+                  />
                   
-                  {medal && (
-                      <div className="absolute top-4 right-4 z-10">
-                          <img src={`/assets/${getMedalFilename(medal)}.png`} alt={`${medal} badge`} className="w-8 h-8 drop-shadow-lg opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all" />
-                      </div>
-                  )}
-
-                  <div className="p-8">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-700 to-transparent opacity-50 group-hover:opacity-100 transition-opacity z-10"></div>
+                  
+                  <div className="p-8 flex-1 relative z-10">
                     <div className="flex justify-between items-start mb-4">
-                      <span className="text-[10px] uppercase tracking-[0.3em] text-amber-600 font-bold border border-amber-900/50 px-2 py-1 rounded">
-                        Era {lesson.era || 'I'}
+                      <span className="text-[10px] uppercase tracking-[0.3em] text-amber-600 font-bold border border-amber-900/50 px-2 py-1 rounded bg-[#1a120b]/80">
+                        {/* Remove the word 'Era' if it exists in the database string */}
+                        {lesson.era ? lesson.era.replace(/era/i, '').trim() : 'MESOZOIC'}
                       </span>
+                      
+                      {/* Region Tag */}
+                      {lesson.region && lesson.region !== 'Global' && (
+                        <span className="text-[9px] uppercase tracking-[0.2em] text-amber-200/50 font-bold border border-amber-900/30 px-2 py-1 rounded bg-black/40 flex items-center gap-1">
+                          <Globe size={10} /> {lesson.region}
+                        </span>
+                      )}
                     </div>
                     
-                    <h3 className="text-2xl font-heading font-bold text-amber-100 mb-3 group-hover:text-amber-400 transition-colors">
+                    <h3 className="text-2xl font-heading font-bold text-amber-100 mb-3 group-hover:text-amber-400 transition-colors drop-shadow-md">
                       {lesson.title}
                     </h3>
                     
@@ -211,27 +339,34 @@ export default function ExplorePage() {
                       {lesson.description}
                     </p>
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 mt-auto">
                       <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-amber-700">
-                        <span>Scholarly Progress</span>
-                        <span>{lesson.progress || 0}%</span>
+                        <span>Progress</span>
+                        {/* Removed the raw percentage number display */}
                       </div>
-                      <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden border border-amber-950">
+                      <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-amber-950">
                         <motion.div 
                           initial={{ width: 0 }}
-                          animate={{ width: `${lesson.progress || 0}%` }}
+                          animate={{ width: `${calculatedProgress}%` }}
                           className="h-full bg-gradient-to-r from-amber-900 via-amber-600 to-amber-400"
                         ></motion.div>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="px-8 py-4 bg-amber-950/20 border-t border-amber-900/30 flex items-center justify-between group-hover:bg-amber-900/30 transition-colors">
-                    <div className="flex items-center gap-2 text-amber-200/40 text-xs">
-                      <Clock size={12} />
-                      <span>{lesson.readTime || '15 min read'}</span>
+                  {/* UPDATED FOOTER WITH DYNAMIC TIME AND DATES */}
+                  <div className="px-8 py-4 bg-[#110b08]/80 border-t border-amber-900/30 flex items-center justify-between group-hover:bg-amber-900/20 transition-colors relative z-10">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2 text-amber-200/50 text-[10px] font-bold uppercase tracking-wider">
+                        <Clock size={12} className="text-amber-600" />
+                        <span>{stats.timeSpent} Spent</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-amber-500/40 text-[9px] font-bold uppercase tracking-widest">
+                        <Calendar size={10} />
+                        <span>Last: {stats.lastPlayed}</span>
+                      </div>
                     </div>
-                    <PlayCircle className="text-amber-500 group-hover:scale-110 transition-transform" size={24} />
+                    <PlayCircle className="text-amber-500 group-hover:scale-110 group-hover:text-amber-400 transition-all drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" size={32} strokeWidth={1.5} />
                   </div>
                 </motion.div>
               );
@@ -243,7 +378,7 @@ export default function ExplorePage() {
       <footer className="bg-[#120c08] text-amber-200/40 py-12 border-t border-amber-900/30 relative z-10">
         <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
-             <img src="assets/scroll.png" alt="Scroll Icon" className="w-8 h-8 object-contain opacity-90 rounded-lg" />
+             <img src="/assets/scroll.png" alt="Scroll Icon" className="w-8 h-8 object-contain opacity-90 rounded-lg" />
             <span className="font-heading font-bold tracking-widest">HISTORIA</span>
           </div>
           <p className="text-xs">© {new Date().getFullYear()} Preservation Society. No rights reserved—history belongs to all.</p>
@@ -264,5 +399,19 @@ export default function ExplorePage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// NavLink Component matching HomePage styling
+function NavLink({ icon, label, onClick, isActive }) {
+  return (
+    <button 
+      onClick={onClick}
+      className={`flex items-center gap-2 font-medium transition-colors group relative ${isActive ? 'text-amber-400' : 'text-amber-200/70 hover:text-amber-100'}`}
+    >
+      <span className="group-hover:-translate-y-0.5 transition-transform duration-300">{icon}</span>
+      <span>{label}</span>
+      <span className={`absolute -bottom-1 left-0 h-[1px] transition-all duration-300 ${isActive ? 'w-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'w-0 bg-amber-400 group-hover:w-full'}`}></span>
+    </button>
   );
 }
