@@ -22,6 +22,24 @@ export default function LoadingScreen({ hasLoaded, onStart, isRevealing }) {
     statusText = 'Compiling Shaders...';
   }
 
+  // Helper function to generate specific debug hints based on the failed asset URL
+  const getDebugHint = (errorUrl) => {
+    const url = errorUrl.toLowerCase();
+    if (url.includes('.glb') || url.includes('.gltf') || url.includes('.obj')) {
+      return 'Geometry Error: Check 3D model paths, compression, or export settings.';
+    }
+    if (url.includes('.jpg') || url.includes('.png') || url.includes('.webp') || url.includes('.hdr')) {
+      return 'Texture Error: Verify image paths, dimensions, or CORS policies.';
+    }
+    if (url.includes('.mp3') || url.includes('.wav') || url.includes('.ogg')) {
+      return 'Audio Error: Missing sound file or blocked by browser autoplay rules.';
+    }
+    if (url.includes('http://') || url.includes('https://')) {
+      return 'Network Error: Cross-Origin Resource Sharing (CORS) or external server timeout.';
+    }
+    return 'Path Error: File not found (404) in the public/assets directory.';
+  };
+
   return (
     <div className="flex flex-col items-center justify-center w-full h-full relative overflow-hidden">
       {/* Background gradients */}
@@ -74,11 +92,32 @@ export default function LoadingScreen({ hasLoaded, onStart, isRevealing }) {
           </div>
         )}
 
-        {/* Network Error Failsafe */}
+        {/* Enhanced Dynamic Error Diagnostics */}
         {errors.length > 0 && !hasLoaded && (
-          <p className="text-red-500 text-xs mt-6 text-center font-mono bg-red-900/20 border border-red-900/50 px-3 py-2 rounded-lg">
-            Network fluctuations detected. Recovering...
-          </p>
+          <div className="mt-8 w-full bg-red-950/40 border border-red-900/60 rounded-lg p-3 backdrop-blur-sm shadow-[0_0_15px_rgba(153,27,27,0.3)]">
+            <h4 className="text-red-400 text-xs font-bold mb-2 text-center uppercase tracking-wider">
+              Diagnostic Alerts ({errors.length})
+            </h4>
+            
+            <div className="max-h-28 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+              {errors.map((err, idx) => (
+                <div key={idx} className="flex flex-col pb-2 border-b border-red-900/40 last:border-0 last:pb-0">
+                  <span className="text-red-200 text-[10px] font-mono break-all leading-tight">
+                    <span className="text-red-500 font-bold pr-1">[{idx + 1}]</span>
+                    {err}
+                  </span>
+                  <span className="text-amber-500/90 text-[10px] font-mono mt-1">
+                    <span className="text-amber-600 mr-1">↳ Fix:</span>
+                    {getDebugHint(err)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            
+            <p className="text-red-500/70 text-[9px] mt-3 text-center font-mono uppercase tracking-widest">
+              Review browser console for trace logs
+            </p>
+          </div>
         )}
       </div>
     </div>
