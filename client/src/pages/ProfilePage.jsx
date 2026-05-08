@@ -12,6 +12,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [message, setMessage] = useState(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const [profile, setProfile] = useState({
     name: "",
@@ -20,7 +21,7 @@ export default function ProfilePage() {
     avatarSeed: "",
     title: "",
     stats: { knowledgePoints: 0, erasExplored: 0, artifactsFound: 0 },
-    achievements: [] // Added achievements array
+    achievements: [] 
   });
 
   const [formData, setFormData] = useState({
@@ -230,7 +231,7 @@ export default function ProfilePage() {
 
             <motion.button 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-              onClick={handleLogout}
+              onClick={() => setShowLogoutConfirm(true)}
               className="w-full mt-4 py-4 bg-red-950/20 border border-red-900/30 hover:bg-red-900/30 text-red-400/80 rounded-2xl transition-all flex items-center justify-center gap-2 font-bold text-sm uppercase tracking-widest"
             >
               <LogOut size={16} /> Disconnect from Archives
@@ -357,6 +358,54 @@ export default function ProfilePage() {
           </div>
         </div>
       </main>
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-[#150f0a] border border-red-900/50 rounded-3xl p-8 max-w-md w-full shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden"
+            >
+              {/* Background glow */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-red-900/20 rounded-full blur-3xl pointer-events-none"></div>
+
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-red-950/40 rounded-2xl flex items-center justify-center border border-red-900/50 mb-6 text-red-500 shadow-inner">
+                  <LogOut size={28} />
+                </div>
+                
+                <h3 className="font-heading text-2xl font-bold text-red-100 mb-3">Confirm Disconnect</h3>
+                <p className="text-amber-200/60 text-sm mb-8 leading-relaxed">
+                  Are you certain you wish to end your connection to the archives? You will need to re-log to continue your journey.
+                </p>
+                
+                <div className="flex gap-4 w-full">
+                  <button
+                    onClick={() => setShowLogoutConfirm(false)}
+                    className="flex-1 py-3 bg-black/40 border border-amber-900/50 hover:bg-amber-900/30 text-amber-100 rounded-xl transition-all font-bold text-sm uppercase tracking-wider"
+                  >
+                    Remain
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex-1 py-3 bg-red-900/80 border border-red-500/50 hover:bg-red-800 text-red-50 rounded-xl transition-all font-bold text-sm uppercase tracking-wider shadow-[0_0_15px_rgba(220,38,38,0.2)]"
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
