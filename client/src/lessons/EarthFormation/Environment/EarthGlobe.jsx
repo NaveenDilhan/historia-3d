@@ -105,7 +105,7 @@ export default function EarthGlobe() {
   const [isQuizActive, setIsQuizActive] = useState(false);
   
   const [isCinematicDone, setIsCinematicDone] = useState(false);
-  const [anomalyRevealed, setAnomalyRevealed] = useState(false); // Controls when the marker actually pops in
+  const [anomalyRevealed, setAnomalyRevealed] = useState(false); 
   
   const [scanCounts, setScanCounts] = useState({ void: 0, hadean: 0, archean: 0, proterozoic: 0, mesozoic: 0 });
   
@@ -122,7 +122,7 @@ export default function EarthGlobe() {
     const handleMcqEnd = () => setIsQuizActive(false);
     const handleCinematicEnded = () => setIsCinematicDone(true);
     const handleRevealAnomaly = () => setAnomalyRevealed(true);
-    const handleEraChange = () => setAnomalyRevealed(false); // Hide the next era's anomaly until requested
+    const handleEraChange = () => setAnomalyRevealed(false); 
 
     window.addEventListener('timeline-progress', handleProgress);
     window.addEventListener('unlock-timeline', handleUnlockUpdate);
@@ -143,12 +143,13 @@ export default function EarthGlobe() {
     };
   }, []);
 
-  const triggerScanLesson = (narrationPrompt, eraKey) => {
+  const triggerScanLesson = (title, narrationPrompt, eraKey) => {
     setIsLessonActive(true);
-    setAnomalyRevealed(false); // Hide immediately for the next one
+    setAnomalyRevealed(false); 
     
     window.dispatchEvent(new CustomEvent('freeze-timeline', { detail: { frozen: true } }));
-    window.dispatchEvent(new CustomEvent('trigger-narration', { detail: { prompt: narrationPrompt } }));
+    // Passing the exact TITLE so the AI knows exactly what to talk about
+    window.dispatchEvent(new CustomEvent('trigger-narration', { detail: { title, prompt: narrationPrompt } }));
 
     setScanCounts(prev => {
         const nextCount = prev[eraKey] + 1;
@@ -202,7 +203,6 @@ export default function EarthGlobe() {
   const isAtLock = (threshold) => Math.abs(progress - threshold) < 0.02 && lockThreshold === threshold && !isLessonActive && !isQuizActive;
   
   const renderActiveAnomaly = () => {
-      // Must wait for UI to command the reveal of the marker
       if (!isCinematicDone || !activeEraKey || !isAtLock(lockThreshold) || !anomalyRevealed) return null;
       
       const eraAnomalies = ANOMALY_DATA[activeEraKey];
@@ -217,7 +217,7 @@ export default function EarthGlobe() {
            position={currentAnomaly.position}
            active={true}
            title={currentAnomaly.title}
-           onScan={() => triggerScanLesson(currentAnomaly.prompt, activeEraKey)}
+           onScan={() => triggerScanLesson(currentAnomaly.title, currentAnomaly.prompt, activeEraKey)}
         />
       );
   };

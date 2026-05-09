@@ -16,7 +16,7 @@ export default function EarthDialogueBox({ currentEra }) {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
         
-        // BUG FIX: The "Silent Warmup"
+        // The "Silent Warmup"
         // Playing an empty string at volume 0 forces the browser's audio context 
         // to initialize in the background. This prevents the engine from clipping 
         // the first few words of the actual first sentence it tries to read.
@@ -67,7 +67,9 @@ export default function EarthDialogueBox({ currentEra }) {
         window.speechSynthesis.cancel();
         
         // Extract raw sentences and clean up weird characters
-        const rawSentences = narration.match(/[^.!?]+[.!?]*/g) || [narration];
+        // FIX: Use a regex that requires a space or the end of the string after punctuation.
+        // This stops the TTS from breaking at decimal points (e.g., "4.6").
+        const rawSentences = narration.match(/.*?[.!?](?:\s|$)|.+/g) || [narration];
         const cleanSentences = rawSentences.map(s => s.replace(/["“”*]/g, '').trim()).filter(Boolean);
         
         if (cleanSentences.length === 0) return;
@@ -111,7 +113,7 @@ export default function EarthDialogueBox({ currentEra }) {
 
               currentUtteranceRef.current = utterance;
               
-              // BUG FIX: The "First Sentence Micro-Buffer"
+              // The "First Sentence Micro-Buffer"
               // Add a slight 150ms delay specifically before the *first* sentence.
               // This gives the audio hardware enough time to physically engage 
               // after the synthesis begins processing.

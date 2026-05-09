@@ -1,23 +1,127 @@
 export const ANOMALY_DATA = {
   void: [
-    { id: 'void-1', title: 'Stellar Nebula', position: [0, 0, 5.5], prompt: "Explain the stellar nebula simply. Describe these giant, glowing clouds of space dust and gas as the ultimate building blocks that make up everything in space." },
-    { id: 'void-2', title: 'Protoplanetary Disk', position: [-2.5, 3.0, 4.0], prompt: "Explain how floating space dust and rocks started bumping into each other and clumping together like rolling snowballs to make the very first pieces of our planet." }
+    { 
+      id: 'void-1', 
+      title: 'Stellar Nebula', 
+      position: [0, 0, 5.5], 
+      prompt: "Explain the stellar nebula simply. Describe these giant, glowing clouds of space dust. Crucially, mention that this nebula was primarily composed of Hydrogen and Helium." 
+    },
+    { 
+      id: 'void-2', 
+      title: 'Gravitational Collapse', 
+      position: [2.0, -2.0, 4.0], 
+      prompt: "Explain how Gravity caused this solar nebula to collapse roughly 4.6 Billion Years Ago. Mention that as it collapsed, its rate of rotation increased significantly." 
+    },
+    { 
+      id: 'void-3', 
+      title: 'Accretion Disk', 
+      position: [-2.5, 3.0, 4.0], 
+      prompt: "Explain the term 'Accretion'. Describe how it is the gradual accumulation of dust and gas to form planetesimals, like space rocks clumping together to build planets." 
+    }
   ],
   hadean: [
-    { id: 'had-1', title: 'Magma Ocean', position: [3.8, 2.0, 3.0], prompt: "Describe the early Earth as a giant, super-hot ball of melted rock. Picture a glowing, bubbling sea of orange lava everywhere you look." },
-    { id: 'had-2', title: 'Theia Collision', position: [-3.0, 1.5, 4.0], prompt: "Explain how a giant space rock crashed into Earth a long time ago, and how the broken pieces floated up into the sky to clump together and make our Moon." }
+    { 
+      id: 'had-1', 
+      title: 'Hellish Origins', 
+      position: [3.8, 2.0, 3.0], 
+      prompt: "Explain that the name 'Hadean' originates from Hades, the Greek god of the underworld. Mention that early Earth was largely molten due to frequent asteroid impacts and radioactive decay." 
+    },
+    { 
+      id: 'had-2', 
+      title: 'Core Formation', 
+      position: [0.0, -4.0, 3.0], 
+      prompt: "Describe how heavier elements slowly sank all the way to the center of the molten Earth, which caused the Iron Core to form." 
+    },
+    { 
+      id: 'had-3', 
+      title: 'Theia Collision', 
+      position: [-3.0, 1.5, 4.0], 
+      prompt: "Explain how a celestial body named Theia collided with the early Earth, and how the broken pieces eventually formed our Moon." 
+    },
+    { 
+      id: 'had-4', 
+      title: 'Cooling Patches', 
+      position: [1.5, 0.0, 4.5], 
+      prompt: "Explain that despite the extreme heat, by the end of the eon, cooling patches allowed small amounts of Liquid Water to finally exist on the surface." 
+    }
   ],
   archean: [
-    { id: 'arch-1', title: 'Cooling Crust', position: [1.0, -3.0, 4.5], prompt: "Describe how the super-hot Earth finally started to cool down, forming a hard, dark rocky crust and allowing the very first puddles of water to gather." },
-    { id: 'arch-2', title: 'Cyanobacteria', position: [-2.5, -1.0, 4.5], prompt: "Explain how tiny, invisible living things appeared in the water and started using sunlight to make fresh air for the very first time." }
+    { 
+      id: 'arch-1', 
+      title: 'Archean Dawn', 
+      position: [1.0, -3.0, 4.5], 
+      prompt: "State that the Archean eon began 4.0 Billion Years Ago. Describe how the Earth was finally cooling and changing from its previous state of molten magma into a solid crust." 
+    },
+    { 
+      id: 'arch-2', 
+      title: 'Anoxic Atmosphere', 
+      position: [3.0, 2.0, 3.0], 
+      prompt: "Describe the early Archean sky. Mention that while the air had gases like methane, Oxygen was entirely absent." 
+    },
+    { 
+      id: 'arch-3', 
+      title: 'First Life', 
+      position: [-2.5, 3.0, 3.5], 
+      prompt: "Explain that the very first life appeared during this time. Describe them as simple, single-celled prokaryotes floating in the ancient oceans." 
+    },
+    { 
+      id: 'arch-4', 
+      title: 'Cyanobacteria', 
+      position: [-2.5, -1.0, 4.5], 
+      prompt: "Explain that Cyanobacteria emerged and became the very first known oxygen-producing organisms on Earth, creating fresh air." 
+    }
   ],
   proterozoic: [
-    { id: 'prot-1', title: 'Great Oxidation', position: [1.5, 4.0, 2.5], prompt: "Describe how the sky and oceans slowly filled up with fresh, breathable oxygen, changing the colors of the world and making it a safer place." },
-    { id: 'prot-2', title: 'Snowball Earth', position: [0.0, -4.5, 2.0], prompt: "Explain a crazy time when the weather got so cold that the entire Earth froze over into a giant snowball covered in thick white ice." }
+    { 
+      id: 'prot-1', 
+      title: 'Great Oxidation', 
+      position: [1.5, 4.0, 2.5], 
+      prompt: "Describe the Great Oxidation Event, where the oceans and sky filled with oxygen. Mention that this unfortunately caused a mass extinction for most anaerobic life." 
+    },
+    { 
+      id: 'prot-2', 
+      title: 'Ozone Shield', 
+      position: [-3.0, 1.0, 4.0], 
+      prompt: "Explain how the newly created oxygen floated high up into the sky and formed the Ozone Layer, a protective shield around the planet." 
+    },
+    { 
+      id: 'prot-3', 
+      title: 'Eukaryotes', 
+      position: [2.5, -2.5, 3.5], 
+      prompt: "Describe how life became more advanced! A new, more complex cellular structure called Eukaryotes emerged in the oceans." 
+    },
+    { 
+      id: 'prot-4', 
+      title: 'Snowball Earth', 
+      position: [0.0, -4.5, 2.0], 
+      prompt: "Explain that the sudden decrease in methane in the air caused a massive Ice Age, freezing the world into what we call 'Snowball Earth'." 
+    }
   ],
   mesozoic: [
-    { id: 'meso-1', title: 'Supercontinent Pangea', position: [-4.0, 1.5, -2.0], prompt: "Describe a time when all the land on Earth was stuck together in one giant puzzle piece, totally surrounded by a huge, deep ocean." },
-    { id: 'meso-2', title: 'Tectonic Rift', position: [2.0, 3.0, 3.5], prompt: "Explain how the ground rumbled and slowly broke that giant land puzzle piece apart, sending the pieces floating away to become the continents we live on today." }
+    { 
+      id: 'meso-1', 
+      title: 'Supercontinent Pangea', 
+      position: [-4.0, 1.5, -2.0], 
+      prompt: "Describe Pangea, the massive supercontinent that stuck all the land together and dominated the globe at the start of the Mesozoic era." 
+    },
+    { 
+      id: 'meso-2', 
+      title: 'Tectonic Rift', 
+      position: [2.0, 3.0, 3.5], 
+      prompt: "Explain how Tectonic plate movement was the massive geological force that eventually tore Pangea apart into separate continents." 
+    },
+    { 
+      id: 'meso-3', 
+      title: 'Age of Dinosaurs', 
+      position: [-1.5, -3.0, 4.0], 
+      prompt: "Mention that this era is made of the Triassic, Jurassic, and Cretaceous periods (not the Cambrian), and that Dinosaurs completely dominated the terrestrial ecosystems." 
+    },
+    { 
+      id: 'meso-4', 
+      title: 'Asteroid Impact', 
+      position: [3.5, 0.0, 3.0], 
+      prompt: "Explain that a massive asteroid impact was the catastrophic event that ultimately ended the Mesozoic era and wiped out the dinosaurs." 
+    }
   ]
 };
 
