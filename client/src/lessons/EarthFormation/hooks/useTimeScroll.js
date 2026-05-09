@@ -3,18 +3,21 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 export const ERAS = [
-  { index: 0, id: 'hadean', name: 'Hadean Eon', time: '4.6 Billion Years Ago', threshold: 0.0 },
-  { index: 1, id: 'archean', name: 'Archean Eon', time: '4.0 Billion Years Ago', threshold: 0.25 },
-  { index: 2, id: 'proterozoic', name: 'Proterozoic Eon', time: '2.5 Billion Years Ago', threshold: 0.5 },
-  { index: 3, id: 'mesozoic', name: 'Mesozoic Era', time: '250 Million Years Ago', threshold: 0.75 },
-  { index: 4, id: 'present', name: 'Present Day', time: 'Today', threshold: 1.0 },
+  { index: 0, id: 'void', name: 'The Cosmic Void', time: 'Before 4.6 Billion Years Ago', threshold: 0.0 },
+  { index: 1, id: 'hadean', name: 'Hadean Eon', time: '4.6 Billion Years Ago', threshold: 0.20 },
+  { index: 2, id: 'archean', name: 'Archean Eon', time: '4.0 Billion Years Ago', threshold: 0.40 },
+  { index: 3, id: 'proterozoic', name: 'Proterozoic Eon', time: '2.5 Billion Years Ago', threshold: 0.60 },
+  { index: 4, id: 'mesozoic', name: 'Mesozoic Era', time: '250 Million Years Ago', threshold: 0.80 },
+  { index: 5, id: 'present', name: 'Present Day', time: 'Today', threshold: 1.0 },
 ];
 
 export default function useTimeScroll(hasStarted) {
   const targetProgress = useRef(0);
   const currentProgress = useRef(0);
   const [activeEra, setActiveEra] = useState(ERAS[0]);
-  const currentLockRef = useRef(ERAS[1].threshold);
+  
+  // Lock at the first scanning anomaly (Archean)
+  const currentLockRef = useRef(ERAS[2].threshold);
   
   const isFrozenRef = useRef(false);
 
@@ -37,7 +40,6 @@ export default function useTimeScroll(hasStarted) {
     const handleWheel = (e) => {
       if (isFrozenRef.current) return; 
 
-      // DRASTICALLY REDUCED SCROLL SPEED
       const scrollSpeed = 0.0001; 
       let newTarget = targetProgress.current + e.deltaY * scrollSpeed;
       

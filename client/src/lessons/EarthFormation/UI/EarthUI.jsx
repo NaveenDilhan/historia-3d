@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import useAI from '../../../hooks/useAI';
-import DialogueBox from '../../Jurassic/UI/DialogueBox'; 
+import useEarthAI from '../hooks/useEarthAI';
+import EarthDialogueBox from './EarthDialogueBox'; 
 import TimelineHUD from './TimelineHUD';
 import LessonCompleteOverlay from '../../../components/UI/LessonCompleteOverlay';
 import MCQOverlay from './MCQOverlay';
@@ -15,7 +15,7 @@ export default function EarthUI({ hasStarted }) {
   const [perfectSections, setPerfectSections] = useState(0);
   const [showLessonComplete, setShowLessonComplete] = useState(false);
   
-  const { getNarration } = useAI();
+  const { getNarration } = useEarthAI();
   const hasFinishedIntro = useRef(false);
 
   useEffect(() => {
@@ -55,8 +55,8 @@ export default function EarthUI({ hasStarted }) {
       setTimeout(() => {
         hasFinishedIntro.current = true;
         getNarration(
-          "The Earth Formation simulation has begun.",
-          "Welcome the user to the dawn of our planet. Instruct them simply: 'Use your scroll wheel to accelerate through time. When an anomaly is detected, hold the spacebar to gather data, and press E to undergo the assessment.' Speak directly to the user; do not use the phrase 'young traveler'.",
+          "The Earth Formation simulation has begun in the empty cosmic void.",
+          "Welcome the user to the vast, silent expanse of space before Earth existed. Instruct them simply: 'Use your scroll wheel to journey forward through time and watch a world take shape. When an anomaly is detected, hold the spacebar to analyze it, and press E to begin your assessment.' Speak directly and warmly.",
           true
         );
       }, 2000);
@@ -64,14 +64,12 @@ export default function EarthUI({ hasStarted }) {
   }, [hasStarted, getNarration]);
 
   const handleMcqComplete = (score) => {
-    // SAFETY CHECK: Prevent double-execution from keyboard auto-repeat
     if (!mcqConfig) return;
 
     if (score === 5) {
       setPerfectSections(prev => prev + 1);
     }
     
-    // Store threshold safely before nulling the config
     const nextThreshold = mcqConfig.nextThreshold;
     setMcqConfig(null);
     
@@ -93,7 +91,8 @@ export default function EarthUI({ hasStarted }) {
       
       {!mcqConfig && (
         <div className="absolute w-full px-8 flex justify-center pointer-events-none z-[150] bottom-12 transition-all duration-500 ease-in-out">
-          <DialogueBox currentBiome={activeEra.name} /> 
+          {/* Rendering the newly created Earth Dialogue Box */}
+          <EarthDialogueBox currentEra={activeEra.name} /> 
         </div>
       )}
 

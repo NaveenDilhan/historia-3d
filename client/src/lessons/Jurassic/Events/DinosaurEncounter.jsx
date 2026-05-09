@@ -1,6 +1,6 @@
 import React, { Suspense, useState, useRef, useEffect } from 'react';
 import { useGLTF, Preload } from '@react-three/drei';
-import useAI from '../../../hooks/useAI';
+import useAI from '../hooks/useAI';
 import DinosaurModel from '../Environment/DinosaurModel';
 import { rexCurve } from '../Environment/Terrain';
 

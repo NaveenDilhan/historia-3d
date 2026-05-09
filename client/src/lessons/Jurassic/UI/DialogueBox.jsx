@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import useAI from '../../../hooks/useAI';
+import useAI from '../hooks/useAI';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function DialogueBox({ currentBiome }) {

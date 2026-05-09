@@ -73,7 +73,7 @@ export default function EarthGlobe() {
   const atmosphereRef = useRef();
   
   const [progress, setProgress] = useState(0);
-  const [lockThreshold, setLockThreshold] = useState(0.25); 
+  const [lockThreshold, setLockThreshold] = useState(0.40); // First lock is at Archean (0.4)
   const [isLessonActive, setIsLessonActive] = useState(false);
   const [isQuizActive, setIsQuizActive] = useState(false);
   
@@ -81,7 +81,8 @@ export default function EarthGlobe() {
   const defaultCameraPos = new THREE.Vector3(0, 0, 15);
   const zoomCameraPos = new THREE.Vector3(2, 0, 8); 
 
-  const [opacities, setOpacities] = useState([1, 0, 0, 0, 0]);
+  // 5 opacities for the 5 actual planet models (Void has no model)
+  const [opacities, setOpacities] = useState([0, 0, 0, 0, 0]);
 
   useEffect(() => {
     const handleProgress = (e) => setProgress(e.detail.progress);
@@ -122,32 +123,46 @@ export default function EarthGlobe() {
 
     if (globeRef.current) {
       globeRef.current.rotation.y = progress * Math.PI * 2; 
+      
+      // Magically scale the Earth out of the void between 0.0 and 0.2
+      const formationScale = THREE.MathUtils.clamp(progress / 0.15, 0, 1);
+      globeRef.current.scale.set(formationScale, formationScale, formationScale);
+      if (atmosphereRef.current) atmosphereRef.current.scale.set(formationScale * 1.03, formationScale * 1.03, formationScale * 1.03);
     }
 
-    const newOpacities = [1, 0, 0, 0, 0]; 
+    const newOpacities = [0, 0, 0, 0, 0]; 
     const blendWindow = 0.05; 
 
+    // Skip index 0 (Void) in loop, map indices 1-5 to opacities 0-4
     for (let i = 1; i < ERAS.length; i++) {
       const prevThreshold = ERAS[i-1].threshold;
-      if (progress <= prevThreshold) newOpacities[i] = 0;
-      else if (progress >= prevThreshold + blendWindow) newOpacities[i] = 1;
-      else newOpacities[i] = (progress - prevThreshold) / blendWindow;
+      if (progress <= prevThreshold) newOpacities[i-1] = 0;
+      else if (progress >= prevThreshold + blendWindow) newOpacities[i-1] = 1;
+      else newOpacities[i-1] = (progress - prevThreshold) / blendWindow;
     }
     setOpacities(newOpacities);
 
     if (atmosphereRef.current) {
+      const colorVoid = new THREE.Color('#000000');
       const colorHadean = new THREE.Color('#ff2200'); 
       const colorPresent = new THREE.Color('#2288ff'); 
-      atmosphereRef.current.material.color.lerpColors(colorHadean, colorPresent, progress);
-      atmosphereRef.current.material.opacity = 0.25 - (progress * 0.1);
+      
+      if (progress < 0.2) {
+          atmosphereRef.current.material.color.lerpColors(colorVoid, colorHadean, progress / 0.2);
+          atmosphereRef.current.material.opacity = (progress / 0.2) * 0.25;
+      } else {
+          atmosphereRef.current.material.color.lerpColors(colorHadean, colorPresent, (progress - 0.2) / 0.8);
+          atmosphereRef.current.material.opacity = 0.25 - ((progress - 0.2) * 0.1);
+      }
     }
   });
 
   const isAtLock = (threshold) => Math.abs(progress - threshold) < 0.02 && lockThreshold === threshold && !isLessonActive && !isQuizActive;
   
-  const hadeanCooling = THREE.MathUtils.clamp(progress / 0.15, 0, 1);
-  // Ensures drift strictly runs between Mesozoic (0.75) and Present (1.0)
-  const tectonicDrift = THREE.MathUtils.clamp((progress - 0.75) / 0.25, 0, 1);
+  // Hadean cooling mapped between 0.2 and 0.4
+  const hadeanCooling = THREE.MathUtils.clamp((progress - 0.2) / 0.2, 0, 1);
+  // Tectonic drift mapped between Mesozoic (0.8) and Present (1.0)
+  const tectonicDrift = THREE.MathUtils.clamp((progress - 0.8) / 0.2, 0, 1);
 
   return (
     <group>
@@ -159,27 +174,27 @@ export default function EarthGlobe() {
         <PresentGlobe radius={5.008} opacity={opacities[4]} drift={tectonicDrift} />
       </group>
 
-      <mesh scale={1.03} ref={atmosphereRef}>
+      <mesh ref={atmosphereRef}>
         <sphereGeometry args={[5, 64, 64]} />
         <meshStandardMaterial transparent blending={THREE.AdditiveBlending} depthWrite={false} roughness={1} />
       </mesh>
 
       <ScanningEvent
-         active={isAtLock(0.25)}
+         active={isAtLock(0.40)}
          title="Early Oceans & Cyanobacteria"
-         onScan={() => triggerScanLesson("Provide a new, distinct historical fact about cyanobacteria or the early ocean environment. Address the user directly as a historical observer; do not use the phrase 'young traveler'. Ensure you do not repeat facts if this is triggered multiple times.")}
-         onQuiz={() => triggerQuiz('archean', 0.50)}
+         onScan={() => triggerScanLesson("Provide a new, distinct historical fact about cyanobacteria or the early ocean environment. Address the user directly as a historical observer. Ensure you do not repeat facts if this is triggered multiple times.")}
+         onQuiz={() => triggerQuiz('archean', 0.60)}
       />
       <ScanningEvent
-         active={isAtLock(0.50)}
+         active={isAtLock(0.60)}
          title="The Great Oxidation Event"
-         onScan={() => triggerScanLesson("Provide a new, distinct historical fact about the Great Oxidation Event or early eukaryotic life. Address the user directly; do not use the phrase 'young traveler'. Do not repeat facts.")}
-         onQuiz={() => triggerQuiz('proterozoic', 0.75)}
+         onScan={() => triggerScanLesson("Provide a new, distinct historical fact about the Great Oxidation Event or early eukaryotic life. Address the user directly. Do not repeat facts.")}
+         onQuiz={() => triggerQuiz('proterozoic', 0.80)}
       />
       <ScanningEvent
-         active={isAtLock(0.75)}
+         active={isAtLock(0.80)}
          title="Supercontinent Pangea"
-         onScan={() => triggerScanLesson("Provide a new, distinct historical fact about Pangea or the Mesozoic climate. Speak directly to the user; do not use the phrase 'young traveler'. Do not repeat facts.")}
+         onScan={() => triggerScanLesson("Provide a new, distinct historical fact about Pangea or the Mesozoic climate. Speak directly to the user. Do not repeat facts.")}
          onQuiz={() => triggerQuiz('mesozoic', 1.0)}
       />
     </group>

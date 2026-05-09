@@ -4,7 +4,7 @@ import InteractHint from './InteractHint';
 import DinoModal from './DinoModal';
 import HUD from './HUD';
 import LessonCompleteOverlay from '../../../components/UI/LessonCompleteOverlay';
-import useAI from '../../../hooks/useAI';
+import useAI from '../hooks/useAI';
 
 export default function JurassicUI({ hasStarted }) {
   const [hoveredDino, setHoveredDino] = useState(false);
