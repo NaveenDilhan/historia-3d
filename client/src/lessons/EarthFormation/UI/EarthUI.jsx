@@ -17,6 +17,7 @@ export default function EarthUI({ hasStarted }) {
   const [isFrozen, setIsFrozen] = useState(true); 
   
   const [quizReadyConfig, setQuizReadyConfig] = useState(null);
+  const [pendingQuizReadyConfig, setPendingQuizReadyConfig] = useState(null);
   const [mcqConfig, setMcqConfig] = useState(null); 
   const [perfectSections, setPerfectSections] = useState(0);
   const [showLessonComplete, setShowLessonComplete] = useState(false);
@@ -25,6 +26,10 @@ export default function EarthUI({ hasStarted }) {
   const hasFinishedIntro = useRef(false);
   const isCinematicActive = useRef(true); 
   const introPromptTimeoutRef = useRef(null);
+  const nextAnnouncementTimeout = useRef(null);
+  
+  // Track the current narrative phase to chain events perfectly
+  const narrationContext = useRef('welcome');
 
   useEffect(() => {
     isCinematicActive.current = showCinematic;
@@ -39,11 +44,11 @@ export default function EarthUI({ hasStarted }) {
         setTimeout(() => setShowLessonComplete(true), 15000); 
       }
 
-      // Progressive Era Changes
       if (!isCinematicActive.current && newEra.id !== 'void') {
+          narrationContext.current = 'era-intro';
           getNarration(
-              `The user just scrolled the timeline forward into a new time period: ${newEra.name} (${newEra.time}).`,
-              `Provide a fun, exciting description of what the planet looks like right now in this new era! Focus on the big visual changes—like glowing lava, new blue oceans, thick white ice, or giant land puzzle pieces moving. Speak like an enthusiastic, friendly science teacher. Use very simple words and keep it exactly 2 to 4 short sentences.`,
+              `The user entered the ${newEra.name} era.`,
+              `Introduce this specific era only. Explain what this era looks like in a fun, simple narrative way for a younger audience. Keep it to exactly 2 short sentences. Do not add any instructions.`,
               true 
           );
       }
@@ -54,18 +59,66 @@ export default function EarthUI({ hasStarted }) {
     const handleFreeze = (e) => setIsFrozen(e.detail.frozen);
 
     const handleDiscoveryNarration = (e) => {
-      getNarration("The user scanned a geological anomaly.", e.detail.prompt, true);
+      narrationContext.current = 'anomaly-fact';
+      getNarration(
+          "The user scanned a geological anomaly.", 
+          `Explain this anomaly fact: "${e.detail.prompt}". Explain it in a very simple, fun narrative way for a young audience. Talk ONLY about the anomaly. Keep it to exactly 2 short sentences.`, 
+          true
+      );
     };
 
-    const handleQuizReady = (e) => setQuizReadyConfig(e.detail);
+    const handleQuizReady = (e) => {
+      // Hold the UI reveal until the fact narration finishes
+      setPendingQuizReadyConfig(e.detail);
+    };
 
     const handleNarrationEnded = () => {
       if (isCinematicActive.current) {
-        introPromptTimeoutRef.current = setTimeout(() => {
-           if (isCinematicActive.current) {
-               setShowEnterPrompt(true);
-           }
-        }, 3000);
+        if (narrationContext.current === 'welcome') {
+            introPromptTimeoutRef.current = setTimeout(() => {
+               if (isCinematicActive.current) {
+                   setShowEnterPrompt(true);
+               }
+            }, 3000);
+        }
+        return;
+      }
+
+      // Narrative State Machine
+      if (narrationContext.current === 'era-intro') {
+          nextAnnouncementTimeout.current = setTimeout(() => {
+              narrationContext.current = 'anomaly-announcement';
+              getNarration(
+                  "An anomaly appeared.",
+                  "Write exactly one simple sentence saying: 'Look, an anomaly has appeared! Press and hold the spacebar to scan it.' Do not add anything else.",
+                  true
+              );
+          }, 3000);
+
+      } else if (narrationContext.current === 'anomaly-announcement') {
+          // Reveal the marker immediately after the AI announces it
+          setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('reveal-anomaly'));
+          }, 500);
+
+      } else if (narrationContext.current === 'anomaly-fact') {
+          // Check if the era's anomalies are fully cleared
+          setPendingQuizReadyConfig(currentPending => {
+              if (currentPending) {
+                  setQuizReadyConfig(currentPending);
+                  return null; // Clear pending state
+              } else {
+                  nextAnnouncementTimeout.current = setTimeout(() => {
+                      narrationContext.current = 'anomaly-announcement';
+                      getNarration(
+                          "Another anomaly appeared.",
+                          "Write exactly one simple sentence saying: 'Wow, another anomaly has appeared! Press and hold the spacebar to scan it.' Do not add anything else.",
+                          true
+                      );
+                  }, 4000);
+                  return null;
+              }
+          });
       }
     };
 
@@ -87,13 +140,13 @@ export default function EarthUI({ hasStarted }) {
       window.removeEventListener('narration-ended', handleNarrationEnded);
       
       if (introPromptTimeoutRef.current) clearTimeout(introPromptTimeoutRef.current);
+      if (nextAnnouncementTimeout.current) clearTimeout(nextAnnouncementTimeout.current);
     };
   }, [getNarration, showLessonComplete]);
 
   // Global key listener
   useEffect(() => {
       const handleKey = (e) => {
-          // Entering the Void
           if (e.code === 'Enter' && showCinematic && showEnterPrompt) {
               setShowCinematic(false);
               window.dispatchEvent(new CustomEvent('freeze-timeline', { detail: { frozen: false } }));
@@ -103,9 +156,10 @@ export default function EarthUI({ hasStarted }) {
               window.__isSpeaking = false;
 
               setTimeout(() => {
+                  narrationContext.current = 'era-intro';
                   getNarration(
-                      "The user just started the journey and is looking at the dark, floating dust in the Cosmic Void.",
-                      "Explain that right now, Earth doesn't exist yet—it's just floating space dust waiting to clump together into a planet. Then, give them their instructions by saying exactly this: 'Use your scroll wheel to travel forward in time. When you see a glowing marker, hold the spacebar to scan it.' Keep it under 4 sentences.",
+                      "The user just entered the Cosmic Void era.",
+                      "Introduce the Cosmic Void era only. Explain in a fun, simple narrative way for a younger audience that Earth doesn't exist yet and is just floating space dust. Keep it to exactly 2 short sentences. Do not add any instructions.",
                       true
                   );
               }, 400);
@@ -126,14 +180,15 @@ export default function EarthUI({ hasStarted }) {
   useEffect(() => {
     if (hasStarted && !hasFinishedIntro.current) {
       hasFinishedIntro.current = true;
+      narrationContext.current = 'welcome';
       
       window.dispatchEvent(new CustomEvent('freeze-timeline', { detail: { frozen: true } }));
       if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
       
       setTimeout(() => {
         getNarration(
-          "The magical journey of Earth's creation is just beginning.",
-          "Give a fun, deeply creative, and awe-inspiring introduction to the amazing story of our planet. Without mentioning any screens, menus, or titles, creatively explain how Earth started as just scattered space dust, and how incredibly magical it is that it eventually clumped together to become a beautiful, vibrant home bursting with amazing life! Keep it within 2 to 4 short, simple sentences.",
+          "Welcome the user to the journey of Earth's formation.",
+          "Give a warm welcome to the story of Earth's formation. Tell it in a magical, narrative way for a younger audience, mentioning how amazing it is that our planet grew to support beautiful life. Keep it very simple, exactly 2 short sentences.",
           true
         );
       }, 1500); 
@@ -153,6 +208,14 @@ export default function EarthUI({ hasStarted }) {
       window.dispatchEvent(new CustomEvent('end-mcq'));
       
       setMcqConfig(null);
+
+      // Era successfully completed -> Now instruct them to scroll
+      narrationContext.current = 'era-outro';
+      getNarration(
+          "User completed gathering all data for this era.",
+          "Say exactly one simple sentence: 'Great job, now use your scroll wheel to travel forward in time!'",
+          true
+      );
   };
 
   let finalMedal = "participant";

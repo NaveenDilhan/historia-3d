@@ -104,8 +104,8 @@ export default function EarthGlobe() {
   const [isLessonActive, setIsLessonActive] = useState(false);
   const [isQuizActive, setIsQuizActive] = useState(false);
   
-  // Track if the cinematic intro is finished to unhide anomalies
   const [isCinematicDone, setIsCinematicDone] = useState(false);
+  const [anomalyRevealed, setAnomalyRevealed] = useState(false); // Controls when the marker actually pops in
   
   const [scanCounts, setScanCounts] = useState({ void: 0, hadean: 0, archean: 0, proterozoic: 0, mesozoic: 0 });
   
@@ -120,13 +120,17 @@ export default function EarthGlobe() {
     const handleUnlockUpdate = (e) => setLockThreshold(e.detail.nextThreshold);
     const handleMcqStart = () => setIsQuizActive(true);
     const handleMcqEnd = () => setIsQuizActive(false);
-    const handleCinematicEnded = () => setIsCinematicDone(true); // Reveal Anomalies
+    const handleCinematicEnded = () => setIsCinematicDone(true);
+    const handleRevealAnomaly = () => setAnomalyRevealed(true);
+    const handleEraChange = () => setAnomalyRevealed(false); // Hide the next era's anomaly until requested
 
     window.addEventListener('timeline-progress', handleProgress);
     window.addEventListener('unlock-timeline', handleUnlockUpdate);
     window.addEventListener('start-mcq', handleMcqStart);
     window.addEventListener('end-mcq', handleMcqEnd);
     window.addEventListener('cinematic-ended', handleCinematicEnded);
+    window.addEventListener('reveal-anomaly', handleRevealAnomaly);
+    window.addEventListener('era-change', handleEraChange);
     
     return () => {
       window.removeEventListener('timeline-progress', handleProgress);
@@ -134,11 +138,15 @@ export default function EarthGlobe() {
       window.removeEventListener('start-mcq', handleMcqStart);
       window.removeEventListener('end-mcq', handleMcqEnd);
       window.removeEventListener('cinematic-ended', handleCinematicEnded);
+      window.removeEventListener('reveal-anomaly', handleRevealAnomaly);
+      window.removeEventListener('era-change', handleEraChange);
     };
   }, []);
 
   const triggerScanLesson = (narrationPrompt, eraKey) => {
     setIsLessonActive(true);
+    setAnomalyRevealed(false); // Hide immediately for the next one
+    
     window.dispatchEvent(new CustomEvent('freeze-timeline', { detail: { frozen: true } }));
     window.dispatchEvent(new CustomEvent('trigger-narration', { detail: { prompt: narrationPrompt } }));
 
@@ -194,8 +202,8 @@ export default function EarthGlobe() {
   const isAtLock = (threshold) => Math.abs(progress - threshold) < 0.02 && lockThreshold === threshold && !isLessonActive && !isQuizActive;
   
   const renderActiveAnomaly = () => {
-      // Hide anomalies completely if cinematic intro hasn't finished
-      if (!isCinematicDone || !activeEraKey || !isAtLock(lockThreshold)) return null;
+      // Must wait for UI to command the reveal of the marker
+      if (!isCinematicDone || !activeEraKey || !isAtLock(lockThreshold) || !anomalyRevealed) return null;
       
       const eraAnomalies = ANOMALY_DATA[activeEraKey];
       const currentIndex = scanCounts[activeEraKey];
