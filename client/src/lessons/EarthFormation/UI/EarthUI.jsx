@@ -10,15 +10,12 @@ export default function EarthUI({ hasStarted }) {
   const [activeEra, setActiveEra] = useState(ERAS[0]);
   const [scrollProgress, setScrollProgress] = useState(0);
   
-  // Cinematic Intro State
   const [showCinematic, setShowCinematic] = useState(true);
   const [showEnterPrompt, setShowEnterPrompt] = useState(false); 
   
-  // Timeline locking and freezing
   const [lockThreshold, setLockThreshold] = useState(0.0);
   const [isFrozen, setIsFrozen] = useState(true); 
   
-  // MCQ and Completion States
   const [quizReadyConfig, setQuizReadyConfig] = useState(null);
   const [mcqConfig, setMcqConfig] = useState(null); 
   const [perfectSections, setPerfectSections] = useState(0);
@@ -42,10 +39,11 @@ export default function EarthUI({ hasStarted }) {
         setTimeout(() => setShowLessonComplete(true), 15000); 
       }
 
+      // Progressive Era Changes
       if (!isCinematicActive.current && newEra.id !== 'void') {
           getNarration(
-              `The timeline just shifted to the ${newEra.name} (${newEra.time}).`,
-              `Provide a fresh, highly visual description of what the planet looks like right now in this new era. Take your time to paint a vivid picture with simple words in 2 to 4 sentences.`,
+              `The user just scrolled the timeline forward into a new time period: ${newEra.name} (${newEra.time}).`,
+              `Provide a fun, exciting description of what the planet looks like right now in this new era! Focus on the big visual changes—like glowing lava, new blue oceans, thick white ice, or giant land puzzle pieces moving. Speak like an enthusiastic, friendly science teacher. Use very simple words and keep it exactly 2 to 4 short sentences.`,
               true 
           );
       }
@@ -95,7 +93,7 @@ export default function EarthUI({ hasStarted }) {
   // Global key listener
   useEffect(() => {
       const handleKey = (e) => {
-          // Dismiss Intro
+          // Entering the Void
           if (e.code === 'Enter' && showCinematic && showEnterPrompt) {
               setShowCinematic(false);
               window.dispatchEvent(new CustomEvent('freeze-timeline', { detail: { frozen: false } }));
@@ -104,17 +102,15 @@ export default function EarthUI({ hasStarted }) {
               if ('speechSynthesis' in window) window.speechSynthesis.cancel();
               window.__isSpeaking = false;
 
-              // Mechanical Instruction
               setTimeout(() => {
                   getNarration(
-                      "The intro is finished.",
-                      "Briefly tell the user: 'Use your scroll wheel to journey forward through time. When you spot a glowing anomaly, hold the spacebar to analyze it.'",
+                      "The user just started the journey and is looking at the dark, floating dust in the Cosmic Void.",
+                      "Explain that right now, Earth doesn't exist yet—it's just floating space dust waiting to clump together into a planet. Then, give them their instructions by saying exactly this: 'Use your scroll wheel to travel forward in time. When you see a glowing marker, hold the spacebar to scan it.' Keep it under 4 sentences.",
                       true
                   );
               }, 400);
           }
           
-          // Start Assessment
           if (e.code === 'KeyE' && quizReadyConfig && !mcqConfig && !showCinematic) {
               window.dispatchEvent(new CustomEvent('freeze-timeline', { detail: { frozen: true } }));
               setMcqConfig(quizReadyConfig);
@@ -126,7 +122,7 @@ export default function EarthUI({ hasStarted }) {
       return () => window.removeEventListener('keydown', handleKey);
   }, [quizReadyConfig, mcqConfig, showCinematic, showEnterPrompt, getNarration]);
 
-  // Initial Boot-up Narration
+  // Initial Welcome Screen
   useEffect(() => {
     if (hasStarted && !hasFinishedIntro.current) {
       hasFinishedIntro.current = true;
@@ -134,18 +130,16 @@ export default function EarthUI({ hasStarted }) {
       window.dispatchEvent(new CustomEvent('freeze-timeline', { detail: { frozen: true } }));
       if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
       
-      // FIX: Reduced delay from 3.5s to 1.5s so the narration starts much faster on boot
       setTimeout(() => {
         getNarration(
-          "The user is viewing the welcome screen showing cosmic void.",
-          "Give a warm, creative welcome to the dawn of time. Explain what 'Earth formation' means using very simple, everyday language—like dust and rocks slowly clumping together over billions of years to build our home. Mention the quiet floating stardust they see right now. Do this in 2 to 4 sentences.",
+          "The magical journey of Earth's creation is just beginning.",
+          "Give a fun, deeply creative, and awe-inspiring introduction to the amazing story of our planet. Without mentioning any screens, menus, or titles, creatively explain how Earth started as just scattered space dust, and how incredibly magical it is that it eventually clumped together to become a beautiful, vibrant home bursting with amazing life! Keep it within 2 to 4 short, simple sentences.",
           true
         );
       }, 1500); 
     }
   }, [hasStarted, getNarration]);
 
-  // Handle assessment completion and unlocking the next timeline phase
   const handleMcqComplete = (score) => {
       if (!mcqConfig) return;
 
@@ -172,7 +166,6 @@ export default function EarthUI({ hasStarted }) {
   return (
     <div className="absolute inset-0 z-20 pointer-events-none">
       
-      {/* Cinematic Title Screen - Always mounted to hide raw 3D scene immediately */}
       <div 
         className={`absolute inset-0 z-[300] flex flex-col items-center justify-center bg-black/95 backdrop-blur-md transition-opacity duration-1000 ease-in-out ${
             showCinematic ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -189,7 +182,6 @@ export default function EarthUI({ hasStarted }) {
         )}
       </div>
 
-      {/* Only render HUD elements once the experience has officially started */}
       {hasStarted && (
         <>
           {quizReadyConfig && !mcqConfig && !showCinematic && (

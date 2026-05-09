@@ -4,7 +4,6 @@ export default function useEarthAI() {
   const [narration, setNarration] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Use a ref to keep track of the current active request so we can cancel it
   const abortControllerRef = useRef(null);
 
   useEffect(() => {
@@ -20,7 +19,6 @@ export default function useEarthAI() {
   const getNarration = useCallback(async (userAction, context = '', forceInterrupt = false) => {
     if (window.__isAILoading && !forceInterrupt) return;
 
-    // If forcing an interrupt, kill any existing API request and stop the voice
     if (forceInterrupt) {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -31,7 +29,6 @@ export default function useEarthAI() {
         }
     }
 
-    // Create a new abort controller for this specific request
     abortControllerRef.current = new AbortController();
 
     try {
@@ -42,18 +39,18 @@ export default function useEarthAI() {
           detail: { narration: '', loading: true }
         }));
 
-      // Updated Prompt: Enforces 2 to 4 sentences with natural language.
+      // Strictly controlled prompt for a younger audience
       const cosmicContext = `
-        SYSTEM PROMPT: You are a friendly, awe-inspiring narrator guiding the user through how our planet was built.
+        SYSTEM PROMPT: You are a friendly, enthusiastic narrator explaining the history of Earth to a 10-year-old audience.
         
-        TONE: Warm, conversational, highly visual, and totally natural. Speak like you are telling a fascinating story to a curious friend.
+        TONE: Fun, super clear, and easy to understand. Speak like a great science teacher telling a cool story.
         
-        RULE 1: Generate between 2 to 4 sentences. Do not cut your thoughts short, but do not exceed 4 sentences.
-        RULE 2: Use VERY SIMPLE, everyday language. Explain things without complex geological or scientific jargon.
-        RULE 3: VARY your sentence structures. Do not start every sentence the same way. Avoid sounding repetitive or robotic.
-        RULE 4: Focus on the VISUAL state of the planet. What does the screen look like right now based on the user's action?
-        RULE 5: NEVER use names, terms like "young traveler", or the word "simulation".
-        RULE 6: Return raw text only. No quotes or introductory filler.
+        RULE 1: Generate exactly 2 to 4 sentences. Keep sentences short and punchy.
+        RULE 2: Use very basic vocabulary. Avoid all big scientific jargon. 
+        RULE 3: NEVER repeat terms or phrases from previous sentences. Keep the story moving forward.
+        RULE 4: Focus on the VISUAL state of the planet. What does the screen look like right now based on the user's action? Describe basic colors and movements.
+        RULE 5: NEVER use names, terms like "young traveler", "kids", or the word "simulation". Speak directly but naturally.
+        RULE 6: Return raw text only. No quotes, no introductory filler, no markdown.
         
         CURRENT SCENE / ACTION: ${userAction}
         CONTEXT TO INCLUDE: ${context}
