@@ -9,7 +9,6 @@ export default function EarthDialogueBox({ currentEra }) {
   
   const masterTimerRef = useRef(null);
 
-  // Pre-fetch voices on mount to wake up the browser's TTS engine early
   useEffect(() => {
     const loadVoices = () => {
       if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
@@ -18,6 +17,9 @@ export default function EarthDialogueBox({ currentEra }) {
     if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) {
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
+    
+    window.__speechUtterances = window.__speechUtterances || [];
+    
     return () => {
       window.__isSpeaking = false;
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -45,83 +47,96 @@ export default function EarthDialogueBox({ currentEra }) {
       window.__isSpeaking = true;
       
       const wordCount = narration.split(' ').length;
-      const fallbackTime = Math.max(8000, (wordCount * 800) + 5000);
-
       if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
 
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         
-        const sentences = narration.match(/[^.!?]+[.!?]*/g) || [narration];
-        const validSentences = sentences.map(s => s.replace(/["“”]/g, '').trim()).filter(Boolean);
+        // Extract raw sentences
+        const rawSentences = narration.match(/[^.!?]+[.!?]*/g) || [narration];
+        const cleanSentences = rawSentences.map(s => s.replace(/["“”]/g, '').trim()).filter(Boolean);
         
-        if (validSentences.length === 0) return;
-
-        window.__speechUtterances = []; 
+        if (cleanSentences.length === 0) return;
 
         const setupAndSpeak = () => {
           const voices = window.speechSynthesis.getVoices();
           
           let ukFemaleVoice = voices.find(v => 
                (v.lang === 'en-GB' || v.lang === 'en_GB') && 
-               (v.name.includes('Female') || v.name.includes('Hazel') || v.name.includes('Serena') || v.name.includes('Martha') || v.name.includes('Google UK English Female'))
+               (v.name.includes('Female') || v.name.includes('Hazel') || v.name.includes('Serena') || v.name.includes('Martha'))
           );
-
           if (!ukFemaleVoice) ukFemaleVoice = voices.find(v => v.lang === 'en-GB' || v.name.includes('UK'));
 
-          validSentences.forEach((text, index) => {
+          // Iterate over the sentences one by one
+          cleanSentences.forEach((text, index) => {
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.rate = 0.95;
             utterance.pitch = 1.1; 
             if (ukFemaleVoice) utterance.voice = ukFemaleVoice;
 
-            utterance.onstart = () => setCurrentSubtitle(text);
+            utterance.onstart = () => {
+                setCurrentSubtitle(text);
+            };
 
-            if (index === validSentences.length - 1) {
+            // Keep utterance in memory until it completely finishes playing
+            window.__speechUtterances.push(utterance);
+
+            const cleanup = () => {
+                const utteranceIndex = window.__speechUtterances.indexOf(utterance);
+                if (utteranceIndex > -1) window.__speechUtterances.splice(utteranceIndex, 1);
+            };
+
+            // If it's the very last sentence
+            if (index === cleanSentences.length - 1) {
               utterance.onend = () => {
+                cleanup();
                 setVisible(false);
                 setCurrentSubtitle('');
                 window.__isSpeaking = false;
-                if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
                 window.dispatchEvent(new CustomEvent('narration-ended'));
               };
               utterance.onerror = () => {
+                cleanup();
                 setVisible(false);
                 setCurrentSubtitle('');
                 window.__isSpeaking = false;
-                if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
                 window.dispatchEvent(new CustomEvent('narration-ended'));
               };
+            } else {
+              utterance.onend = cleanup;
+              utterance.onerror = cleanup;
             }
 
-            window.__speechUtterances.push(utterance);
             window.speechSynthesis.speak(utterance);
           });
         };
 
-        // Robust Voice Loading Retry Loop
         let retryCount = 0;
         const trySpeak = () => {
             const voices = window.speechSynthesis.getVoices();
-            if (voices.length > 0 || retryCount > 10) {
-                // If it fails 10 times, the browser will just use its default native voice
-                setupAndSpeak();
+            if (voices.length > 0 || retryCount > 5) {
+                // Micro-delay allows the browser TTS engine to reset after cancel() to prevent voice clipping
+                setTimeout(setupAndSpeak, 100);
             } else {
                 retryCount++;
-                setTimeout(trySpeak, 100);
+                setTimeout(trySpeak, 50); 
             }
         };
         trySpeak();
 
+        // Failsafe: Only triggers if the browser API completely locks up
         masterTimerRef.current = setTimeout(() => {
-          setVisible(false);
-          setCurrentSubtitle('');
-          window.__isSpeaking = false;
-          window.speechSynthesis.cancel();
-          window.dispatchEvent(new CustomEvent('narration-ended'));
-        }, fallbackTime);
+          if (window.__isSpeaking) {
+             setVisible(false);
+             setCurrentSubtitle('');
+             window.__isSpeaking = false;
+             window.speechSynthesis.cancel();
+             window.dispatchEvent(new CustomEvent('narration-ended'));
+          }
+        }, Math.max(30000, wordCount * 1000));
 
       } else {
+        // Fallback for browsers without TTS support
         setCurrentSubtitle(narration.replace(/["“”]/g, ''));
         const readTime = Math.max(4000, wordCount * 300);
         masterTimerRef.current = setTimeout(() => {
