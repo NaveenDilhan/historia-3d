@@ -53,16 +53,26 @@ export default function ScenePage() {
   const canvasWrapperRef = useRef(null);
   const hasStartedRef = useRef(false);
 
-  // Monitor loading progress
+  // Monitor loading progress (FIXED FOR PROCEDURAL SCENES)
   useEffect(() => {
     if (hasLoaded) return;
-    if (!active && progress === 100 && total > 0) {
-      const timer = setTimeout(() => setHasLoaded(true), 1500);
-      return () => clearTimeout(timer);
-    }
-    if (!active && errors.length > 0) {
-      const timer = setTimeout(() => setHasLoaded(true), 3000);
-      return () => clearTimeout(timer);
+    
+    // When 'active' is false, the loading manager is idle.
+    if (!active) {
+      if (progress === 100 && total > 0) {
+        // Normal scenes with external assets
+        const timer = setTimeout(() => setHasLoaded(true), 1500);
+        return () => clearTimeout(timer);
+      } else if (total === 0) {
+        // Procedural scenes with NO external assets (like Earth Formation)
+        // Wait a tiny bit just in case React is still mounting the loaders
+        const timer = setTimeout(() => setHasLoaded(true), 1500);
+        return () => clearTimeout(timer);
+      } else if (errors.length > 0) {
+        // Scenes with failed assets
+        const timer = setTimeout(() => setHasLoaded(true), 3000);
+        return () => clearTimeout(timer);
+      }
     }
   }, [active, progress, total, errors.length, hasLoaded]);
 

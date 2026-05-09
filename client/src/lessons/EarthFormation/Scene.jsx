@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Environment, Stars, Sparkles, OrbitControls } from '@react-three/drei';
+import { Environment, Stars, Sparkles, OrbitControls, Preload } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing';
 import EarthGlobe from './Environment/EarthGlobe';
 import EarthUI from './UI/EarthUI';
@@ -28,7 +28,9 @@ export default function Scene({ hasStarted }) {
         <TimeScrollController hasStarted={hasStarted} />
         
         <Suspense fallback={null}>
-           {hasStarted && <EarthGlobe />}
+           {/* FIX: Render EarthGlobe unconditionally so assets trigger the loading screen */}
+           <EarthGlobe />
+           <Preload all />
         </Suspense>
 
         <Stars radius={100} depth={50} count={6000} factor={3} saturation={0.5} fade speed={1.5} />
