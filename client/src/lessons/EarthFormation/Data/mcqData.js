@@ -1,4 +1,18 @@
 export const MCQ_DATA = {
+  void: [
+    { q: "What primary force caused the solar nebula to collapse and form the sun and planets?", options: ["Magnetism", "Gravity", "Nuclear Fission", "Centrifugal Force"], a: 1 },
+    { q: "What term describes the gradual accumulation of dust and gas to form planetesimals?", options: ["Accretion", "Sublimation", "Oxidation", "Subduction"], a: 0 },
+    { q: "Roughly how long ago did our solar system begin to form?", options: ["13.8 Billion Years", "4.6 Billion Years", "2.5 Billion Years", "65 Million Years"], a: 1 },
+    { q: "What was the solar nebula primarily composed of?", options: ["Hydrogen and Helium", "Oxygen and Carbon", "Iron and Nickel", "Nitrogen and Methane"], a: 0 },
+    { q: "As the nebula collapsed, what happened to its rate of rotation?", options: ["It stopped", "It reversed direction", "It slowed down", "It increased significantly"], a: 3 }
+  ],
+  hadean: [
+    { q: "What celestial body likely collided with the Hadean Earth to form the Moon?", options: ["Mars", "Venus", "Theia", "Ceres"], a: 2 },
+    { q: "Why was the Hadean Earth largely molten?", options: ["Proximity to the sun", "Extreme greenhouse effect", "Frequent asteroid impacts and radioactive decay", "Lack of an atmosphere"], a: 2 },
+    { q: "What essential planetary feature began to form as the heavier elements sank to the center?", options: ["The Mantle", "The Iron Core", "The Crust", "The Lithosphere"], a: 1 },
+    { q: "Despite the extreme heat, what compound may have existed on the surface in small, cooling patches by the end of the eon?", options: ["Liquid Water", "Liquid Methane", "Solid Oxygen", "Liquid Nitrogen"], a: 0 },
+    { q: "Where does the term 'Hadean' originate from?", options: ["The Greek god of the underworld, Hades", "A type of ancient rock", "The scientist who discovered it", "A Latin word for 'beginning'"], a: 0 }
+  ],
   archean: [
     { q: "What were the first known oxygen-producing organisms on Earth?", options: ["Cyanobacteria", "Trilobites", "Amoebas", "Sponges"], a: 0 },
     { q: "What was the dominant state of Earth's surface during the preceding Hadean eon?", options: ["Frozen ice", "Molten magma", "Dense forests", "Shallow seas"], a: 1 },

@@ -16,8 +16,8 @@ export default function useTimeScroll(hasStarted) {
   const currentProgress = useRef(0);
   const [activeEra, setActiveEra] = useState(ERAS[0]);
   
-  // Lock at the first scanning anomaly (Archean)
-  const currentLockRef = useRef(ERAS[2].threshold);
+  // Set the initial lock to 0.0 so the user must analyze the Void anomaly first
+  const currentLockRef = useRef(ERAS[0].threshold);
   
   const isFrozenRef = useRef(false);
 

@@ -1,8 +1,12 @@
 import React from 'react';
 
-export default function TimelineHUD({ activeEra, progress }) {
+export default function TimelineHUD({ activeEra, progress, visible }) {
   return (
-    <div className="absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none z-50">
+    <div 
+      className={`absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none z-50 transition-opacity duration-700 ease-in-out ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`}
+    >
       <div className="bg-black/60 backdrop-blur-md border border-white/20 text-white px-8 py-4 rounded-xl text-center shadow-[0_0_20px_rgba(0,0,0,0.8)]">
         <h2 className="text-3xl font-bold uppercase tracking-widest text-emerald-400">
           {activeEra?.name || 'Initializing...'}

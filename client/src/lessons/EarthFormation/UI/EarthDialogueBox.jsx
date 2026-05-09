@@ -9,17 +9,22 @@ export default function EarthDialogueBox({ currentEra }) {
   
   const masterTimerRef = useRef(null);
 
+  // Pre-fetch voices on mount to wake up the browser's TTS engine early
   useEffect(() => {
+    const loadVoices = () => {
+      if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
+    };
+    loadVoices();
+    if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
     return () => {
       window.__isSpeaking = false;
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
     };
   }, []);
 
-  // AUDIO ENGINE & LINE-BY-LINE SUBTITLES
   useEffect(() => {
     if (loading) {
       setVisible(false);
@@ -47,7 +52,6 @@ export default function EarthDialogueBox({ currentEra }) {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         
-        // Split narration into sentence chunks
         const sentences = narration.match(/[^.!?]+[.!?]*/g) || [narration];
         const validSentences = sentences.map(s => s.replace(/["“”]/g, '').trim()).filter(Boolean);
         
@@ -60,12 +64,10 @@ export default function EarthDialogueBox({ currentEra }) {
           
           let ukFemaleVoice = voices.find(v => 
                (v.lang === 'en-GB' || v.lang === 'en_GB') && 
-               (v.name.includes('Female') || v.name.includes('Hazel') || v.name.includes('Serena') || v.name.includes('Martha') || v.name.includes('Sonia') || v.name.includes('Google UK English Female'))
+               (v.name.includes('Female') || v.name.includes('Hazel') || v.name.includes('Serena') || v.name.includes('Martha') || v.name.includes('Google UK English Female'))
           );
 
-          if (!ukFemaleVoice) {
-            ukFemaleVoice = voices.find(v => v.lang === 'en-GB' || v.name.includes('UK') || v.name.includes('Great Britain'));
-          }
+          if (!ukFemaleVoice) ukFemaleVoice = voices.find(v => v.lang === 'en-GB' || v.name.includes('UK'));
 
           validSentences.forEach((text, index) => {
             const utterance = new SpeechSynthesisUtterance(text);
@@ -73,10 +75,7 @@ export default function EarthDialogueBox({ currentEra }) {
             utterance.pitch = 1.1; 
             if (ukFemaleVoice) utterance.voice = ukFemaleVoice;
 
-            // Sync visual subtitle to audio chunk
-            utterance.onstart = () => {
-              setCurrentSubtitle(text);
-            };
+            utterance.onstart = () => setCurrentSubtitle(text);
 
             if (index === validSentences.length - 1) {
               utterance.onend = () => {
@@ -100,11 +99,19 @@ export default function EarthDialogueBox({ currentEra }) {
           });
         };
 
-        if (window.speechSynthesis.getVoices().length > 0) {
-          setupAndSpeak();
-        } else {
-          window.speechSynthesis.onvoiceschanged = setupAndSpeak;
-        }
+        // Robust Voice Loading Retry Loop
+        let retryCount = 0;
+        const trySpeak = () => {
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0 || retryCount > 10) {
+                // If it fails 10 times, the browser will just use its default native voice
+                setupAndSpeak();
+            } else {
+                retryCount++;
+                setTimeout(trySpeak, 100);
+            }
+        };
+        trySpeak();
 
         masterTimerRef.current = setTimeout(() => {
           setVisible(false);
@@ -128,9 +135,7 @@ export default function EarthDialogueBox({ currentEra }) {
   }, [narration, loading]);
 
   return (
-    // The relative wrapper guarantees the UI stays fixed and text won't push components around
     <div className="relative w-full max-w-4xl min-h-[90px] flex justify-center items-end pb-4">
-      {/* mode="wait" ensures the old sentence unmounts fully before the new one animates in */}
       <AnimatePresence mode="wait">
         {visible && currentSubtitle && (
           <motion.div
@@ -139,12 +144,10 @@ export default function EarthDialogueBox({ currentEra }) {
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             exit={{ opacity: 0, y: -8, filter: 'blur(3px)' }}
             transition={{ duration: 0.35, ease: "easeInOut" }}
-            // absolute positioning prevents any layout shifts while animating
             className="absolute w-full text-center pointer-events-none"
           >
             <span 
                className="text-white text-xl md:text-2xl font-medium tracking-wide leading-relaxed" 
-               // Strong text-shadow makes it readable against bright lavas and sun without a background box
                style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 4px 16px rgba(0,0,0,0.7), 0 0 24px rgba(0,0,0,0.4)' }}
             >
               {currentSubtitle}
