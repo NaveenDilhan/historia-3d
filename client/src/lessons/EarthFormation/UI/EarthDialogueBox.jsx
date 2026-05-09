@@ -8,17 +8,32 @@ export default function EarthDialogueBox({ currentEra }) {
   const [currentSubtitle, setCurrentSubtitle] = useState('');
   
   const masterTimerRef = useRef(null);
+  const currentUtteranceRef = useRef(null); 
 
+  // Initialize and "Warm Up" the TTS Engine
   useEffect(() => {
     const loadVoices = () => {
-      if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+        
+        // BUG FIX: The "Silent Warmup"
+        // Playing an empty string at volume 0 forces the browser's audio context 
+        // to initialize in the background. This prevents the engine from clipping 
+        // the first few words of the actual first sentence it tries to read.
+        const wakeUpUtterance = new SpeechSynthesisUtterance('');
+        wakeUpUtterance.volume = 0;
+        wakeUpUtterance.rate = 1;
+        window.speechSynthesis.speak(wakeUpUtterance);
+        
+        // Resume catches any stuck state in certain browsers
+        window.speechSynthesis.resume();
+      }
     };
+    
     loadVoices();
     if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) {
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
-    
-    window.__speechUtterances = window.__speechUtterances || [];
     
     return () => {
       window.__isSpeaking = false;
@@ -38,7 +53,6 @@ export default function EarthDialogueBox({ currentEra }) {
     }
 
     if (!narration) {
-        window.dispatchEvent(new CustomEvent('narration-ended'));
         return;
     }
 
@@ -52,9 +66,9 @@ export default function EarthDialogueBox({ currentEra }) {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         
-        // Extract raw sentences
+        // Extract raw sentences and clean up weird characters
         const rawSentences = narration.match(/[^.!?]+[.!?]*/g) || [narration];
-        const cleanSentences = rawSentences.map(s => s.replace(/["“”]/g, '').trim()).filter(Boolean);
+        const cleanSentences = rawSentences.map(s => s.replace(/["“”*]/g, '').trim()).filter(Boolean);
         
         if (cleanSentences.length === 0) return;
 
@@ -67,56 +81,56 @@ export default function EarthDialogueBox({ currentEra }) {
           );
           if (!ukFemaleVoice) ukFemaleVoice = voices.find(v => v.lang === 'en-GB' || v.name.includes('UK'));
 
-          // Iterate over the sentences one by one
-          cleanSentences.forEach((text, index) => {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.95;
-            utterance.pitch = 1.1; 
-            if (ukFemaleVoice) utterance.voice = ukFemaleVoice;
+          const playSentence = (index) => {
+              if (index >= cleanSentences.length || !window.__isSpeaking) {
+                  setVisible(false);
+                  setCurrentSubtitle('');
+                  window.__isSpeaking = false;
+                  window.dispatchEvent(new CustomEvent('narration-ended'));
+                  return;
+              }
 
-            utterance.onstart = () => {
-                setCurrentSubtitle(text);
-            };
+              const text = cleanSentences[index];
+              const utterance = new SpeechSynthesisUtterance(text);
+              utterance.rate = 0.95;
+              utterance.pitch = 1.1; 
+              if (ukFemaleVoice) utterance.voice = ukFemaleVoice;
 
-            // Keep utterance in memory until it completely finishes playing
-            window.__speechUtterances.push(utterance);
+              utterance.onstart = () => {
+                  setCurrentSubtitle(text);
+              };
 
-            const cleanup = () => {
-                const utteranceIndex = window.__speechUtterances.indexOf(utterance);
-                if (utteranceIndex > -1) window.__speechUtterances.splice(utteranceIndex, 1);
-            };
-
-            // If it's the very last sentence
-            if (index === cleanSentences.length - 1) {
               utterance.onend = () => {
-                cleanup();
-                setVisible(false);
-                setCurrentSubtitle('');
-                window.__isSpeaking = false;
-                window.dispatchEvent(new CustomEvent('narration-ended'));
+                  playSentence(index + 1);
               };
-              utterance.onerror = () => {
-                cleanup();
-                setVisible(false);
-                setCurrentSubtitle('');
-                window.__isSpeaking = false;
-                window.dispatchEvent(new CustomEvent('narration-ended'));
-              };
-            } else {
-              utterance.onend = cleanup;
-              utterance.onerror = cleanup;
-            }
 
-            window.speechSynthesis.speak(utterance);
-          });
+              utterance.onerror = (e) => {
+                  console.warn('Speech API error:', e);
+                  playSentence(index + 1); 
+              };
+
+              currentUtteranceRef.current = utterance;
+              
+              // BUG FIX: The "First Sentence Micro-Buffer"
+              // Add a slight 150ms delay specifically before the *first* sentence.
+              // This gives the audio hardware enough time to physically engage 
+              // after the synthesis begins processing.
+              if (index === 0) {
+                  setTimeout(() => window.speechSynthesis.speak(utterance), 150);
+              } else {
+                  window.speechSynthesis.speak(utterance);
+              }
+          };
+
+          playSentence(0);
         };
 
         let retryCount = 0;
         const trySpeak = () => {
             const voices = window.speechSynthesis.getVoices();
             if (voices.length > 0 || retryCount > 5) {
-                // Micro-delay allows the browser TTS engine to reset after cancel() to prevent voice clipping
-                setTimeout(setupAndSpeak, 100);
+                // Ensure there is a gap between the silent warmup and the real text
+                setTimeout(setupAndSpeak, 250);
             } else {
                 retryCount++;
                 setTimeout(trySpeak, 50); 

@@ -27,6 +27,7 @@ export default function EarthUI({ hasStarted }) {
   const { getNarration } = useEarthAI();
   const hasFinishedIntro = useRef(false);
   const isCinematicActive = useRef(true); 
+  const introPromptTimeoutRef = useRef(null);
 
   useEffect(() => {
     isCinematicActive.current = showCinematic;
@@ -62,7 +63,11 @@ export default function EarthUI({ hasStarted }) {
 
     const handleNarrationEnded = () => {
       if (isCinematicActive.current) {
-        setShowEnterPrompt(true);
+        introPromptTimeoutRef.current = setTimeout(() => {
+           if (isCinematicActive.current) {
+               setShowEnterPrompt(true);
+           }
+        }, 3000);
       }
     };
 
@@ -82,6 +87,8 @@ export default function EarthUI({ hasStarted }) {
       window.removeEventListener('trigger-narration', handleDiscoveryNarration);
       window.removeEventListener('quiz-ready', handleQuizReady);
       window.removeEventListener('narration-ended', handleNarrationEnded);
+      
+      if (introPromptTimeoutRef.current) clearTimeout(introPromptTimeoutRef.current);
     };
   }, [getNarration, showLessonComplete]);
 
@@ -127,15 +134,32 @@ export default function EarthUI({ hasStarted }) {
       window.dispatchEvent(new CustomEvent('freeze-timeline', { detail: { frozen: true } }));
       if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
       
+      // FIX: Reduced delay from 3.5s to 1.5s so the narration starts much faster on boot
       setTimeout(() => {
         getNarration(
           "The user is viewing the welcome screen showing cosmic void.",
           "Give a warm, creative welcome to the dawn of time. Explain what 'Earth formation' means using very simple, everyday language—like dust and rocks slowly clumping together over billions of years to build our home. Mention the quiet floating stardust they see right now. Do this in 2 to 4 sentences.",
           true
         );
-      }, 3500); 
+      }, 1500); 
     }
   }, [hasStarted, getNarration]);
+
+  // Handle assessment completion and unlocking the next timeline phase
+  const handleMcqComplete = (score) => {
+      if (!mcqConfig) return;
+
+      window.dispatchEvent(new CustomEvent('freeze-timeline', { detail: { frozen: false } }));
+      
+      if (score === 5) {
+          setPerfectSections(p => p + 1);
+      }
+      
+      window.dispatchEvent(new CustomEvent('unlock-timeline', { detail: { nextThreshold: mcqConfig.nextThreshold } }));
+      window.dispatchEvent(new CustomEvent('end-mcq'));
+      
+      setMcqConfig(null);
+  };
 
   let finalMedal = "participant";
   if (perfectSections >= 4) finalMedal = "gold"; 
