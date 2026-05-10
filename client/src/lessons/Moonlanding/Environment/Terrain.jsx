@@ -3,106 +3,191 @@ import { MeshReflectorMaterial, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
 export default function Terrain() {
-  // 1. Load Textures (ensure these are in your public/textures folder)
+  // 1. Existing Grass Textures
   const grassTextures = useTexture({
     map: '/textures/moon/grass_diff.jpg',
     normalMap: '/textures/moon/grass_nor.jpg',
     roughnessMap: '/textures/moon/grass_rough.jpg'
   });
 
-  const gravelTextures = useTexture({
-    map: '/textures/moon/gravel_diff.jpg',
-    normalMap: '/textures/moon/gravel_nor.jpg',
-    roughnessMap: '/textures/moon/gravel_rough.jpg'
-  });
+  // 2. Custom Paving Textures
+  const [roadTex, padTex, slabTex] = useTexture([
+    '/textures/moon/road.jpg',
+    '/textures/moon/launchpad.jpg',
+    '/textures/moon/slab.jpg'
+  ]);
 
-  const concreteTextures = useTexture({
-    map: '/textures/moon/concrete_diff.jpg',
-    normalMap: '/textures/moon/concrete_nor.jpg',
-    roughnessMap: '/textures/moon/concrete_rough.jpg'
-  });
-
-  // 2. Tile the textures to prevent stretching
+  // 3. Tile the textures extensively and apply Anisotropy to fix blurring
   useLayoutEffect(() => {
-    Object.values(grassTextures).forEach((texture) => {
-      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(100, 100);
-    });
+    
+    const allTextures = [
+      ...Object.values(grassTextures),
+      roadTex,
+      padTex,
+      slabTex
+    ];
 
-    Object.values(gravelTextures).forEach((texture) => {
-      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(4, 40);
+    allTextures.forEach((tex) => {
+      if (tex) {
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        // Anisotropy keeps textures sharp at extreme grazing angles!
+        tex.anisotropy = 16; 
+      }
     });
+    
+    // Increased the repeat tiling significantly to prevent stretching
+    if (grassTextures.map) grassTextures.map.repeat.set(200, 200);
+    if (grassTextures.normalMap) grassTextures.normalMap.repeat.set(200, 200);
+    if (grassTextures.roughnessMap) grassTextures.roughnessMap.repeat.set(200, 200);
+    
+    if (roadTex) roadTex.repeat.set(4, 20); 
+    if (padTex) padTex.repeat.set(12, 12);
+    if (slabTex) slabTex.repeat.set(24, 24);
 
-    Object.values(concreteTextures).forEach((texture) => {
-      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(15, 15);
-    });
-  }, [grassTextures, gravelTextures, concreteTextures]);
+  }, [grassTextures, roadTex, padTex, slabTex]);
 
   return (
     <group>
-      {/* REALISTIC OCEAN */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -12.5, -400]} receiveShadow>
-        <planeGeometry args={[3000, 1500]} />
+      {/* 1. REALISTIC OCEAN */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -14, -800]} receiveShadow>
+        <planeGeometry args={[8000, 3000]} />
         <MeshReflectorMaterial
           blur={[400, 100]} 
           resolution={1024} 
           mixBlur={1}
           mixStrength={1.5} 
-          roughness={0.2}
+          roughness={0.1}
           depthScale={1.2}
           minDepthThreshold={0.4}
           maxDepthThreshold={1.4}
-          color="#3a4b5c" 
+          color="#424e4d" 
           metalness={0.8}
         />
       </mesh>
 
-      {/* DRY MARSHLAND TERRAIN */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -12, 0]} receiveShadow>
-        <planeGeometry args={[2000, 2000, 64, 64]} />
+      {/* 2. DRY MARSHLAND TERRAIN */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -13.5, 0]} receiveShadow>
+        <planeGeometry args={[8000, 8000, 64, 64]} />
         <meshStandardMaterial 
           {...grassTextures} 
-          color="#8c8662" 
-          metalness={0.1} 
-          roughness={0.9}
+          color="#64624b"
+          metalness={0.05} 
+          roughness={1}
         />
       </mesh>
 
-      {/* MAIN CRAWLERWAY */}
-      <mesh position={[0, -11.9, 200]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[30, 400]} />
-        <meshStandardMaterial {...gravelTextures} color="#707070" />
+      {/* 3. DISTANT ROLLING HILLS */}
+      <mesh position={[-300, -80, -500]} scale={[1, 0.5, 1]} receiveShadow>
+        <sphereGeometry args={[200, 32, 32]} />
+        <meshStandardMaterial {...grassTextures} color="#5a553f" roughness={1} metalness={0} />
+      </mesh>
+      <mesh position={[350, -100, -450]} scale={[1, 0.4, 1]} receiveShadow>
+        <sphereGeometry args={[250, 32, 32]} />
+        <meshStandardMaterial {...grassTextures} color="#5a553f" roughness={1} metalness={0} />
+      </mesh>
+      <mesh position={[0, -120, -600]} scale={[1, 0.4, 1]} receiveShadow>
+        <sphereGeometry args={[350, 32, 32]} />
+        <meshStandardMaterial {...grassTextures} color="#4a4635" roughness={1} metalness={0} />
       </mesh>
 
-      {/* SECONDARY ROADS */}
-      <mesh position={[100, -11.8, 50]} rotation={[-Math.PI / 2, 0, -Math.PI / 6]} receiveShadow>
-        <planeGeometry args={[15, 300]} />
-        <meshStandardMaterial {...concreteTextures} color="#606060" />
-      </mesh>
-      <mesh position={[-100, -11.8, 50]} rotation={[-Math.PI / 2, 0, Math.PI / 6]} receiveShadow>
-        <planeGeometry args={[15, 300]} />
-        <meshStandardMaterial {...concreteTextures} color="#606060" />
-      </mesh>
 
-      {/* SLOPED CONCRETE MOUND (Your 3D model will sit on top of this at Y=0) */}
-      <mesh position={[0, -6, 0]} rotation={[0, Math.PI / 4, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[65, 130, 12, 4]} />
-        <meshStandardMaterial {...concreteTextures} color="#8a8a8a" roughness={0.8} />
-      </mesh>
-
-      {/* SPHERICAL FUEL TANK */}
-      <group position={[-90, -4, 40]}>
-        <mesh receiveShadow castShadow>
-          <sphereGeometry args={[8, 32, 32]} />
-          <meshStandardMaterial color="#4a524a" roughness={0.4} metalness={0.6} />
+      {/* 4. PROCEDURAL BASE RECREATION */}
+      
+      {/* --- CENTRAL LAUNCH PAD COMPLEX --- */}
+      <group position={[0, -13.5, 0]}>
+        
+        {/* The Base Slab (Mound) */}
+        <mesh position={[0, 7.5, 0]} rotation={[0, Math.PI / 4, 0]} receiveShadow castShadow>
+          <cylinderGeometry args={[45, 120, 15, 4]} />
+          <meshStandardMaterial map={slabTex} color="#cccccc" roughness={0.9} />
         </mesh>
-        <mesh position={[0, -6, 0]} receiveShadow castShadow>
-          <cylinderGeometry args={[6, 6, 4, 16]} />
-          <meshStandardMaterial color="#555555" />
+
+        {/* The Top Launchpad Area - Lifted slightly higher */}
+        <mesh position={[0, 15.4, 0]} rotation={[0, 0, 0]} receiveShadow castShadow>
+          <boxGeometry args={[60, 0.6, 60]} />
+          <meshStandardMaterial map={padTex} color="#dddddd" roughness={0.8} />
+        </mesh>
+
+        {/* Flame Trench Cutout - Lifted to match launchpad */}
+        <mesh position={[0, 15.5, 0]} receiveShadow>
+          <boxGeometry args={[15, 0.7, 60]} />
+          <meshStandardMaterial color="#1a1a1a" roughness={1} />
+        </mesh>
+
+        {/* Crawlerway Ramp - Mathematically angled to join the pad at Y=15.4 down to the road at Y=0 */}
+        <mesh position={[0, 7.6, 65]} rotation={[0.23, 0, 0]} receiveShadow castShadow>
+          <boxGeometry args={[25, 1.2, 75]} />
+          <meshStandardMaterial map={roadTex} color="#cccccc" roughness={0.9} />
         </mesh>
       </group>
+
+
+      {/* --- ROAD NETWORK --- */}
+      <group position={[0, -13.4, 0]}>
+        {/* Main Crawlerway passing under the camera */}
+        <mesh position={[0, 0, 150]} receiveShadow>
+          <boxGeometry args={[25, 0.2, 100]} />
+          <meshStandardMaterial map={roadTex} color="#cccccc" roughness={0.9} />
+        </mesh>
+
+        <mesh position={[-60, 0, -60]} rotation={[0, Math.PI / 4, 0]} receiveShadow>
+          <boxGeometry args={[10, 0.2, 170]} />
+          <meshStandardMaterial map={roadTex} color="#cccccc" roughness={0.9} />
+        </mesh>
+
+        <mesh position={[60, 0, -60]} rotation={[0, -Math.PI / 4, 0]} receiveShadow>
+          <boxGeometry args={[10, 0.2, 170]} />
+          <meshStandardMaterial map={roadTex} color="#cccccc" roughness={0.9} />
+        </mesh>
+      </group>
+
+
+      {/* --- FUEL STATION --- */}
+      <group position={[-120, -13.5, -120]}>
+        <mesh position={[0, 0.2, 0]} receiveShadow>
+          <cylinderGeometry args={[25, 25, 0.4, 32]} />
+          <meshStandardMaterial map={slabTex} color="#cccccc" roughness={0.9} />
+        </mesh>
+
+        <mesh position={[0, 12, 0]} receiveShadow castShadow>
+          <sphereGeometry args={[10, 32, 32]} />
+          <meshStandardMaterial color="#4a5240" roughness={0.6} metalness={0.2} />
+        </mesh>
+
+        <mesh position={[0, 5, 0]} receiveShadow castShadow>
+          <cylinderGeometry args={[6, 8, 10, 16]} />
+          <meshStandardMaterial map={slabTex} color="#cccccc" roughness={0.8} />
+        </mesh>
+      </group>
+
+
+      {/* --- FACILITY / SUB-STATION --- */}
+      <group position={[120, -13.5, -120]}>
+        <mesh position={[0, 0.2, 0]} receiveShadow>
+           <group>
+             <mesh position={[0, 0, -30]}><boxGeometry args={[80, 0.4, 10]} /><meshStandardMaterial map={roadTex} color="#cccccc" /></mesh>
+             <mesh position={[0, 0, 30]}><boxGeometry args={[80, 0.4, 10]} /><meshStandardMaterial map={roadTex} color="#cccccc" /></mesh>
+             <mesh position={[-35, 0, 0]}><boxGeometry args={[10, 0.4, 50]} /><meshStandardMaterial map={roadTex} color="#cccccc" /></mesh>
+             <mesh position={[35, 0, 0]}><boxGeometry args={[10, 0.4, 50]} /><meshStandardMaterial map={roadTex} color="#cccccc" /></mesh>
+           </group>
+        </mesh>
+
+        <mesh position={[-15, 3, 0]} receiveShadow castShadow>
+          <boxGeometry args={[15, 6, 20]} />
+          <meshStandardMaterial color="#cccccc" roughness={0.9} />
+        </mesh>
+
+        <mesh position={[25, 15, -20]} receiveShadow castShadow>
+          <cylinderGeometry args={[1.5, 1.5, 30, 8]} />
+          <meshStandardMaterial color="#999999" />
+        </mesh>
+
+        <mesh position={[25, 30, -20]} receiveShadow castShadow>
+          <boxGeometry args={[6, 4, 6]} />
+          <meshStandardMaterial color="#dddddd" />
+        </mesh>
+      </group>
+
     </group>
   );
 }
