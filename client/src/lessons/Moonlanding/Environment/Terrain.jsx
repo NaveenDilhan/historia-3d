@@ -102,28 +102,58 @@ export default function Terrain() {
           <meshStandardMaterial map={slabTex} color="#cccccc" roughness={0.9} />
         </mesh>
 
-        {/* The Top Launchpad Area - Lifted slightly higher */}
-        <mesh position={[0, 15.4, 0]} rotation={[0, 0, 0]} receiveShadow castShadow>
+        {/* The Top Launchpad Area */}
+        <mesh position={[0, 16.15, 0]} rotation={[0, 0, 0]} receiveShadow castShadow>
           <boxGeometry args={[60, 0.6, 60]} />
-          <meshStandardMaterial map={padTex} color="#dddddd" roughness={0.8} />
+          <meshStandardMaterial map={roadTex} color="#dddddd" roughness={0.8} />
         </mesh>
 
-        {/* Flame Trench Cutout - Lifted to match launchpad */}
-        <mesh position={[0, 15.5, 0]} receiveShadow>
+        {/* Flame Trench Cutout */}
+        <mesh position={[0, 16.25, 0]} receiveShadow>
           <boxGeometry args={[15, 0.7, 60]} />
           <meshStandardMaterial color="#1a1a1a" roughness={1} />
         </mesh>
 
-        {/* Crawlerway Ramp - Mathematically angled to join the pad at Y=15.4 down to the road at Y=0 */}
-        <mesh position={[0, 7.6, 65]} rotation={[0.23, 0, 0]} receiveShadow castShadow>
-          <boxGeometry args={[25, 1.2, 75]} />
-          <meshStandardMaterial map={roadTex} color="#cccccc" roughness={0.9} />
-        </mesh>
+        {/* Crawlerway Ramp - grouped to include the new center black road */}
+        <group position={[0, 7.32, 66.36]} rotation={[0.23, 0, 0]}>
+          {/* Main Ramp Base */}
+          <mesh receiveShadow castShadow>
+            <boxGeometry args={[25, 1.2, 75]} />
+            <meshStandardMaterial map={roadTex} color="#cccccc" roughness={0.9} />
+          </mesh>
+          {/* Middle Black Road connecting Flame Trench down to the ground */}
+          <mesh position={[0, 0.61, 0]} receiveShadow>
+            <boxGeometry args={[15, 0.05, 75]} />
+            <meshStandardMaterial color="#1a1a1a" roughness={1} />
+          </mesh>
+        </group>
       </group>
 
 
       {/* --- ROAD NETWORK --- */}
       <group position={[0, -13.4, 0]}>
+        
+        {/* Black Ring Road forming a perfect square around the base slab */}
+        {/* Positioned slightly higher (0.05) to overlay correctly on other roads without clipping */}
+        <group position={[0, 0.05, 0]}>
+          <mesh position={[0, 0, -97.5]} receiveShadow>
+             <boxGeometry args={[220, 0.25, 25]} />
+             <meshStandardMaterial color="#1a1a1a" roughness={1} />
+          </mesh>
+          <mesh position={[0, 0, 97.5]} receiveShadow>
+             <boxGeometry args={[220, 0.25, 25]} />
+             <meshStandardMaterial color="#1a1a1a" roughness={1} />
+          </mesh>
+          <mesh position={[-97.5, 0, 0]} receiveShadow>
+             <boxGeometry args={[25, 0.25, 220]} />
+             <meshStandardMaterial color="#1a1a1a" roughness={1} />
+          </mesh>
+          <mesh position={[97.5, 0, 0]} receiveShadow>
+             <boxGeometry args={[25, 0.25, 220]} />
+             <meshStandardMaterial color="#1a1a1a" roughness={1} />
+          </mesh>
+        </group>
+
         {/* Main Crawlerway passing under the camera */}
         <mesh position={[0, 0, 150]} receiveShadow>
           <boxGeometry args={[25, 0.2, 100]} />

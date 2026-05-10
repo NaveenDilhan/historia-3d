@@ -48,9 +48,8 @@ export default function RocketModel({ phase, launchProgress }) {
   });
 
   return (
-    // Lift the entire 3D model up by 15 units so the pad is no longer submerged
-    // (Adjust the Y value '15' up or down if it hovers or sinks into the concrete mound)
-    <group position={[0, 25, 0]}> 
+    // Lift the entire 3D model up by 25.75 units to match the newly raised launchpad
+    <group position={[0, 25.75, 0]}> 
       
       {/* Renders the entire scene (Tower, Pad, and Rocket) */}
       <primitive object={scene} />
