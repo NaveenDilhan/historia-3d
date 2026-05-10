@@ -2,8 +2,8 @@ import React, { useLayoutEffect } from 'react';
 import { MeshReflectorMaterial, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
-export default function Launchpad() {
-  // 1. Load PBR Textures
+export default function Terrain() {
+  // 1. Load Textures (ensure these are in your public/textures folder)
   const grassTextures = useTexture({
     map: '/textures/moon/grass_diff.jpg',
     normalMap: '/textures/moon/grass_nor.jpg',
@@ -22,7 +22,7 @@ export default function Launchpad() {
     roughnessMap: '/textures/moon/concrete_rough.jpg'
   });
 
-  // 2. Tile the textures
+  // 2. Tile the textures to prevent stretching
   useLayoutEffect(() => {
     Object.values(grassTextures).forEach((texture) => {
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -42,7 +42,7 @@ export default function Launchpad() {
 
   return (
     <group>
-      {/* 1. REALISTIC OCEAN */}
+      {/* REALISTIC OCEAN */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -12.5, -400]} receiveShadow>
         <planeGeometry args={[3000, 1500]} />
         <MeshReflectorMaterial
@@ -54,29 +54,29 @@ export default function Launchpad() {
           depthScale={1.2}
           minDepthThreshold={0.4}
           maxDepthThreshold={1.4}
-          color="#3a4b5c" // Adjusted to a sunset water tone
+          color="#3a4b5c" 
           metalness={0.8}
         />
       </mesh>
 
-      {/* 2. DRY MARSHLAND TERRAIN (Matches the yellowish-green in your image) */}
+      {/* DRY MARSHLAND TERRAIN */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -12, 0]} receiveShadow>
         <planeGeometry args={[2000, 2000, 64, 64]} />
         <meshStandardMaterial 
           {...grassTextures} 
-          color="#8c8662" // Dry, sunset-lit grass color
+          color="#8c8662" 
           metalness={0.1} 
           roughness={0.9}
         />
       </mesh>
 
-      {/* 3. MAIN CRAWLERWAY (The road extending towards the camera) */}
+      {/* MAIN CRAWLERWAY */}
       <mesh position={[0, -11.9, 200]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[30, 400]} />
         <meshStandardMaterial {...gravelTextures} color="#707070" />
       </mesh>
 
-      {/* SECONDARY ROADS (Branching off like in your image) */}
+      {/* SECONDARY ROADS */}
       <mesh position={[100, -11.8, 50]} rotation={[-Math.PI / 2, 0, -Math.PI / 6]} receiveShadow>
         <planeGeometry args={[15, 300]} />
         <meshStandardMaterial {...concreteTextures} color="#606060" />
@@ -86,81 +86,22 @@ export default function Launchpad() {
         <meshStandardMaterial {...concreteTextures} color="#606060" />
       </mesh>
 
-      {/* 4. SLOPED CONCRETE MOUND (The truncated pyramid base) */}
-      {/* We use a 4-sided cylinder rotated by 45 degrees to create the perfect sloped ramp structure */}
+      {/* SLOPED CONCRETE MOUND (Your 3D model will sit on top of this at Y=0) */}
       <mesh position={[0, -6, 0]} rotation={[0, Math.PI / 4, 0]} receiveShadow castShadow>
-        {/* args: [radiusTop, radiusBottom, height, radialSegments] */}
         <cylinderGeometry args={[65, 130, 12, 4]} />
         <meshStandardMaterial {...concreteTextures} color="#8a8a8a" roughness={0.8} />
       </mesh>
 
-      {/* 5. SPHERICAL FUEL TANK (Visible on the left side of your image) */}
+      {/* SPHERICAL FUEL TANK */}
       <group position={[-90, -4, 40]}>
         <mesh receiveShadow castShadow>
           <sphereGeometry args={[8, 32, 32]} />
           <meshStandardMaterial color="#4a524a" roughness={0.4} metalness={0.6} />
         </mesh>
-        {/* Tank Base */}
         <mesh position={[0, -6, 0]} receiveShadow castShadow>
           <cylinderGeometry args={[6, 6, 4, 16]} />
           <meshStandardMaterial color="#555555" />
         </mesh>
-      </group>
-
-      {/* 6. FLAME TRENCH & DEFLECTOR */}
-      <group position={[0, -3, 0]}>
-        <mesh position={[0, -2.5, 0]} receiveShadow castShadow>
-          <boxGeometry args={[16, 1, 60]} />
-          <meshStandardMaterial {...concreteTextures} color="#333333" />
-        </mesh>
-        <mesh position={[0, -0.5, 0]} rotation={[0, 0, Math.PI / 4]} receiveShadow castShadow>
-          <boxGeometry args={[4, 4, 10]} />
-          <meshStandardMaterial color="#1a1a1a" roughness={1} />
-        </mesh>
-      </group>
-
-      {/* 7. MOBILE LAUNCHER PLATFORM (MLP) */}
-      <group position={[0, -1, 0]}>
-        <mesh position={[-8, 0, 0]} receiveShadow castShadow>
-          <boxGeometry args={[6, 3, 30]} />
-          <meshStandardMaterial color="#555" roughness={0.6} metalness={0.4} />
-        </mesh>
-        <mesh position={[8, 0, 0]} receiveShadow castShadow>
-          <boxGeometry args={[6, 3, 30]} />
-          <meshStandardMaterial color="#555" roughness={0.6} metalness={0.4} />
-        </mesh>
-        <mesh position={[0, 0, -12]} receiveShadow castShadow>
-          <boxGeometry args={[10, 3, 6]} />
-          <meshStandardMaterial color="#555" roughness={0.6} metalness={0.4} />
-        </mesh>
-        <mesh position={[0, 0, 12]} receiveShadow castShadow>
-          <boxGeometry args={[10, 3, 6]} />
-          <meshStandardMaterial color="#555" roughness={0.6} metalness={0.4} />
-        </mesh>
-      </group>
-
-      {/* 8. LAUNCH UMBILICAL TOWER (LUT) */}
-      <group position={[15, 18, -8]}>
-        <mesh receiveShadow castShadow>
-          <boxGeometry args={[5, 42, 5]} />
-          <meshStandardMaterial color="#b33939" roughness={0.7} metalness={0.2} />
-        </mesh>
-        <mesh position={[0, -21, 0]} receiveShadow castShadow>
-          <boxGeometry args={[8, 4, 8]} />
-          <meshStandardMaterial color="#2d3436" roughness={0.8} />
-        </mesh>
-        {[-10, 0, 10, 16].map((y, i) => (
-          <group key={i} position={[-6.5, y, 0]}>
-            <mesh receiveShadow castShadow>
-              <boxGeometry args={[10, 0.6, 0.8]} />
-              <meshStandardMaterial color="#b33939" roughness={0.7} />
-            </mesh>
-            <mesh position={[-5, 0, 0]} receiveShadow castShadow>
-              <boxGeometry args={[1, 1, 1]} />
-              <meshStandardMaterial color="#ffffff" roughness={0.5} />
-            </mesh>
-          </group>
-        ))}
       </group>
     </group>
   );
