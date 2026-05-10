@@ -1,3 +1,4 @@
+// src/pages/ScenePage.jsx
 import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import LoadingScreen from '../components/UI/LoadingScreen';
@@ -11,6 +12,8 @@ import * as THREE from 'three';
 const SceneMap = {
   'earth-formation': lazy(() => import('../lessons/EarthFormation/Scene')),
   'jurassic': lazy(() => import('../lessons/Jurassic/Scene')),
+  // ADDED NEW MOON LANDING ROUTE HERE:
+  'moon-landing': lazy(() => import('../lessons/MoonLanding/Scene')),
 };
 
 const LessonNotFound = () => {
@@ -44,7 +47,6 @@ export default function ScenePage() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
 
-  // --- PAUSE MENU STATE ---
   const [isPaused, setIsPaused] = useState(false);
   const [soundMuted, setSoundMuted] = useState(window.__soundMuted || false);
   const [subsMuted, setSubsMuted] = useState(window.__subtitlesMuted || false);
@@ -53,35 +55,26 @@ export default function ScenePage() {
   const canvasWrapperRef = useRef(null);
   const hasStartedRef = useRef(false);
 
-  // Monitor loading progress (FIXED FOR PROCEDURAL SCENES)
   useEffect(() => {
     if (hasLoaded) return;
-    
-    // When 'active' is false, the loading manager is idle.
     if (!active) {
       if (progress === 100 && total > 0) {
-        // Normal scenes with external assets
         const timer = setTimeout(() => setHasLoaded(true), 1500);
         return () => clearTimeout(timer);
       } else if (total === 0) {
-        // Procedural scenes with NO external assets (like Earth Formation)
-        // Wait a tiny bit just in case React is still mounting the loaders
         const timer = setTimeout(() => setHasLoaded(true), 1500);
         return () => clearTimeout(timer);
       } else if (errors.length > 0) {
-        // Scenes with failed assets
         const timer = setTimeout(() => setHasLoaded(true), 3000);
         return () => clearTimeout(timer);
       }
     }
   }, [active, progress, total, errors.length, hasLoaded]);
 
-  // Keep track of started state for the event listeners safely
   useEffect(() => {
     hasStartedRef.current = hasStarted;
   }, [hasStarted]);
 
-  // --- PREVENT BROWSER BACK BUTTON ---
   useEffect(() => {
     window.history.pushState(null, '', window.location.pathname);
     const handlePopState = (event) => {
@@ -94,7 +87,6 @@ export default function ScenePage() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // --- PAUSE LOGIC (ESC KEY DETECTION) ---
   useEffect(() => {
     const handlePointerLockChange = () => {
       if (!document.pointerLockElement && hasStartedRef.current) {
@@ -107,27 +99,24 @@ export default function ScenePage() {
     return () => document.removeEventListener('pointerlockchange', handlePointerLockChange);
   }, []);
 
-  // --- AUDIO & VOICE SUSPENSION LOGIC ---
   useEffect(() => {
     const ctx = THREE.AudioContext.getContext();
     if (isPaused) {
-      // Pause environment audio
       if (ctx.state === 'running') ctx.suspend();
-      // Pause voice narration mid-sentence
       if ('speechSynthesis' in window) window.speechSynthesis.pause(); 
     } else {
-      // Only resume if sound is not explicitly muted
       if (!soundMuted && ctx.state === 'suspended') ctx.resume();
       if (!soundMuted && 'speechSynthesis' in window) window.speechSynthesis.resume();
     }
     
-    // Hard cancel if muted
     if (soundMuted && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
   }, [isPaused, soundMuted]);
 
   const handleStart = () => {
+    // For scenes that don't need pointer lock initially (like videos), 
+    // we just unlock it during the intro video state inside the component itself.
     const canvas = document.querySelector('canvas');
     if (canvas) canvas.requestPointerLock();
     
@@ -152,7 +141,6 @@ export default function ScenePage() {
     );
   };
 
-  // --- MENU ACTIONS ---
   const handleResume = () => {
     const canvas = document.querySelector('canvas');
     if (canvas) canvas.requestPointerLock(); 
@@ -185,14 +173,12 @@ export default function ScenePage() {
 
   return (
     <div className="scene-page relative w-full h-screen overflow-hidden bg-black">
-      {/* Intro Loading Screen */}
       {!hasStarted && ActiveScene && (
         <div ref={overlayRef} className="absolute inset-0 z-50 bg-[#1a120b] shadow-[0_20px_50px_rgba(0,0,0,1)] flex items-center justify-center">
           <LoadingScreen hasLoaded={hasLoaded} onStart={handleStart} isRevealing={isRevealing} />
         </div>
       )}
 
-      {/* R3F Canvas */}
       <div ref={canvasWrapperRef} className="w-full h-full absolute inset-0 z-10">
         {ActiveScene ? (
           <Suspense fallback={null}>
@@ -203,7 +189,6 @@ export default function ScenePage() {
         )}
       </div>
 
-      {/* GAME PAUSE MENU */}
       <PauseMenu 
         isPaused={isPaused}
         handleResume={handleResume}
