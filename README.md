@@ -52,7 +52,7 @@ PORT=5000
 ```
 
 ### 4. Run the Development Server
-Once everything is installed and configured, start the Vite development server and your backend environment:
+Once everything is installed and configured, start the Vite development server and your backend environment by running the below in the root of the file:
 
 ```bash
 # Starts the Vite frontend server
