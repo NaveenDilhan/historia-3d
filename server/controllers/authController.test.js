@@ -1,10 +1,11 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { registerUser, loginUser, logoutUser } from './authController.js';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 
-// Mock the User model and jwt
-jest.mock('../models/User.js');
-jest.mock('jsonwebtoken');
+// Mock the User model and jwt using Vitest
+vi.mock('../models/User.js');
+vi.mock('jsonwebtoken');
 
 describe('Auth Controller (UT-01: User Authentication)', () => {
   let mockReq, mockRes;
@@ -14,16 +15,16 @@ describe('Auth Controller (UT-01: User Authentication)', () => {
       body: { name: 'Leonidas', email: 'leo@sparta.com', password: 'password123' },
     };
     mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      cookie: jest.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+      cookie: vi.fn(),
     };
     process.env.JWT_SECRET = 'test_secret';
     jwt.sign.mockReturnValue('mocked_token');
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('registerUser', () => {
@@ -56,7 +57,7 @@ describe('Auth Controller (UT-01: User Authentication)', () => {
         _id: '1',
         name: 'Leonidas',
         email: 'leo@sparta.com',
-        matchPassword: jest.fn().mockResolvedValue(true),
+        matchPassword: vi.fn().mockResolvedValue(true),
       };
       User.findOne.mockResolvedValue(mockUser);
 

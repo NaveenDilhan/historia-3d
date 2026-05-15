@@ -1,9 +1,10 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import protect from './authMiddleware.js';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-jest.mock('jsonwebtoken');
-jest.mock('../models/User.js');
+vi.mock('jsonwebtoken');
+vi.mock('../models/User.js');
 
 describe('Auth Middleware (UT-04: API Route Protection)', () => {
   let mockReq, mockRes, mockNext;
@@ -13,15 +14,15 @@ describe('Auth Middleware (UT-04: API Route Protection)', () => {
       cookies: {},
     };
     mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
     };
-    mockNext = jest.fn();
+    mockNext = vi.fn();
     process.env.JWT_SECRET = 'test_secret';
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should call next() if valid token is provided', async () => {
@@ -30,7 +31,7 @@ describe('Auth Middleware (UT-04: API Route Protection)', () => {
     
     const mockUser = { _id: '1', name: 'Scholar' };
     User.findById.mockReturnValue({
-      select: jest.fn().mockResolvedValue(mockUser)
+      select: vi.fn().mockResolvedValue(mockUser)
     });
 
     await protect(mockReq, mockRes, mockNext);

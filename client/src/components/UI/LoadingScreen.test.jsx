@@ -1,18 +1,19 @@
 import React from 'react';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import LoadingScreen from './LoadingScreen';
 import { useProgress } from '@react-three/drei';
 
-// Mock @react-three/drei
-jest.mock('@react-three/drei', () => ({
-  useProgress: jest.fn(),
+// Mock @react-three/drei using Vitest (vi)
+vi.mock('@react-three/drei', () => ({
+  useProgress: vi.fn(),
 }));
 
 describe('LoadingScreen Component (UT-02: Asset Loader Diagnostics)', () => {
-  const mockOnStart = jest.fn();
+  const mockOnStart = vi.fn();
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should display progress bar when loading', () => {

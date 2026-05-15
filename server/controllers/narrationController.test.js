@@ -1,13 +1,14 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getNarration } from './narrationController.js';
 import { openai } from '../utils/openaiClient.js';
 import Narration from '../models/Narration.js';
 
-jest.mock('../utils/openaiClient.js', () => ({
+vi.mock('../utils/openaiClient.js', () => ({
   openai: {
-    chat: { completions: { create: jest.fn() } },
+    chat: { completions: { create: vi.fn() } },
   },
 }));
-jest.mock('../models/Narration.js');
+vi.mock('../models/Narration.js');
 
 describe('Narration Controller', () => {
   let mockReq, mockRes;
@@ -20,13 +21,13 @@ describe('Narration Controller', () => {
       },
     };
     mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
     };
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should return AI narration and save to database', async () => {
@@ -36,7 +37,7 @@ describe('Narration Controller', () => {
       choices: [{ message: { content: mockAIResponse } }],
     });
 
-    Narration.prototype.save = jest.fn().mockResolvedValue(true);
+    Narration.prototype.save = vi.fn().mockResolvedValue(true);
 
     await getNarration(mockReq, mockRes);
 
