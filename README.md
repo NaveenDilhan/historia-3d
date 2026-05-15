@@ -11,6 +11,56 @@ A highly immersive, interactive 3D educational web environment that blends artis
 *   **Themed UI & Authentication**: A consistent "ancient/archive" visual theme across the platform, featuring custom dark brown assets, floating scroll logo animations, responsive login/registration pages, and beautifully styled profile and logout confirmation modals. 
 *   **Smart Debugging**: Features a custom React Loading Screen with context-aware, asset-specific diagnostic hints for smooth troubleshooting during the initial heavy 3D asset loads.
 
+## 🚀 User Guide
+
+Want to run Historia 3D locally on your machine? Follow these steps to set up the development environment.
+
+### Prerequisites
+Before you begin, ensure you have the following installed:
+*   [Node.js](https://nodejs.org/) (v18 or higher recommended)
+*   [Git](https://git-scm.com/)
+*   [MongoDB](https://www.mongodb.com/) (Local installation or a MongoDB Atlas URI)
+*   API Keys for **OpenAI** and **ElevenLab** (required for the AI narration features)
+
+### 1. Clone the Repository
+Open your terminal and clone the repository using Git:
+
+```bash
+git clone [https://github.com/NaveenDilhan/historia-3d.git](https://github.com/NaveenDilhan/historia-3d.git)
+cd historia-3d
+```
+### 2. Install Dependencies
+Install the required packages for both the client and the server. (If your backend and frontend are in separate folders, run this in both directories).
+
+```bash
+npm install
+```
+
+### 3. Environment Variables Configuration
+Create a `.env` file in the root directory of your project and add your database connection string and API keys. Use the following template:
+
+```env
+# Database
+MONGO_URI=your_mongodb_connection_string_here
+
+# AI Integrations
+OPENAI_API_KEY=your_openai_api_key_here
+ELEVEN_API_KEY=your_groq_api_key_here
+
+# Server Port (Optional)
+PORT=5000
+```
+
+### 4. Run the Development Server
+Once everything is installed and configured, start the Vite development server and your backend environment:
+
+```bash
+# Starts the Vite frontend server
+npm run dev
+```
+
+The application should now be running locally. Open your browser and navigate to `http://localhost:5173` (or the port specified in your terminal) to explore the Historia!
+
 ## 🛠️ Tech Stack
 
 **Frontend & Tooling**
