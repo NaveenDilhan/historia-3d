@@ -9,19 +9,19 @@ const BushScatter = memo(function BushScatter({ count = 50, bounds, terrainGeo, 
         const arr = [];
         let attempts = 0;
         
-        // Find valid anchors (trees and rocks) to cluster around
+
         const anchors = obstacles.filter(obs => obs.type === 'tree' || obs.type === 'rock');
 
         while (arr.length < count && attempts < count * 30) {
             attempts++;
             let x, z;
 
-            // 80% chance to spawn hugging an anchor, 20% chance for random wilderness
+
             if (anchors.length > 0 && Math.random() < 0.8) {
                 const anchor = anchors[Math.floor(Math.random() * anchors.length)];
                 const angle = Math.random() * Math.PI * 2;
                 
-                // Spawn exactly at the edge of the anchor's radius + a tiny gap
+
                 const distance = anchor.radius + 1.0 + Math.random() * 1.5;
                 x = anchor.x + Math.cos(angle) * distance;
                 z = anchor.z + Math.sin(angle) * distance;
@@ -30,7 +30,7 @@ const BushScatter = memo(function BushScatter({ count = 50, bounds, terrainGeo, 
                 z = bounds ? bounds.zMin + Math.random() * (bounds.zMax - bounds.zMin) : (Math.random() - 0.5) * 350;
             }
 
-            // Boundary check
+
             if (bounds) {
                 if (x < bounds.xMin || x > bounds.xMax || z < bounds.zMin || z > bounds.zMax) continue;
             }
@@ -43,7 +43,7 @@ const BushScatter = memo(function BushScatter({ count = 50, bounds, terrainGeo, 
             const scale = 1.0 + Math.random() * 1.5;
             const bushRadius = scale * 0.8;
 
-            // STRICT COLLISION: Ensure this new calculated spot doesn't clip with anything else
+
             let isClipping = false;
             for (let obs of obstacles) {
                 if (Math.hypot(obs.x - x, obs.z - z) < (obs.radius + bushRadius)) {
@@ -53,11 +53,11 @@ const BushScatter = memo(function BushScatter({ count = 50, bounds, terrainGeo, 
             }
             if (isClipping) continue;
 
-            // Visual fix: sink the bush into the ground slightly
+
             const buriedY = y - (scale * 0.4);
             arr.push({ x, y: buriedY, z, scale, rotY: Math.random() * Math.PI * 2 });
             
-            // Register this bush so future foliage doesn't clip into it
+
             obstacles.push({ x, z, radius: bushRadius, type: 'bush' });
         }
         return arr;

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Volume2, VolumeX, MessageSquare, LogOut, Maximize, Minimize } from 'lucide-react';
 
-// Reusable Pause Menu Button Component
 function MenuButton({ icon, label, onClick, highlight, isDanger }) {
   return (
     <button
@@ -34,7 +33,6 @@ export default function PauseMenu({
 }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Sync state with native browser fullscreen changes (e.g. F11 press)
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -62,7 +60,6 @@ export default function PauseMenu({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          // Bumped Z-index to 999 to guarantee it covers subtitles (z-[150]) and everything else
           className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-lg p-4"
         >
           <motion.div 

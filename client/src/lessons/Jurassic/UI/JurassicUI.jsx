@@ -23,17 +23,17 @@ export default function JurassicUI({ hasStarted }) {
   const hasTriggeredCongratsRef = useRef(false);
   const isApocalypseRef = useRef(false); 
 
-  // Custom Modal Close Handler to track sequences
+
   const handleModalClose = () => {
       const closedType = activeModal;
       setActiveModal(null);
       
       if (closedType === 'geothermal') {
-          // Tell the Scene to start the meteor sequence and block ambient events
+
           isApocalypseRef.current = true;
           window.dispatchEvent(new CustomEvent('geothermal-modal-closed'));
       } else if (closedType === 'meteor') {
-          // The Chicxulub modal just closed. Trigger the final congratulations and calculate achievement.
+          
           setTimeout(() => {
               hasTriggeredCongratsRef.current = true;
 

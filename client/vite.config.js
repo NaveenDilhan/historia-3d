@@ -22,5 +22,11 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['@react-three/rapier', '@dimforge/rapier3d-compat']
+  },
+
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/setupTests.js' 
   }
 })

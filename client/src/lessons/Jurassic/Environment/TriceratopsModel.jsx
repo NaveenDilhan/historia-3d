@@ -16,7 +16,7 @@ const TriceratopsModel = memo(function TriceratopsModel({ terrainGeo, hasStarted
   const [action, setAction] = useState('idle');
   const neckBone = useRef(null);
 
-  // FIXED: Synchronously calculate position before the RigidBody ever mounts
+
   const { yPos, rot, fernY, fernX, fernZ } = useMemo(() => {
     const fernDist = 4.0 * scale;
     const fX = x + Math.sin(rotationY) * fernDist;
@@ -55,10 +55,10 @@ const TriceratopsModel = memo(function TriceratopsModel({ terrainGeo, hasStarted
     const alignQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
     const baseQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationY);
     
-    // Pitch offset to keep the tail down properly
+
     const pitchOffset = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.15);
     
-    // NEW: Severely reduced the roll offset so it doesn't seesaw the right legs into the air
+
     const rollOffset = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -0.05);
     
     alignQuat.multiply(pitchOffset);

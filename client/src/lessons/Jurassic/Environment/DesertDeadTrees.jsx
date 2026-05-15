@@ -55,7 +55,7 @@ const DesertDeadTrees = memo(function DesertDeadTrees({ terrainGeo, count = 15, 
       
       arr.push({ x, y, z, model: model.scene, scale: scale, rot: Math.random() * Math.PI * 2 });
       
-      // Fix: Register dead trees to obstacles so they don't clip!
+
       obstacles.push({ x, z, radius: scale * 1.5, type: 'tree' });
     }
     
@@ -80,7 +80,7 @@ const DesertDeadTrees = memo(function DesertDeadTrees({ terrainGeo, count = 15, 
 
 export default DesertDeadTrees;
 
-// Aggressively preload models to eliminate mounting lag
+
 useGLTF.preload('/models/jurrasic/dead1.glb');
 useGLTF.preload('/models/jurrasic/dead2.glb');
 useGLTF.preload('/models/jurrasic/dead3.glb');

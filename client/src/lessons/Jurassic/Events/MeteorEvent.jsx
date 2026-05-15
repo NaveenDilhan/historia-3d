@@ -27,7 +27,7 @@ const MeteorTrailMaterial = shaderMaterial(
 );
 extend({ MeteorTrailMaterial });
 
-// HOISTED GEOMETRIES & MATERIALS: Eliminates 150 shader compilations
+
 const _meteorCoreGeo = new THREE.SphereGeometry(2, 12, 12);
 const _meteorCoreMat = new THREE.MeshBasicMaterial({ color: "#ffffff" });
 const _meteorGlowGeo = new THREE.SphereGeometry(4, 12, 12);
@@ -38,25 +38,25 @@ const _hitboxGeo = new THREE.SphereGeometry(1, 8, 8);
 const _hitboxMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 
 
-// Individual Meteor Component
+
 const Meteor = ({ startPos, targetPos, delay, speed, scale, isHero, hasAudio }) => {
     const ref = useRef();
     const [visible, setVisible] = useState(false);
     const progress = useRef(0);
 
-    // Audio Refs & State
+
     const meteorSoundRef = useRef();
     const explosionSoundRef = useRef();
     const hasStartedSound = useRef(false);
     const hasExploded = useRef(false);
 
     useFrame((state, delta) => {
-        if (delay === Infinity) return; // Optimization: Stay dormant until activated
+        if (delay === Infinity) return; 
 
         if (state.clock.elapsedTime > delay && progress.current < 1) {
             if (!visible) setVisible(true);
             
-            // 1. Play the falling whoosh sound
+
             if (hasAudio && !hasStartedSound.current && meteorSoundRef.current && meteorSoundRef.current.buffer) {
                 meteorSoundRef.current.setVolume(isHero ? 2.5 : 0.15);
                 meteorSoundRef.current.setRefDistance(isHero ? 300 : 50);
@@ -64,13 +64,13 @@ const Meteor = ({ startPos, targetPos, delay, speed, scale, isHero, hasAudio }) 
                 hasStartedSound.current = true;
             }
 
-            // Calculate movement step based on constant speed
+
             progress.current += (delta * speed) / startPos.distanceTo(targetPos);
             
             if (progress.current >= 1) {
-                if (visible) setVisible(false); // Hide the visual meshes
+                if (visible) setVisible(false); 
                 
-                // 2. Play the impact explosion sound
+
                 if (hasAudio && !hasExploded.current && explosionSoundRef.current && explosionSoundRef.current.buffer) {
                     if (meteorSoundRef.current?.isPlaying) meteorSoundRef.current.stop();
                     explosionSoundRef.current.setVolume(isHero ? 4.0 : 0.3);

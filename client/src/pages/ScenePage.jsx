@@ -12,7 +12,6 @@ import * as THREE from 'three';
 const SceneMap = {
   'earth-formation': lazy(() => import('../lessons/EarthFormation/Scene')),
   'jurassic': lazy(() => import('../lessons/Jurassic/Scene')),
-  // ADDED NEW MOON LANDING ROUTE HERE:
   'moon-landing': lazy(() => import('../lessons/MoonLanding/Scene')),
 };
 
@@ -115,8 +114,7 @@ export default function ScenePage() {
   }, [isPaused, soundMuted]);
 
   const handleStart = () => {
-    // For scenes that don't need pointer lock initially (like videos), 
-    // we just unlock it during the intro video state inside the component itself.
+
     const canvas = document.querySelector('canvas');
     if (canvas) canvas.requestPointerLock();
     

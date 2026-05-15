@@ -5,12 +5,12 @@ import * as THREE from 'three';
 import { RigidBody, CapsuleCollider, useRapier } from '@react-three/rapier';
 import { PositionalAudio } from '@react-three/drei';
 
-// PRELOAD AUDIO to prevent mid-scene Suspense cascading
+
 [1, 2, 3, 4, 5, 6].forEach((num) => {
   useLoader.preload(THREE.AudioLoader, `/sounds/jurrasic/0${num}-footstep.ogg`);
 });
 
-// HOISTED VARIABLES: Prevents extreme GC stuttering during physics checks
+
 const _direction = new THREE.Vector3();
 const _rotMatrix = new THREE.Matrix4();
 const _quaternion = new THREE.Quaternion();
@@ -104,7 +104,7 @@ export default function Player({ hasStarted }) {
     _linvelTarget.y = linvel.y || 0;
     _linvelTarget.z = smoothZ;
 
-    // Utilize hoisted objects to heavily reduce memory footprint
+
     _rayOrigin.x = pos.x || 0;
     _rayOrigin.y = (pos.y || 0) - 0.9;
     _rayOrigin.z = pos.z || 0;

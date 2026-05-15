@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +24,9 @@
     "openai": "^4.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "@jest/globals": "^30.4.1",
+    "jest": "^30.4.2",
+    "nodemon": "^3.1.0",
+    "supertest": "^7.2.2"
   }
 }

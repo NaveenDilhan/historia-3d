@@ -8,7 +8,7 @@ export const getLessons = async (req, res) => {
     const { search, era, region } = req.query;
     let query = {};
 
-    // Optional Server-Side Filtering (if query params are provided)
+  
     if (search) {
         query.$or = [
             { title: { $regex: search, $options: 'i' } },
@@ -36,7 +36,7 @@ export const createLesson = async (req, res) => {
   try {
     const lessonData = req.body;
     
-    // Auto-generate a URL-friendly slug from the title if one isn't provided
+  
     if (!lessonData.slug && lessonData.title) {
         lessonData.slug = lessonData.title
             .toLowerCase()

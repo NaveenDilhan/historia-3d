@@ -12,7 +12,7 @@ export default function MCQOverlay({ eraId, onComplete }) {
 
   useEffect(() => {
     const handleKey = (e) => {
-      // If quiz is done, pressing Space completes the section
+
       if (isFinished) {
         if (e.code === 'Space' || e.code === 'Enter') {
           onComplete(score);
@@ -20,7 +20,7 @@ export default function MCQOverlay({ eraId, onComplete }) {
         return;
       }
 
-      // If answering a question
+
       if (!showResult && e.key >= '1' && e.key <= '4') {
         const answerIdx = parseInt(e.key) - 1;
         setSelectedAnswer(answerIdx);
@@ -30,7 +30,7 @@ export default function MCQOverlay({ eraId, onComplete }) {
           setScore(s => s + 1);
         }
 
-        // Auto-advance after showing the result for 1.5 seconds
+
         setTimeout(() => {
           setShowResult(false);
           setSelectedAnswer(null);

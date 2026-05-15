@@ -3,7 +3,7 @@ import { MeshReflectorMaterial, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
 export default function Terrain() {
-  // 1. Existing Grass Textures
+  // 1. Grass Textures
   const grassTextures = useTexture({
     map: '/textures/moon/grass_diff.jpg',
     normalMap: '/textures/moon/grass_nor.jpg',
@@ -30,12 +30,12 @@ export default function Terrain() {
     allTextures.forEach((tex) => {
       if (tex) {
         tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        // Anisotropy keeps textures sharp at extreme grazing angles!
+
         tex.anisotropy = 16; 
       }
     });
     
-    // Increased the repeat tiling significantly to prevent stretching
+
     if (grassTextures.map) grassTextures.map.repeat.set(200, 200);
     if (grassTextures.normalMap) grassTextures.normalMap.repeat.set(200, 200);
     if (grassTextures.roughnessMap) grassTextures.roughnessMap.repeat.set(200, 200);
@@ -121,7 +121,7 @@ export default function Terrain() {
             <boxGeometry args={[25, 1.2, 75]} />
             <meshStandardMaterial map={roadTex} color="#cccccc" roughness={0.9} />
           </mesh>
-          {/* Middle Black Road connecting Flame Trench down to the ground */}
+
           <mesh position={[0, 0.61, 0]} receiveShadow>
             <boxGeometry args={[15, 0.05, 75]} />
             <meshStandardMaterial color="#1a1a1a" roughness={1} />
@@ -133,8 +133,7 @@ export default function Terrain() {
       {/* --- ROAD NETWORK --- */}
       <group position={[0, -13.4, 0]}>
         
-        {/* Black Ring Road forming a perfect square around the base slab */}
-        {/* Positioned slightly higher (0.05) to overlay correctly on other roads without clipping */}
+
         <group position={[0, 0.05, 0]}>
           <mesh position={[0, 0, -97.5]} receiveShadow>
              <boxGeometry args={[220, 0.25, 25]} />

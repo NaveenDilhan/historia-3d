@@ -1,32 +1,31 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import cookieParser from 'cookie-parser'; // ✅ Import cookie-parser
+import cookieParser from 'cookie-parser'; 
 import connectDB from './config/db.js';
 import narrationRoutes from './routes/narrationRoutes.js';
 import lessonRoutes from './routes/lessonRoutes.js';
-import authRoutes from './routes/authRoutes.js'; // ✅ Import Auth Routes
-import userRoutes from './routes/userRoutes.js'; // ✅ Import User Routes
+import authRoutes from './routes/authRoutes.js'; 
+import userRoutes from './routes/userRoutes.js'; 
 
 dotenv.config();
 
 const app = express();
 
-// ---------------- MIDDLEWARE ----------------
-// ✅ FIX: Strict CORS to allow cookies
+
 app.use(cors({
-  origin: 'http://localhost:5173', // Must match your Frontend URL
-  credentials: true // Allows the secure cookie to pass through
+  origin: 'http://localhost:5173', 
+  credentials: true 
 }));
 
 app.use(express.json());
-app.use(cookieParser()); // ✅ Parse cookies
+app.use(cookieParser()); 
 
 // ---------------- ROUTES ----------------
 app.use('/api/narration', narrationRoutes);
 app.use('/api/lessons', lessonRoutes);
-app.use('/api/auth', authRoutes); // ✅ Register Auth
-app.use('/api/users', userRoutes); // ✅ Register User Profile
+app.use('/api/auth', authRoutes); 
+app.use('/api/users', userRoutes); 
 
 // ---------------- HEALTH CHECK ----------------
 app.get('/', (req, res) => {

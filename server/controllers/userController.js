@@ -69,19 +69,19 @@ export const updateAchievements = async (req, res) => {
     const existingIndex = user.achievements.findIndex(a => a.lessonId === lessonId);
 
     if (existingIndex !== -1) {
-      // Only update if they found MORE events than their previous best run
+      
       if (eventsFound > user.achievements[existingIndex].eventsFound) {
         user.achievements[existingIndex].eventsFound = eventsFound;
         user.achievements[existingIndex].medal = medal;
         user.achievements[existingIndex].unlockedAt = Date.now();
       }
     } else {
-      // First time completing this specific lesson
+      
       user.achievements.push({ lessonId, eventsFound, totalEvents, medal });
       user.stats.erasExplored += 1;
     }
 
-    // Add newly found artifacts to their total global stats
+    
     user.stats.artifactsFound += eventsFound;
     
     await user.save();

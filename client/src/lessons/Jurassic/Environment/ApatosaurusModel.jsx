@@ -12,7 +12,7 @@ const ApatosaurusModel = memo(function ApatosaurusModel({ terrainGeo, hasStarted
   const { scene, animations } = useGLTF('/models/jurrasic/Apatosaurus.glb');
   const { actions } = useAnimations(animations, dinoRef);
 
-  // FIXED: Synchronously calculate position before the RigidBody ever mounts
+
   const { yPos, rot } = useMemo(() => {
     if (!terrainGeo) return { yPos: 0, rot: [0, -Math.PI / 4, 0] };
     

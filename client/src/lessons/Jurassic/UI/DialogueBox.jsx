@@ -6,16 +6,16 @@ export default function DialogueBox({ currentBiome }) {
   const { narration, loading, getNarration } = useAI();
   const [visible, setVisible] = useState(false);
   
-  // Kill switch for ambient facts
+
   const [ambientActive, setAmbientActive] = useState(true);
   
   const masterTimerRef = useRef(null);
   const ambientTimerRef = useRef(null);
 
-  // Stop ambient loop when the apocalypse begins
+
   useEffect(() => {
     const handleGeothermalClosed = () => {
-      setAmbientActive(false); // Permanently stop random facts
+      setAmbientActive(false); 
       if (ambientTimerRef.current) clearTimeout(ambientTimerRef.current);
     };
     
@@ -34,22 +34,22 @@ export default function DialogueBox({ currentBiome }) {
     };
   }, []);
 
-  // THE 10-SECOND AMBIENT LOOP
+
   useEffect(() => {
-    // If the apocalypse has started, or we are already speaking, cancel the timer
+
     if (!ambientActive || visible || loading) {
       if (ambientTimerRef.current) clearTimeout(ambientTimerRef.current);
       return;
     }
 
-    const delay = 10000; // Exactly 10 seconds
+    const delay = 10000; 
     
     ambientTimerRef.current = setTimeout(() => {
       if (!window.__isAILoading && !window.__isSpeaking) {
         getNarration(
           `The user is exploring the ${currentBiome} biome.`, 
           `Share a fascinating, conversational fact about what the ${currentBiome} would have looked like in the Late Cretaceous period. Keep it fresh, human-like, and highly immersive.`,
-          false // Normal ambient facts do not force-interrupt
+          false 
         );
       }
     }, delay);
@@ -85,7 +85,7 @@ export default function DialogueBox({ currentBiome }) {
         window.speechSynthesis.cancel();
         
         const sentences = narration.match(/[^.!?]+[.!?]*/g) || [narration];
-        // Strip out all quotes so the TTS engine doesn't say "quote"
+
         const validSentences = sentences.map(s => s.replace(/["“”]/g, '').trim()).filter(Boolean);
         
         if (validSentences.length === 0) return;

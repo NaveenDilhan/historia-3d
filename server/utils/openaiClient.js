@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import 'dotenv/config'; // Make absolutely sure env variables are loaded here
+import 'dotenv/config'; 
 
 const groqKey = process.env.GROQ_API_KEY;
 

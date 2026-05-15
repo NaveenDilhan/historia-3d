@@ -8,14 +8,12 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
 
   if (!lesson) return null;
 
-  // Map the string values to their respective filenames
   const medalAssetMap = {
       gold: 'medal1',
       silver: 'medal2',
       bronze: 'medal3'
   };
 
-  // Safely resolve the filename, defaulting to the raw prop if no match is found
   const getMedalFilename = (medalName) => {
       if (!medalName) return null;
       return medalAssetMap[medalName.toLowerCase()] || medalName;

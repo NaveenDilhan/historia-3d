@@ -42,7 +42,7 @@ const BorderMountains = memo(function BorderMountains({ obstacles = [] }) {
           type: type
         });
         
-        // INCREASED RADIUS: Prevents trees/rocks from spawning inside the slopes
+
         obstacles.push({
             x: jx,
             z: jz,

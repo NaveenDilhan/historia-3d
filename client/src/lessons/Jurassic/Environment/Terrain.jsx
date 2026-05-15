@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise.js';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 
-// Import separated environment models
+
 import TreeForest from './TreeModel';
 import GrassModel from './GrassModel';
 import RockModel from './RockModel';
@@ -127,12 +127,12 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
     return geo;
   }, []);
 
-  // FIXED: Synchronously generate ALL obstacles (including Mountains) in one pass
+
   const { obstacles, borderMountains } = useMemo(() => {
     const obs = [];
     const mts = [];
     
-    // 1. Dinosaurs
+
     const dinoX = 20;
     const dinoZ = -200;
     const angle = -Math.PI / 4;
@@ -141,7 +141,7 @@ const Terrain = memo(function Terrain({ setTerrainGeo }) {
     }
     obs.push({ x: -100, z: 80, radius: 35, type: 'triceratops' });
 
-    // 2. Border Mountains
+
     const step = 25;
     const addEdge = (startX, startZ, endX, endZ, type = 'mountain', skipChance = 0) => {
       const dist = Math.hypot(endX - startX, endZ - startZ);

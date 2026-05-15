@@ -49,10 +49,10 @@ export default function DinoModal({ type, onClose }) {
         let failsafeTimer;
 
         if (type) {
-            // Reset ability to close
+            
             setCanClose(false);
 
-            // Wait for the narration to finish, then wait exactly 3 more seconds
+            
             const handleNarrationEnded = () => {
                 delayTimer = setTimeout(() => {
                     setCanClose(true);
@@ -60,30 +60,29 @@ export default function DinoModal({ type, onClose }) {
             };
             window.addEventListener('narration-ended', handleNarrationEnded);
 
-            // Extended failsafe to 60 seconds. This prevents the button from showing up 
-            // before long narrations finish while still providing a fallback if audio crashes.
+
             failsafeTimer = setTimeout(() => {
                 setCanClose(true);
             }, 60000); 
 
-            // Scope animations to the overlay container for clean cleanup
+
             let ctx = gsap.context(() => {
                 const tl = gsap.timeline();
                 
-                // 1. Fade in the backdrop overlay
+
                 tl.fromTo(overlayRef.current, 
                     { opacity: 0 }, 
                     { opacity: 1, duration: 0.4, ease: "power2.out" }
                 );
 
-                // 2. 3D Unfold and spring up the main modal container
+
                 tl.fromTo(modalRef.current,
                     { opacity: 0, scale: 0.85, y: 60, rotationX: -15, transformPerspective: 1000 },
                     { opacity: 1, scale: 1, y: 0, rotationX: 0, duration: 0.8, ease: "back.out(1.5)" },
                     "<0.1" 
                 );
 
-                // 3. Stagger the appearance of all internal elements marked with 'animate-item'
+
                 tl.fromTo(".animate-item",
                     { opacity: 0, y: 20 },
                     { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" },
@@ -92,7 +91,7 @@ export default function DinoModal({ type, onClose }) {
 
             }, overlayRef);
 
-            // Cleanup function to kill timers and animations when unmounted
+
             return () => {
                 window.removeEventListener('narration-ended', handleNarrationEnded);
                 clearTimeout(delayTimer);
@@ -102,7 +101,7 @@ export default function DinoModal({ type, onClose }) {
         }
     }, [type]);
 
-    // Handle "Enter" Key press to close
+
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Enter' && canClose) {

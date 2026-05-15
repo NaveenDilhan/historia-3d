@@ -40,7 +40,7 @@ const TreeForest = memo(function TreeForest({ genericCount = 50, forestCount = 2
       const scale = (1.5 + Math.random() * 0.7) * treeScale;
       trees.push({ x, y, z, scale, rotY: Math.random() * Math.PI * 2, windOffset: Math.random() * Math.PI * 2, modelIndex: Math.floor(Math.random() * genericModels.length) });
       
-      // Increased safety radius to prevent rock/bush clipping
+
       obstacles.push({ x, z, radius: scale * 1.8, type: 'tree' });
     }
     return trees;

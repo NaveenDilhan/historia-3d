@@ -23,14 +23,14 @@ export function useLaunchControls(phase, setPhase) {
     const updateProgress = () => {
       setLaunchProgress((prev) => {
         if (isHolding) {
-          const next = prev + 0.3; // Speed of filling up
+          const next = prev + 0.3; 
           if (next >= 100) {
-            setPhase('liftoff'); // Trigger next chapter
+            setPhase('liftoff'); 
             return 100;
           }
           return next;
         } else {
-          // Slowly drain if they let go of spacebar
+   
           return prev > 0 ? prev - 0.5 : 0; 
         }
       });

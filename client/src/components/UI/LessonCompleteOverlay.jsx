@@ -11,14 +11,12 @@ export default function LessonCompleteOverlay({
     const navigate = useNavigate();
     const [canProceed, setCanProceed] = useState(false);
 
-    // Map the string values to their respective filenames
     const medalAssetMap = {
         gold: 'medal1',
         silver: 'medal2',
         bronze: 'medal3'
     };
 
-    // Safely resolve the filename, defaulting to the raw prop if no match is found
     const getMedalFilename = (medalName) => {
         if (!medalName) return null;
         return medalAssetMap[medalName.toLowerCase()] || medalName;

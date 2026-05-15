@@ -11,8 +11,8 @@ export default function MoonLandingUI({ hasStarted, phase, setPhase, launchProgr
       setShowTitle(true);
       const timer = setTimeout(() => {
         setShowTitle(false);
-        setTimeout(() => setPhase('launch'), 2000); // Wait for the text to fully fade out
-      }, 4500); // Keep title on screen slightly longer
+        setTimeout(() => setPhase('launch'), 2000); 
+      }, 4500); 
       return () => clearTimeout(timer);
     }
   }, [phase, setPhase]);
@@ -22,7 +22,7 @@ export default function MoonLandingUI({ hasStarted, phase, setPhase, launchProgr
   return (
     <div className="absolute inset-0 pointer-events-none z-20 flex flex-col items-center justify-center">
       
-      {/* mode="wait" ensures the video completely fades away before the title appears */}
+
       <AnimatePresence mode="wait">
         
         {/* CHAPTER 1: JFK Video Intro */}

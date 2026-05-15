@@ -21,7 +21,7 @@ const flowerArrangement = [
     { p: [0, 0.4, -0.65],       r: [-0.8, 3.14, 0],      s: 0.28 }
 ];
 
-// HOISTED HITBOX
+
 const _bushHitboxGeo = new THREE.SphereGeometry(1, 12, 12);
 const _hitboxMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 

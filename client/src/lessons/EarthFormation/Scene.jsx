@@ -19,7 +19,7 @@ export default function Scene({ hasStarted }) {
       if (!bgmRef.current && typeof Audio !== 'undefined') {
         bgmRef.current = new Audio('/sounds/earth/Background.ogg');
         bgmRef.current.loop = true;
-        bgmRef.current.volume = 0.3; // Lower volume for background music
+        bgmRef.current.volume = 0.3; 
       }
       bgmRef.current?.play().catch(e => console.warn('BGM blocked by browser:', e));
     }

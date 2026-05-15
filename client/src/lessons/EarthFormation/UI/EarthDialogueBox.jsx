@@ -10,22 +10,19 @@ export default function EarthDialogueBox({ currentEra }) {
   const masterTimerRef = useRef(null);
   const currentUtteranceRef = useRef(null); 
 
-  // Initialize and "Warm Up" the TTS Engine
+
   useEffect(() => {
     const loadVoices = () => {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.getVoices();
         
-        // The "Silent Warmup"
-        // Playing an empty string at volume 0 forces the browser's audio context 
-        // to initialize in the background. This prevents the engine from clipping 
-        // the first few words of the actual first sentence it tries to read.
+
         const wakeUpUtterance = new SpeechSynthesisUtterance('');
         wakeUpUtterance.volume = 0;
         wakeUpUtterance.rate = 1;
         window.speechSynthesis.speak(wakeUpUtterance);
         
-        // Resume catches any stuck state in certain browsers
+
         window.speechSynthesis.resume();
       }
     };
@@ -66,9 +63,7 @@ export default function EarthDialogueBox({ currentEra }) {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         
-        // Extract raw sentences and clean up weird characters
-        // FIX: Use a regex that requires a space or the end of the string after punctuation.
-        // This stops the TTS from breaking at decimal points (e.g., "4.6").
+
         const rawSentences = narration.match(/.*?[.!?](?:\s|$)|.+/g) || [narration];
         const cleanSentences = rawSentences.map(s => s.replace(/["“”*]/g, '').trim()).filter(Boolean);
         
@@ -113,10 +108,7 @@ export default function EarthDialogueBox({ currentEra }) {
 
               currentUtteranceRef.current = utterance;
               
-              // The "First Sentence Micro-Buffer"
-              // Add a slight 150ms delay specifically before the *first* sentence.
-              // This gives the audio hardware enough time to physically engage 
-              // after the synthesis begins processing.
+
               if (index === 0) {
                   setTimeout(() => window.speechSynthesis.speak(utterance), 150);
               } else {
@@ -131,7 +123,7 @@ export default function EarthDialogueBox({ currentEra }) {
         const trySpeak = () => {
             const voices = window.speechSynthesis.getVoices();
             if (voices.length > 0 || retryCount > 5) {
-                // Ensure there is a gap between the silent warmup and the real text
+                
                 setTimeout(setupAndSpeak, 250);
             } else {
                 retryCount++;
@@ -140,7 +132,7 @@ export default function EarthDialogueBox({ currentEra }) {
         };
         trySpeak();
 
-        // Failsafe: Only triggers if the browser API completely locks up
+        
         masterTimerRef.current = setTimeout(() => {
           if (window.__isSpeaking) {
              setVisible(false);
@@ -152,7 +144,7 @@ export default function EarthDialogueBox({ currentEra }) {
         }, Math.max(30000, wordCount * 1000));
 
       } else {
-        // Fallback for browsers without TTS support
+        
         setCurrentSubtitle(narration.replace(/["“”]/g, ''));
         const readTime = Math.max(4000, wordCount * 300);
         masterTimerRef.current = setTimeout(() => {

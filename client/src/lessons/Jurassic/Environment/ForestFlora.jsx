@@ -21,7 +21,7 @@ const ForestFlora = memo(function ForestFlora({ count = 300, bounds, terrainGeo,
     const data = [];
     let attempts = 0;
     
-    // Increased attempts to ensure the map populates fully even with strict clipping
+
     while (data.length < count && attempts < count * 10) {
       const x = bounds ? bounds.xMin + Math.random() * (bounds.xMax - bounds.xMin) : (Math.random() - 0.5) * 350;
       const z = bounds ? bounds.zMin + Math.random() * (bounds.zMax - bounds.zMin) : (Math.random() - 0.5) * 350;
@@ -32,7 +32,7 @@ const ForestFlora = memo(function ForestFlora({ count = 300, bounds, terrainGeo,
       const y = getExactHeight(x, z, terrainGeo);
       if (y > 8.0) continue;
 
-      // STRICT COLLISION: Ensure ferns/mushrooms don't clip into rocks or trees
+   
       let isClipping = false;
       for (let obs of obstacles) {
          if (Math.hypot(obs.x - x, obs.z - z) < (obs.radius + 0.8)) {

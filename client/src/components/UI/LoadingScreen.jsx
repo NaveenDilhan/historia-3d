@@ -6,7 +6,6 @@ export default function LoadingScreen({ hasLoaded, onStart, isRevealing }) {
   const { progress, errors } = useProgress();
   const [smoothProgress, setSmoothProgress] = useState(0);
 
-  // Guarantee the progress bar only moves forward (0 to 100 once)
   useEffect(() => {
     setSmoothProgress((prev) => {
       const next = Math.max(prev, progress || 0);

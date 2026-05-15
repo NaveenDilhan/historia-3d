@@ -6,9 +6,9 @@ const lessonSchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true }, 
   
   // Categorization Fields
-  era: { type: String, default: 'Ancient' },         // e.g., "Mesozoic", "Precambrian"
-  region: { type: String, default: 'Global' },       // e.g., "North America", "Egypt", "Global"
-  tags: [{ type: String }],                          // e.g., ["Dinosaurs", "Asteroid", "Oceans"]
+  era: { type: String, default: 'Ancient' },         
+  region: { type: String, default: 'Global' },       
+  tags: [{ type: String }],                          
   
   totalEvents: { type: Number, default: 0 }, 
   progress: { type: Number, default: 0 },

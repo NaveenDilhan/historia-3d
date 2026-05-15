@@ -8,12 +8,12 @@ import protect from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Apply 'protect' middleware to secure these routes
+
 router.route('/profile')
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
 
-// Route for logging completed lesson achievements
+
 router.route('/achievements')
   .post(protect, updateAchievements);
 

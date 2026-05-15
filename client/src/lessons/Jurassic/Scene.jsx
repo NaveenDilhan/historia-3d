@@ -119,12 +119,12 @@ export default function Scene({ hasStarted }) {
   const [terrainGeo, setTerrainGeo] = useState(null);
   const [meteorStrikeActive, setMeteorStrikeActive] = useState(false);
 
-  // CORE SEQUENCE FIX: 10 seconds AFTER the Geothermal modal is CLOSED
+
   useEffect(() => {
     const handleGeothermalClosed = () => {
       setTimeout(() => {
         setMeteorStrikeActive(true);
-        // Alert the UI that the strike is visually starting right now
+        
         window.dispatchEvent(new CustomEvent('meteor-strike-started'));
       }, 10000); 
     };

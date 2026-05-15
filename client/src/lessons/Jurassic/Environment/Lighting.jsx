@@ -2,7 +2,6 @@ import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-// HOIST CONSTANTS TO PREVENT GC SPIKES
 const _targetDirColor = new THREE.Color('#ff2200');
 const _targetHemiGround = new THREE.Color('#1a0500');
 const _targetHemiSky = new THREE.Color('#4a0a00');
@@ -13,10 +12,10 @@ export default function Lighting({ meteorStrikeActive }) {
 
   useFrame((state, delta) => {
     if (meteorStrikeActive) {
-      // Transition to intense apocalyptic lighting
+
       if (dirLightRef.current) {
         dirLightRef.current.color.lerp(_targetDirColor, delta * 0.5);
-        // Ramp up intensity for dramatic shadows
+
         dirLightRef.current.intensity = THREE.MathUtils.lerp(dirLightRef.current.intensity, 5.0, delta * 0.5); 
       }
       if (hemiLightRef.current) {
