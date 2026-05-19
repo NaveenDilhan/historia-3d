@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema({
     artifactsFound: { type: Number, default: 0 },
     knowledgePoints: { type: Number, default: 0 }
   },
+  
+  // Track bought premium lessons by slug
+  unlockedLessons: [{ type: String }],
+
   // Achievement tracking
   achievements: [{
     lessonId: { type: String, required: true },

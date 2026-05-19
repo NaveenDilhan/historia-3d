@@ -13,7 +13,11 @@ const lessonSchema = new mongoose.Schema({
   totalEvents: { type: Number, default: 0 }, 
   progress: { type: Number, default: 0 },
   achievements: { type: Number, default: 0 }, 
-  readTime: { type: String, default: '15 min read' }
+  readTime: { type: String, default: '15 min read' },
+
+  // Paywall Fields
+  isPremium: { type: Boolean, default: false },
+  kpCost: { type: Number, default: 0 }
 }, { timestamps: true });
 
 const Lesson = mongoose.model('Lesson', lessonSchema);

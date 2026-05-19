@@ -8,7 +8,6 @@ export const getLessons = async (req, res) => {
     const { search, era, region } = req.query;
     let query = {};
 
-  
     if (search) {
         query.$or = [
             { title: { $regex: search, $options: 'i' } },
@@ -36,7 +35,6 @@ export const createLesson = async (req, res) => {
   try {
     const lessonData = req.body;
     
-  
     if (!lessonData.slug && lessonData.title) {
         lessonData.slug = lessonData.title
             .toLowerCase()

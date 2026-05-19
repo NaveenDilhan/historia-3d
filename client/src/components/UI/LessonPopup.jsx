@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { X, Play, Award, Clock, BookOpen } from 'lucide-react';
+import { X, Play, Award, Clock, BookOpen, Lock, Unlock, Zap } from 'lucide-react';
 
-export default function LessonPopup({ lesson, onClose, onPlay }) {
+export default function LessonPopup({ lesson, userKP, onUnlockSuccess, onClose, onPlay }) {
   const navigate = useNavigate();
+  const [unlocking, setUnlocking] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   if (!lesson) return null;
 
@@ -19,9 +21,37 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
       return medalAssetMap[medalName.toLowerCase()] || medalName;
   };
 
+  const handleUnlock = async () => {
+    if (userKP < lesson.kpCost) {
+      setErrorMsg("Not enough Knowledge Points.");
+      return;
+    }
+
+    setUnlocking(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/users/unlock-lesson", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ lessonSlug: lesson.slug, cost: lesson.kpCost })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        onUnlockSuccess(data.stats.knowledgePoints, data.unlockedLessons);
+        lesson.isLocked = false; 
+      } else {
+        setErrorMsg(data.message || "Failed to unlock.");
+      }
+    } catch (err) {
+      setErrorMsg("Network error.");
+    } finally {
+      setUnlocking(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[100] p-4">
-      {/* 1. Backdrop Overlay */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -30,7 +60,6 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
         className="absolute inset-0 bg-black/80 backdrop-blur-md"
       />
 
-      {/* 2. Popup Content */}
       <motion.div 
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -49,7 +78,7 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
         <div className="p-8 md:p-10 relative z-10">
           <div className="mb-6">
             <div className="flex items-center gap-2 text-amber-500 mb-2">
-              <BookOpen size={16} />
+              {lesson.isLocked ? <Lock size={16} /> : <BookOpen size={16} />}
               <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Historical Archive</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-heading font-bold text-amber-100 drop-shadow-md">
@@ -62,7 +91,6 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
           </p>
 
           <div className="grid grid-cols-2 gap-4 mb-10">
-            
             {/* LEFT BOX: Completion / Medal */}
             <div className="bg-black/30 p-4 rounded-2xl border border-amber-900/30 flex flex-col justify-center">
               <div className="flex items-center gap-2 text-amber-500/70 mb-3">
@@ -95,19 +123,44 @@ export default function LessonPopup({ lesson, onClose, onPlay }) {
               )}
             </div>
 
-            {/* RIGHT BOX: Start Scene */}
-            <button 
-              onClick={onPlay}
-              className="group relative bg-black/30 p-4 rounded-2xl border border-amber-900/30 hover:border-amber-500/50 hover:bg-amber-900/20 transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden shadow-inner"
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-amber-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <Play size={32} className="text-amber-500 fill-amber-500 mb-2 group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-100 group-hover:text-amber-400 transition-colors">
-                Start Scene
-              </span>
-            </button>
-
+            {/* RIGHT BOX: Start Scene OR Unlock */}
+            {!lesson.isLocked ? (
+              <button 
+                onClick={onPlay}
+                className="group relative bg-black/30 p-4 rounded-2xl border border-amber-900/30 hover:border-amber-500/50 hover:bg-amber-900/20 transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden shadow-inner"
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-amber-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Play size={32} className="text-amber-500 fill-amber-500 mb-2 group-hover:scale-110 transition-transform drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-100 group-hover:text-amber-400 transition-colors">
+                  Start Scene
+                </span>
+              </button>
+            ) : (
+              <button 
+                onClick={handleUnlock}
+                disabled={unlocking}
+                className="group relative bg-black/30 p-4 rounded-2xl border border-zinc-700 hover:border-amber-500/50 hover:bg-amber-900/20 transition-all flex flex-col items-center justify-center cursor-pointer overflow-hidden shadow-inner disabled:opacity-50"
+              >
+                {unlocking ? (
+                  <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                ) : (
+                  <>
+                    <Unlock size={32} className="text-amber-500 mb-2 group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-amber-100 group-hover:text-amber-400 transition-colors mb-1">
+                      Unlock Access
+                    </span>
+                    <span className={`text-[10px] font-bold flex items-center gap-1 ${userKP >= lesson.kpCost ? 'text-amber-500' : 'text-red-400'}`}>
+                      Cost: <Zap size={10} className="fill-current" /> {lesson.kpCost} KP
+                    </span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
+          
+          {errorMsg && (
+              <p className="text-red-400 text-xs text-center font-bold tracking-wider uppercase mb-4">{errorMsg}</p>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-4">
             <button

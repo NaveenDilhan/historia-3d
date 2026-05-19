@@ -1,17 +1,18 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Compass, Users, ChevronLeft, PlayCircle, Clock, LogIn, Calendar, Search, Filter, Globe } from 'lucide-react';
+import { Compass, Users, Clock, LogIn, Calendar, Search, Filter, Globe, PlayCircle, Lock, Zap } from 'lucide-react';
 import LessonPopup from '../components/UI/LessonPopup';
 
 export default function ExplorePage() {
   const [lessons, setLessons] = useState([]);
   const [userAchievements, setUserAchievements] = useState([]);
+  const [unlockedLessons, setUnlockedLessons] = useState([]);
+  const [knowledgePoints, setKnowledgePoints] = useState(0);
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // --- SEARCH & FILTER STATE ---
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEra, setSelectedEra] = useState('All');
   const [selectedRegion, setSelectedRegion] = useState('All');
@@ -19,23 +20,8 @@ export default function ExplorePage() {
   const navigate = useNavigate();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState({
-    name: "",
-    avatar: ""
-  });
+  const [user, setUser] = useState({ name: "", avatar: "" });
 
-  const medalAssetMap = {
-      gold: 'medal1',
-      silver: 'medal2',
-      bronze: 'medal3'
-  };
-
-  const getMedalFilename = (medalName) => {
-      if (!medalName) return null;
-      return medalAssetMap[medalName.toLowerCase()] || medalName;
-  };
-
-  // Helper to convert medal to progress percentage
   const getProgressFromMedal = (medal) => {
       if (medal === 'gold') return 100;
       if (medal === 'silver') return 50;
@@ -56,6 +42,8 @@ export default function ExplorePage() {
         .then(res => res.json())
         .then(data => {
             if (data.achievements) setUserAchievements(data.achievements);
+            if (data.unlockedLessons) setUnlockedLessons(data.unlockedLessons);
+            if (data.stats) setKnowledgePoints(data.stats.knowledgePoints);
         })
         .catch(console.error);
     }
@@ -66,9 +54,7 @@ export default function ExplorePage() {
       try {
         setLoading(true);
         const response = await fetch('http://localhost:5000/api/lessons');
-        
         if (!response.ok) throw new Error('Failed to fetch from the Great Library');
-        
         const lessonData = await response.json();
         setLessons(lessonData);
       } catch (err) {
@@ -84,7 +70,6 @@ export default function ExplorePage() {
   const getLessonStats = (lesson) => {
       const lessonId = lesson.slug || lesson.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
       const ach = userAchievements.find(a => a.lessonId === lessonId);
-      
       const timeSpent = ach?.timeSpent ? ach.timeSpent : (ach ? ach.eventsFound * 5 : 0);
       
       return {
@@ -96,20 +81,14 @@ export default function ExplorePage() {
       };
   };
 
-  // --- FILTERING LOGIC ---
-  
-  // 1. Dynamically extract unique categories from the database payload
-  const availableEras = useMemo(() => {
-      const eras = lessons.map(l => l.era).filter(Boolean);
-      return [...new Set(eras)];
-  }, [lessons]);
+  const handleUnlockSuccess = (newKP, newUnlockedList) => {
+    setKnowledgePoints(newKP);
+    setUnlockedLessons(newUnlockedList);
+  };
 
-  const availableRegions = useMemo(() => {
-      const regions = lessons.map(l => l.region).filter(Boolean);
-      return [...new Set(regions)];
-  }, [lessons]);
+  const availableEras = useMemo(() => [...new Set(lessons.map(l => l.era).filter(Boolean))], [lessons]);
+  const availableRegions = useMemo(() => [...new Set(lessons.map(l => l.region).filter(Boolean))], [lessons]);
 
-  // 2. Filter the lessons array based on active criteria
   const filteredLessons = useMemo(() => {
       return lessons.filter(lesson => {
           const matchesSearch = 
@@ -119,11 +98,9 @@ export default function ExplorePage() {
             
           const matchesEra = selectedEra === 'All' || lesson.era === selectedEra;
           const matchesRegion = selectedRegion === 'All' || lesson.region === selectedRegion;
-
           return matchesSearch && matchesEra && matchesRegion;
       });
   }, [lessons, searchQuery, selectedEra, selectedRegion]);
-
 
   return (
     <div className="min-h-screen text-amber-50 font-body overflow-x-hidden selection:bg-amber-500/30 relative">
@@ -134,13 +111,10 @@ export default function ExplorePage() {
         .font-body { font-family: 'Lato', sans-serif; }
         .ancient-wall-bg {
           background-color: #1a120b;
-          background-image: 
-            radial-gradient(circle at 50% -20%, rgba(217, 119, 6, 0.15), rgba(0, 0, 0, 0.9)),
-            url("https://www.transparenttextures.com/patterns/wall-4-light.png");
+          background-image: radial-gradient(circle at 50% -20%, rgba(217, 119, 6, 0.15), rgba(0, 0, 0, 0.9)), url("https://www.transparenttextures.com/patterns/wall-4-light.png");
           background-blend-mode: screen, overlay;
           background-attachment: fixed;
         }
-        /* Custom Scrollbar for select elements */
         select option { background-color: #1a120b; color: #fef3c7; }
       `}</style>
 
@@ -169,15 +143,22 @@ export default function ExplorePage() {
             <div className="w-px h-6 bg-amber-900/50 mx-2"></div>
             
             {isLoggedIn ? (
-              <button 
-                onClick={() => navigate("/profile")}
-                className="flex items-center gap-3 p-1 pr-4 bg-amber-950/40 border border-amber-500/30 rounded-full hover:bg-amber-900/50 transition-all active:scale-95 group"
-              >
-                <div className="w-8 h-8 rounded-full border-2 border-amber-500 overflow-hidden group-hover:border-amber-400 transition-colors bg-amber-900">
-                  <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+              <div className="flex items-center gap-4">
+                {/* KP Display */}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-900/30 border border-amber-500/30 rounded-full text-amber-300 font-bold tracking-widest text-xs">
+                    <Zap size={14} className="text-yellow-400 fill-yellow-400" />
+                    <span>{knowledgePoints} KP</span>
                 </div>
-                <span className="text-sm font-medium text-amber-100 max-w-[100px] truncate">{user.name}</span>
-              </button>
+                <button 
+                  onClick={() => navigate("/profile")}
+                  className="flex items-center gap-3 p-1 pr-4 bg-amber-950/40 border border-amber-500/30 rounded-full hover:bg-amber-900/50 transition-all active:scale-95 group"
+                >
+                  <div className="w-8 h-8 rounded-full border-2 border-amber-500 overflow-hidden group-hover:border-amber-400 transition-colors bg-amber-900">
+                    <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                  </div>
+                  <span className="text-sm font-medium text-amber-100 max-w-[100px] truncate">{user.name}</span>
+                </button>
+              </div>
             ) : (
               <button
                 onClick={() => navigate("/login")}
@@ -209,14 +190,12 @@ export default function ExplorePage() {
           </motion.div>
         </header>
 
-        {/* --- SEARCH AND FILTER WIDGET --- */}
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="flex flex-col md:flex-row gap-4 mb-12 items-center justify-between bg-[#150f0a]/60 p-4 rounded-2xl border border-amber-900/40 shadow-lg backdrop-blur-md"
         >
-          {/* Text Search */}
           <div className="relative w-full md:w-1/2">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-700" />
             <input
@@ -228,7 +207,6 @@ export default function ExplorePage() {
             />
           </div>
 
-          {/* Category Dropdowns */}
           <div className="flex w-full md:w-auto gap-4">
             <div className="relative w-full md:w-48 group">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700 group-focus-within:text-amber-400 transition-colors" />
@@ -258,7 +236,6 @@ export default function ExplorePage() {
           </div>
         </motion.div>
 
-        {/* --- DYNAMIC RENDER AREA --- */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
@@ -287,8 +264,11 @@ export default function ExplorePage() {
             {filteredLessons.map((lesson, index) => {
               const stats = getLessonStats(lesson);
               const calculatedProgress = getProgressFromMedal(stats.medal);
+              const lessonSlug = lesson.slug || lesson.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
               
-              // Calculate a dynamic background position to "break apart" the map across cards
+              // Check if locked
+              const isLocked = lesson.isPremium && !unlockedLessons.includes(lessonSlug);
+
               const bgPosX = (index % 3) * 50;
               const bgPosY = Math.floor(index / 3) * 50;
 
@@ -300,13 +280,11 @@ export default function ExplorePage() {
                     visible: { opacity: 1, scale: 1 }
                   }}
                   whileHover={{ y: -10 }}
-                  // Pass calculated progress so the popup also uses the medal-based percentage
-                  onClick={() => setSelectedLesson({ ...lesson, medal: stats.medal, progress: calculatedProgress })}
-                  className="group cursor-pointer relative bg-[#1a130e]/80 border border-amber-900/40 rounded-2xl overflow-hidden hover:border-amber-500/50 transition-all duration-300 shadow-xl flex flex-col"
+                  onClick={() => setSelectedLesson({ ...lesson, slug: lessonSlug, medal: stats.medal, progress: calculatedProgress, isLocked })}
+                  className={`group cursor-pointer relative bg-[#1a130e]/80 border ${isLocked ? 'border-zinc-800' : 'border-amber-900/40 hover:border-amber-500/50'} rounded-2xl overflow-hidden transition-all duration-300 shadow-xl flex flex-col`}
                 >
-                  {/* Map Background Fragment */}
                   <div 
-                    className="absolute inset-0 z-0 opacity-30 mix-blend-screen pointer-events-none transition-opacity duration-500 group-hover:opacity-60"
+                    className={`absolute inset-0 z-0 opacity-30 mix-blend-screen pointer-events-none transition-opacity duration-500 group-hover:opacity-60 ${isLocked ? 'grayscale opacity-10' : ''}`}
                     style={{
                       backgroundImage: `url("/assets/map.webp")`,
                       backgroundSize: '300% 300%',
@@ -314,59 +292,62 @@ export default function ExplorePage() {
                     }}
                   />
                   
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-700 to-transparent opacity-50 group-hover:opacity-100 transition-opacity z-10"></div>
+                  <div className={`absolute top-0 left-0 w-full h-1 ${isLocked ? 'bg-zinc-800' : 'bg-gradient-to-r from-transparent via-amber-700 to-transparent'} opacity-50 group-hover:opacity-100 transition-opacity z-10`}></div>
                   
                   <div className="p-8 flex-1 relative z-10">
                     <div className="flex justify-between items-start mb-4">
-                      <span className="text-[10px] uppercase tracking-[0.3em] text-amber-600 font-bold border border-amber-900/50 px-2 py-1 rounded bg-[#1a120b]/80">
-                        {/* Remove the word 'Era' if it exists in the database string */}
+                      <span className={`text-[10px] uppercase tracking-[0.3em] font-bold border px-2 py-1 rounded bg-[#1a120b]/80 ${isLocked ? 'text-zinc-500 border-zinc-800' : 'text-amber-600 border-amber-900/50'}`}>
                         {lesson.era ? lesson.era.replace(/era/i, '').trim() : 'MESOZOIC'}
                       </span>
                       
-                      {/* Region Tag */}
                       {lesson.region && lesson.region !== 'Global' && (
-                        <span className="text-[9px] uppercase tracking-[0.2em] text-amber-200/50 font-bold border border-amber-900/30 px-2 py-1 rounded bg-black/40 flex items-center gap-1">
+                        <span className={`text-[9px] uppercase tracking-[0.2em] font-bold border px-2 py-1 rounded flex items-center gap-1 ${isLocked ? 'text-zinc-600 border-zinc-800 bg-black/40' : 'text-amber-200/50 border-amber-900/30 bg-black/40'}`}>
                           <Globe size={10} /> {lesson.region}
                         </span>
                       )}
                     </div>
                     
-                    <h3 className="text-2xl font-heading font-bold text-amber-100 mb-3 group-hover:text-amber-400 transition-colors drop-shadow-md">
+                    <h3 className={`text-2xl font-heading font-bold mb-3 transition-colors drop-shadow-md flex items-center gap-3 ${isLocked ? 'text-zinc-400' : 'text-amber-100 group-hover:text-amber-400'}`}>
+                      {isLocked && <Lock size={20} className="text-zinc-500" />}
                       {lesson.title}
                     </h3>
                     
-                    <p className="text-amber-200/50 text-sm leading-relaxed mb-6 line-clamp-3">
+                    <p className={`text-sm leading-relaxed mb-6 line-clamp-3 ${isLocked ? 'text-zinc-600' : 'text-amber-200/50'}`}>
                       {lesson.description}
                     </p>
 
                     <div className="space-y-3 mt-auto">
-                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-amber-700">
+                      <div className={`flex justify-between text-[10px] font-bold uppercase tracking-widest ${isLocked ? 'text-zinc-700' : 'text-amber-700'}`}>
                         <span>Progress</span>
-                        {/* Removed the raw percentage number display */}
                       </div>
-                      <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-amber-950">
+                      <div className="w-full bg-black/60 h-1.5 rounded-full overflow-hidden border border-black/80">
                         <motion.div 
                           initial={{ width: 0 }}
                           animate={{ width: `${calculatedProgress}%` }}
-                          className="h-full bg-gradient-to-r from-amber-900 via-amber-600 to-amber-400"
+                          className={`h-full ${isLocked ? 'bg-zinc-700' : 'bg-gradient-to-r from-amber-900 via-amber-600 to-amber-400'}`}
                         ></motion.div>
                       </div>
                     </div>
                   </div>
                   
-                  {/* UPDATED FOOTER WITH DYNAMIC TIME AND DATES */}
-                  <div className="px-8 py-4 bg-[#110b08]/80 border-t border-amber-900/30 flex items-center justify-between group-hover:bg-amber-900/20 transition-colors relative z-10">
+                  <div className={`px-8 py-4 bg-[#110b08]/80 border-t flex items-center justify-between relative z-10 ${isLocked ? 'border-zinc-900' : 'border-amber-900/30 group-hover:bg-amber-900/20'} transition-colors`}>
                     <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2 text-amber-200/50 text-[10px] font-bold uppercase tracking-wider">
-                        <Clock size={12} className="text-amber-600" />
+                      <div className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider ${isLocked ? 'text-zinc-600' : 'text-amber-200/50'}`}>
+                        <Clock size={12} className={isLocked ? "text-zinc-600" : "text-amber-600"} />
                         <span>{stats.timeSpent} Spent</span>
                       </div>
-                      <div className="flex items-center gap-2 text-amber-500/40 text-[9px] font-bold uppercase tracking-widest">
+                      <div className={`flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest ${isLocked ? 'text-zinc-700' : 'text-amber-500/40'}`}>
                         <Calendar size={10} />
                         <span>Last: {stats.lastPlayed}</span>
                       </div>
                     </div>
-                    <PlayCircle className="text-amber-500 group-hover:scale-110 group-hover:text-amber-400 transition-all drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" size={32} strokeWidth={1.5} />
+                    {isLocked ? (
+                        <div className="flex items-center gap-1.5 text-zinc-400 font-bold text-xs uppercase tracking-widest">
+                             <Zap size={14} className="fill-zinc-400" /> {lesson.kpCost} KP
+                        </div>
+                    ) : (
+                        <PlayCircle className="text-amber-500 group-hover:scale-110 group-hover:text-amber-400 transition-all drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" size={32} strokeWidth={1.5} />
+                    )}
                   </div>
                 </motion.div>
               );
@@ -389,9 +370,11 @@ export default function ExplorePage() {
         {selectedLesson && (
           <LessonPopup 
             lesson={selectedLesson}
+            userKP={knowledgePoints}
+            onUnlockSuccess={handleUnlockSuccess}
             onClose={() => setSelectedLesson(null)}
             onPlay={() => {
-              const routeId = selectedLesson.slug || selectedLesson.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+              const routeId = selectedLesson.slug;
               setSelectedLesson(null);
               navigate(`/scene/${routeId}`);
             }}
@@ -402,7 +385,6 @@ export default function ExplorePage() {
   );
 }
 
-// NavLink Component matching HomePage styling
 function NavLink({ icon, label, onClick, isActive }) {
   return (
     <button 
