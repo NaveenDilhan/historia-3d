@@ -2,24 +2,37 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   
   // Profile fields
   avatarSeed: { type: String, default: 'Scholar' },
+  avatarOptions: {
+    skinColor: { type: String, default: 'f8d25c' },
+    top: { type: String, default: 'shortHair' },
+    accessories: { type: String, default: 'none' }
+  },
   title: { type: String, default: 'Novice Chronicler' },
   bio: { type: String, default: 'A seeker of ancient truths.' },
+  
+  // Personalization fields
+  age: { type: Number, required: false },
+  experienceLevel: { 
+    type: String, 
+    enum: ['Beginner', 'Enthusiast', 'Scholar'], 
+    default: 'Beginner' 
+  },
+  historicalInterests: [{ type: String }],
+
   stats: {
     erasExplored: { type: Number, default: 0 },
     artifactsFound: { type: Number, default: 0 },
     knowledgePoints: { type: Number, default: 0 }
   },
-  
-  // Track bought premium lessons by slug
   unlockedLessons: [{ type: String }],
-
-  // Achievement tracking
   achievements: [{
     lessonId: { type: String, required: true },
     medal: { type: String, enum: ['gold', 'silver', 'bronze', null] },

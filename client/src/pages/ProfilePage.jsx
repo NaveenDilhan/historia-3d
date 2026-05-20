@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, Mail, Save, Edit2, LogOut, ChevronLeft, 
-  Trophy, BookOpen, Map, Crown, RefreshCw, Sparkles 
+  Trophy, BookOpen, Map, Crown, RefreshCw, Sparkles,
+  Calendar, Brain, Compass, AtSign
 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -14,34 +15,54 @@ export default function ProfilePage() {
   const [message, setMessage] = useState(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  const availableInterests = [
+    "Ancient Civilizations", "Space Exploration", "Medieval History", 
+    "Paleontology", "World Wars", "Industrial Revolution"
+  ];
+
   const [profile, setProfile] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
+    username: "",
     email: "",
     bio: "",
     avatarSeed: "",
+    avatarOptions: { skinColor: "f8d25c", top: "shortHair", accessories: "none" },
     title: "",
+    age: "",
+    experienceLevel: "Beginner",
+    historicalInterests: [],
     stats: { knowledgePoints: 0, erasExplored: 0, artifactsFound: 0 },
     achievements: [] 
   });
 
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
+    username: "",
     email: "",
     bio: "",
-    avatarSeed: ""
+    avatarSeed: "",
+    avatarOptions: { skinColor: "f8d25c", top: "shortHair", accessories: "none" },
+    age: "",
+    experienceLevel: "",
+    historicalInterests: []
   });
 
-  // Map the string values to their respective filenames
-  const medalAssetMap = {
-      gold: 'medal1',
-      silver: 'medal2',
-      bronze: 'medal3'
-  };
-
-  // Safely resolve the filename, defaulting to the raw prop if no match is found
+  const medalAssetMap = { gold: 'medal1', silver: 'medal2', bronze: 'medal3' };
   const getMedalFilename = (medalName) => {
       if (!medalName) return null;
       return medalAssetMap[medalName.toLowerCase()] || medalName;
+  };
+
+  const buildAvatarUrl = (seed, options) => {
+    let url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed || 'Scholar'}`;
+    if (options) {
+        if (options.skinColor) url += `&skinColor=${options.skinColor}`;
+        if (options.top) url += `&top=${options.top}`;
+        if (options.accessories && options.accessories !== "none") url += `&accessories=${options.accessories}`;
+    }
+    return url;
   };
 
   useEffect(() => {
@@ -51,22 +72,34 @@ export default function ProfilePage() {
   const fetchProfile = async () => {
     try {
       const res = await fetch("http://localhost:5000/api/users/profile", {
-        method: "GET", 
-        credentials: "include", 
-        headers: { "Content-Type": "application/json" }
+        method: "GET", credentials: "include", headers: { "Content-Type": "application/json" }
       });
 
       if (res.ok) {
         const data = await res.json();
+        
+        // Ensure options exist
+        const safeOptions = data.avatarOptions || { skinColor: "f8d25c", top: "shortHair", accessories: "none" };
+        
         setProfile({
             ...data,
+            avatarOptions: safeOptions,
+            age: data.age || "",
+            experienceLevel: data.experienceLevel || "Beginner",
+            historicalInterests: data.historicalInterests || [],
             achievements: data.achievements || []
         });
         setFormData({
-          name: data.name,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          username: data.username,
           email: data.email,
           bio: data.bio,
-          avatarSeed: data.avatarSeed
+          avatarSeed: data.avatarSeed,
+          avatarOptions: safeOptions,
+          age: data.age || "",
+          experienceLevel: data.experienceLevel || "Beginner",
+          historicalInterests: data.historicalInterests || []
         });
       } else {
         navigate("/login");
@@ -79,30 +112,53 @@ export default function ProfilePage() {
     }
   };
 
+  const handleInterestToggle = (interest) => {
+    setFormData(prev => ({
+      ...prev,
+      historicalInterests: prev.historicalInterests.includes(interest)
+        ? prev.historicalInterests.filter(i => i !== interest)
+        : [...prev.historicalInterests, interest]
+    }));
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+          ...formData,
+          age: formData.age ? parseInt(formData.age, 10) : null
+      };
+
       const res = await fetch("http://localhost:5000/api/users/profile", {
         method: "PUT",
         credentials: "include", 
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
         const updatedData = await res.json();
         setProfile({
             ...updatedData,
+            age: updatedData.age || "",
             achievements: updatedData.achievements || []
         });
+        
         localStorage.setItem("userInfo", JSON.stringify({ 
-          name: updatedData.name, 
-          email: updatedData.email 
+          name: `${updatedData.firstName} ${updatedData.lastName}`,
+          firstName: updatedData.firstName,
+          lastName: updatedData.lastName,
+          username: updatedData.username,
+          email: updatedData.email,
+          avatarSeed: updatedData.avatarSeed,
+          avatarOptions: updatedData.avatarOptions
         }));
+        
         setIsEditing(false);
         setMessage({ type: "success", text: "Identity updated successfully." });
       } else {
-        setMessage({ type: "error", text: "Failed to update profile." });
+        const errData = await res.json();
+        setMessage({ type: "error", text: errData.message || "Failed to update profile." });
       }
     } catch (error) {
       setMessage({ type: "error", text: "Server error." });
@@ -113,13 +169,8 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     try {
-        await fetch("http://localhost:5000/api/auth/logout", { 
-            method: "POST",
-            credentials: "include" 
-        });
-    } catch (error) {
-        console.error("Logout failed", error);
-    }
+        await fetch("http://localhost:5000/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch (error) {}
     localStorage.removeItem("userInfo");
     navigate("/login");
   };
@@ -137,7 +188,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen text-amber-50 font-body ancient-wall-bg relative overflow-x-hidden selection:bg-amber-500/30">
-      
       <div className="fixed inset-0 bg-[#1a120b]/90 z-[-1]"></div>
       <div className="fixed inset-0 bg-radial-gradient(circle at center, transparent 0%, #000 100%) pointer-events-none z-0"></div>
 
@@ -151,13 +201,10 @@ export default function ProfilePage() {
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 pb-20 relative z-10">
-        
         <AnimatePresence>
           {message && (
             <motion.div 
-              initial={{ opacity: 0, y: -20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
               className={`fixed top-10 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg border ${
                 message.type === 'success' ? 'bg-emerald-900/80 border-emerald-500/50 text-emerald-100' : 'bg-red-900/80 border-red-500/50 text-red-100'
               } backdrop-blur-md shadow-xl z-50 flex items-center gap-2`}
@@ -169,12 +216,10 @@ export default function ProfilePage() {
         </AnimatePresence>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
           {/* LEFT COLUMN */}
           <div className="lg:col-span-1">
             <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
               className="bg-[#150f0a]/60 backdrop-blur-xl border border-amber-900/40 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden"
             >
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -182,7 +227,10 @@ export default function ProfilePage() {
               <div className="relative inline-block mb-6 group">
                 <div className="w-40 h-40 rounded-full border-4 border-amber-800/50 shadow-[0_0_30px_rgba(245,158,11,0.1)] overflow-hidden bg-[#2a1d15] relative z-10">
                   <img 
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${isEditing ? formData.avatarSeed : profile.avatarSeed}`} 
+                    src={buildAvatarUrl(
+                        isEditing ? formData.avatarSeed : profile.avatarSeed, 
+                        isEditing ? formData.avatarOptions : profile.avatarOptions
+                    )} 
                     alt="Scholar Avatar" 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -193,11 +241,9 @@ export default function ProfilePage() {
 
                 {isEditing && (
                   <motion.button
-                    whileTap={{ rotate: 180 }}
-                    onClick={rerollAvatar}
-                    type="button"
+                    whileTap={{ rotate: 180 }} onClick={rerollAvatar} type="button"
                     className="absolute bottom-0 right-0 bg-amber-600 hover:bg-amber-500 text-white p-2.5 rounded-full shadow-lg border border-amber-400/30 transition-colors z-20"
-                    title="Re-roll Appearance"
+                    title="Randomize Base Face"
                   >
                     <RefreshCw size={16} />
                   </motion.button>
@@ -206,12 +252,27 @@ export default function ProfilePage() {
 
               {!isEditing ? (
                 <>
-                  <h2 className="text-2xl font-heading font-bold text-amber-100">{profile.name}</h2>
-                  <p className="text-amber-500 text-sm uppercase tracking-widest font-bold mt-1 mb-4">{profile.title}</p>
+                  <h2 className="text-2xl font-heading font-bold text-amber-100">{profile.firstName} {profile.lastName}</h2>
+                  <p className="text-amber-500/80 text-xs font-bold tracking-widest mt-1 mb-1">@{profile.username}</p>
                   
-                  <div className="inline-block bg-amber-950/40 px-4 py-2 rounded-lg border border-amber-900/30 text-amber-200/60 text-sm italic">
+                  <div className="mt-4 mb-4 flex items-center justify-center gap-2">
+                      <span className="text-amber-500 text-[10px] uppercase tracking-widest font-bold border border-amber-500/30 bg-amber-950/40 px-2 py-1 rounded">{profile.title}</span>
+                      <span className="text-amber-700 text-[10px] uppercase tracking-widest font-bold border border-amber-900/50 bg-black/40 px-2 py-1 rounded flex items-center gap-1"><Brain size={10}/> {profile.experienceLevel}</span>
+                  </div>
+                  
+                  <div className="inline-block bg-amber-950/40 px-4 py-2 rounded-lg border border-amber-900/30 text-amber-200/60 text-sm italic w-full">
                     "{profile.bio}"
                   </div>
+
+                  {profile.historicalInterests.length > 0 && (
+                      <div className="mt-6 flex flex-wrap justify-center gap-1.5">
+                          {profile.historicalInterests.map(interest => (
+                              <span key={interest} className="px-2 py-1 bg-black/40 border border-amber-900/30 text-amber-600 text-[9px] uppercase tracking-wider rounded">
+                                  {interest}
+                              </span>
+                          ))}
+                      </div>
+                  )}
                   
                   <div className="mt-8 pt-8 border-t border-amber-900/30">
                     <button 
@@ -223,8 +284,65 @@ export default function ProfilePage() {
                   </div>
                 </>
               ) : (
-                <div className="space-y-4">
-                  <p className="text-xs text-amber-500/80 uppercase tracking-widest font-bold">Forging New Identity</p>
+                <div className="space-y-4 text-left mt-6 border-t border-amber-900/30 pt-4">
+                  <p className="text-xs text-amber-500/80 uppercase tracking-widest font-bold mb-4 text-center">Avatar Customization</p>
+                  
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-amber-500 uppercase tracking-widest font-bold">Skin Tone</label>
+                    <select 
+                      value={formData.avatarOptions.skinColor} 
+                      onChange={e => setFormData({...formData, avatarOptions: {...formData.avatarOptions, skinColor: e.target.value}})} 
+                      className="w-full bg-black/40 border border-amber-900/50 rounded-lg p-2 text-amber-50 text-xs outline-none"
+                    >
+                        <option value="614335">Dark Brown</option>
+                        <option value="ae5d29">Brown</option>
+                        <option value="d08b5b">Light Brown</option>
+                        <option value="edb98a">Tan</option>
+                        <option value="f8d25c">Yellow</option>
+                        <option value="fd9841">Orange</option>
+                        <option value="ffdbb4">Pale</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-amber-500 uppercase tracking-widest font-bold">Hair & Headwear</label>
+                    <select 
+                      value={formData.avatarOptions.top} 
+                      onChange={e => setFormData({...formData, avatarOptions: {...formData.avatarOptions, top: e.target.value}})} 
+                      className="w-full bg-black/40 border border-amber-900/50 rounded-lg p-2 text-amber-50 text-xs outline-none"
+                    >
+                        <option value="shortHair">Short Hair</option>
+                        <option value="longHair">Long Hair</option>
+                        <option value="bob">Bob Cut</option>
+                        <option value="bun">Bun</option>
+                        <option value="curly">Curly</option>
+                        <option value="dreads">Dreads</option>
+                        <option value="fro">Afro</option>
+                        <option value="shaggy">Shaggy</option>
+                        <option value="turban">Turban</option>
+                        <option value="hijab">Hijab</option>
+                        <option value="hat">Hat</option>
+                        <option value="winterHat1">Winter Hat</option>
+                        <option value="eyepatch">Eyepatch</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-amber-500 uppercase tracking-widest font-bold">Accessories / Glasses</label>
+                    <select 
+                      value={formData.avatarOptions.accessories} 
+                      onChange={e => setFormData({...formData, avatarOptions: {...formData.avatarOptions, accessories: e.target.value}})} 
+                      className="w-full bg-black/40 border border-amber-900/50 rounded-lg p-2 text-amber-50 text-xs outline-none"
+                    >
+                        <option value="none">None</option>
+                        <option value="round">Round Glasses</option>
+                        <option value="kurt">Kurt Glasses</option>
+                        <option value="prescription01">Prescription 1</option>
+                        <option value="prescription02">Prescription 2</option>
+                        <option value="sunglasses">Sunglasses</option>
+                        <option value="wayfarers">Wayfarers</option>
+                    </select>
+                  </div>
                 </div>
               )}
             </motion.div>
@@ -240,10 +358,8 @@ export default function ProfilePage() {
 
           {/* RIGHT COLUMN */}
           <div className="lg:col-span-2 space-y-8">
-            
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               className="grid grid-cols-1 md:grid-cols-3 gap-4"
             >
               <StatCard icon={<Trophy className="text-yellow-500" />} value={profile.stats?.knowledgePoints || 0} label="Knowledge Points" />
@@ -252,9 +368,7 @@ export default function ProfilePage() {
             </motion.div>
 
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
               className="bg-[#150f0a]/60 backdrop-blur-xl border border-amber-900/40 rounded-3xl p-8 relative"
             >
               {isEditing ? (
@@ -272,37 +386,91 @@ export default function ProfilePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80">Scholar Name</label>
+                      <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80">First Name</label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700" />
                         <input 
-                          type="text" 
-                          value={formData.name}
-                          onChange={(e) => setFormData({...formData, name: e.target.value})}
+                          type="text" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                          className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 pl-10 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80">Last Name</label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700" />
+                        <input 
+                          type="text" value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                           className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 pl-10 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all"
                         />
                       </div>
                     </div>
                     
                     <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80">Email Archive</label>
+                      <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80">Username</label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700" />
+                        <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700" />
                         <input 
-                          type="email" 
-                          value={formData.email}
-                          onChange={(e) => setFormData({...formData, email: e.target.value})}
+                          type="text" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})}
                           className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 pl-10 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all"
                         />
                       </div>
                     </div>
 
-                    <div className="col-span-1 md:col-span-2 space-y-2">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80">Email Archive</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700" />
+                        <input 
+                          type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})}
+                          className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 pl-10 pr-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80 flex items-center gap-2"><Calendar size={12}/> Age (Optional)</label>
+                        <input 
+                            type="number" min="1" max="120" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})}
+                            className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 px-4 text-amber-50 focus:border-amber-500/80 outline-none transition-all" 
+                        />
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80 flex items-center gap-2"><Brain size={12}/> Experience</label>
+                        <select 
+                            value={formData.experienceLevel} onChange={(e) => setFormData({...formData, experienceLevel: e.target.value})}
+                            className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 px-4 text-amber-50 focus:border-amber-500/80 outline-none transition-all appearance-none cursor-pointer"
+                        >
+                            <option value="Beginner">Beginner Explorer</option>
+                            <option value="Enthusiast">History Enthusiast</option>
+                            <option value="Scholar">Advanced Scholar</option>
+                        </select>
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2 space-y-3 pt-2">
+                        <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80 flex items-center gap-2"><Compass size={12}/> Areas of Interest</label>
+                        <div className="flex flex-wrap gap-2">
+                            {availableInterests.map(interest => (
+                                <button
+                                    key={interest} type="button" onClick={() => handleInterestToggle(interest)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-all ${
+                                        formData.historicalInterests.includes(interest) 
+                                        ? 'bg-amber-600/20 border-amber-500 text-amber-300' 
+                                        : 'bg-black/30 border-amber-900/30 text-amber-600 hover:border-amber-700'
+                                    }`}
+                                >
+                                    {interest}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2 space-y-2 mt-2">
                       <label className="text-xs font-bold uppercase tracking-widest text-amber-500/80">Personal Chronicle (Bio)</label>
                       <textarea 
-                        value={formData.bio}
-                        onChange={(e) => setFormData({...formData, bio: e.target.value})}
-                        rows="3"
+                        value={formData.bio} onChange={(e) => setFormData({...formData, bio: e.target.value})} rows="3"
                         className="w-full bg-black/40 border border-amber-900/50 rounded-lg py-3 px-4 text-amber-50 focus:border-amber-500/50 outline-none transition-all resize-none"
                       />
                     </div>
@@ -359,22 +527,16 @@ export default function ProfilePage() {
         </div>
       </main>
 
-      {/* LOGOUT CONFIRMATION MODAL */}
       <AnimatePresence>
         {showLogoutConfirm && (
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           >
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
               className="bg-[#150f0a] border border-red-900/50 rounded-3xl p-8 max-w-md w-full shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden"
             >
-              {/* Background glow */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-red-900/20 rounded-full blur-3xl pointer-events-none"></div>
 
               <div className="relative z-10 flex flex-col items-center text-center">

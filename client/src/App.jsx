@@ -9,6 +9,7 @@ import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import CommunityPage from './pages/CommunityPage';
 import CreditsPage from './pages/CreditsPage';
+import StorePage from './pages/StorePage';
 
 export default function App() {
   return (
@@ -32,6 +33,10 @@ export default function App() {
           
           {/* Credits Route */}
           <Route path="/credits" element={<CreditsPage />} />
+
+          {/* Store Route */}
+          <Route path="/store" element={<StorePage />} />
+
         </Routes>
       </div>
     </Router>

@@ -8,6 +8,17 @@ import humanWalk from "../assets/animations/Ancient_Man.json";
 import dinoRoar from "../assets/animations/T-Rex.json";
 import rocketBg from "../assets/animations/Rocket_Webpage.json";
 
+// Helper to construct the customized avatar URL matching other pages
+const buildAvatarUrl = (seed, options) => {
+    let url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed || 'Scholar'}`;
+    if (options) {
+        if (options.skinColor) url += `&skinColor=${options.skinColor}`;
+        if (options.top) url += `&top=${options.top}`;
+        if (options.accessories && options.accessories !== "none") url += `&accessories=${options.accessories}`;
+    }
+    return url;
+};
+
 export default function HomePage() {
   const navigate = useNavigate();
   const { scrollY } = useScroll();
@@ -23,9 +34,15 @@ export default function HomePage() {
     
     if (userInfo) {
       setIsLoggedIn(true);
+      
+      // Determine display name using the updated system
+      const displayName = userInfo.firstName 
+        ? `${userInfo.firstName} ${userInfo.lastName}`
+        : (userInfo.name || userInfo.username || 'Scholar');
+
       setUser({
-        name: userInfo.name,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.avatarSeed || userInfo.name}` 
+        name: displayName,
+        avatar: buildAvatarUrl(userInfo.avatarSeed, userInfo.avatarOptions)
       });
     }
   }, []);

@@ -3,7 +3,8 @@ import {
   getUserProfile, 
   updateUserProfile, 
   updateAchievements,
-  unlockLesson
+  unlockLesson,
+  purchaseKP
 } from '../controllers/userController.js';
 import protect from '../middleware/authMiddleware.js';
 
@@ -18,5 +19,8 @@ router.route('/achievements')
 
 router.route('/unlock-lesson')
   .post(protect, unlockLesson);
+
+router.route('/purchase-kp')
+  .post(protect, purchaseKP);
 
 export default router;

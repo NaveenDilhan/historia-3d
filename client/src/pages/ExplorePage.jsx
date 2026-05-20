@@ -4,6 +4,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Compass, Users, Clock, LogIn, Calendar, Search, Filter, Globe, PlayCircle, Lock, Zap } from 'lucide-react';
 import LessonPopup from '../components/UI/LessonPopup';
 
+// Helper to construct the customized avatar URL
+const buildAvatarUrl = (seed, options) => {
+    let url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed || 'Scholar'}`;
+    if (options) {
+        if (options.skinColor) url += `&skinColor=${options.skinColor}`;
+        if (options.top) url += `&top=${options.top}`;
+        if (options.accessories && options.accessories !== "none") url += `&accessories=${options.accessories}`;
+    }
+    return url;
+};
+
 export default function ExplorePage() {
   const [lessons, setLessons] = useState([]);
   const [userAchievements, setUserAchievements] = useState([]);
@@ -13,6 +24,7 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // --- SEARCH & FILTER STATE ---
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEra, setSelectedEra] = useState('All');
   const [selectedRegion, setSelectedRegion] = useState('All');
@@ -20,8 +32,12 @@ export default function ExplorePage() {
   const navigate = useNavigate();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState({ name: "", avatar: "" });
+  const [user, setUser] = useState({
+    name: "",
+    avatar: ""
+  });
 
+  // Helper to convert medal to progress percentage
   const getProgressFromMedal = (medal) => {
       if (medal === 'gold') return 100;
       if (medal === 'silver') return 50;
@@ -33,17 +49,32 @@ export default function ExplorePage() {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
     if (userInfo) {
       setIsLoggedIn(true);
+      
+      // Determine display name
+      const displayName = userInfo.firstName 
+        ? `${userInfo.firstName} ${userInfo.lastName}`
+        : (userInfo.name || userInfo.username || 'Scholar');
+
+      // Immediately load the configured avatar from local storage
       setUser({
-        name: userInfo.name,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.name}`
+        name: displayName,
+        avatar: buildAvatarUrl(userInfo.avatarSeed, userInfo.avatarOptions)
       });
 
+      // Fetch full profile to keep stats and avatar perfectly in sync
       fetch("http://localhost:5000/api/users/profile", { credentials: "include" })
         .then(res => res.json())
         .then(data => {
             if (data.achievements) setUserAchievements(data.achievements);
             if (data.unlockedLessons) setUnlockedLessons(data.unlockedLessons);
             if (data.stats) setKnowledgePoints(data.stats.knowledgePoints);
+            
+            // Sync avatar and name in case they were updated in another tab/device
+            const fetchedName = data.firstName ? `${data.firstName} ${data.lastName}` : (data.username || 'Scholar');
+            setUser({
+              name: fetchedName,
+              avatar: buildAvatarUrl(data.avatarSeed, data.avatarOptions)
+            });
         })
         .catch(console.error);
     }
@@ -54,7 +85,9 @@ export default function ExplorePage() {
       try {
         setLoading(true);
         const response = await fetch('http://localhost:5000/api/lessons');
+        
         if (!response.ok) throw new Error('Failed to fetch from the Great Library');
+        
         const lessonData = await response.json();
         setLessons(lessonData);
       } catch (err) {
@@ -70,6 +103,7 @@ export default function ExplorePage() {
   const getLessonStats = (lesson) => {
       const lessonId = lesson.slug || lesson.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
       const ach = userAchievements.find(a => a.lessonId === lessonId);
+      
       const timeSpent = ach?.timeSpent ? ach.timeSpent : (ach ? ach.eventsFound * 5 : 0);
       
       return {
@@ -81,13 +115,22 @@ export default function ExplorePage() {
       };
   };
 
+  // Callback to update local state when a lesson is successfully unlocked in the popup
   const handleUnlockSuccess = (newKP, newUnlockedList) => {
     setKnowledgePoints(newKP);
     setUnlockedLessons(newUnlockedList);
   };
 
-  const availableEras = useMemo(() => [...new Set(lessons.map(l => l.era).filter(Boolean))], [lessons]);
-  const availableRegions = useMemo(() => [...new Set(lessons.map(l => l.region).filter(Boolean))], [lessons]);
+  // --- FILTERING LOGIC ---
+  const availableEras = useMemo(() => {
+      const eras = lessons.map(l => l.era).filter(Boolean);
+      return [...new Set(eras)];
+  }, [lessons]);
+
+  const availableRegions = useMemo(() => {
+      const regions = lessons.map(l => l.region).filter(Boolean);
+      return [...new Set(regions)];
+  }, [lessons]);
 
   const filteredLessons = useMemo(() => {
       return lessons.filter(lesson => {
@@ -98,6 +141,7 @@ export default function ExplorePage() {
             
           const matchesEra = selectedEra === 'All' || lesson.era === selectedEra;
           const matchesRegion = selectedRegion === 'All' || lesson.region === selectedRegion;
+
           return matchesSearch && matchesEra && matchesRegion;
       });
   }, [lessons, searchQuery, selectedEra, selectedRegion]);
@@ -111,10 +155,13 @@ export default function ExplorePage() {
         .font-body { font-family: 'Lato', sans-serif; }
         .ancient-wall-bg {
           background-color: #1a120b;
-          background-image: radial-gradient(circle at 50% -20%, rgba(217, 119, 6, 0.15), rgba(0, 0, 0, 0.9)), url("https://www.transparenttextures.com/patterns/wall-4-light.png");
+          background-image: 
+            radial-gradient(circle at 50% -20%, rgba(217, 119, 6, 0.15), rgba(0, 0, 0, 0.9)),
+            url("https://www.transparenttextures.com/patterns/wall-4-light.png");
           background-blend-mode: screen, overlay;
           background-attachment: fixed;
         }
+        /* Custom Scrollbar for select elements */
         select option { background-color: #1a120b; color: #fef3c7; }
       `}</style>
 
@@ -144,11 +191,18 @@ export default function ExplorePage() {
             
             {isLoggedIn ? (
               <div className="flex items-center gap-4">
-                {/* KP Display */}
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-900/30 border border-amber-500/30 rounded-full text-amber-300 font-bold tracking-widest text-xs">
-                    <Zap size={14} className="text-yellow-400 fill-yellow-400" />
+                {/* KP Display / Link to Store */}
+                <div 
+                  onClick={() => navigate('/store')}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-amber-900/20 border border-amber-500/30 rounded-full text-amber-300 font-bold tracking-widest text-xs cursor-pointer hover:bg-amber-900/50 hover:border-amber-400 transition-all group shadow-inner"
+                  title="Acquire more Knowledge Points"
+                >
+                    <Zap size={14} className="text-yellow-400 fill-yellow-400 group-hover:scale-110 transition-transform" />
                     <span>{knowledgePoints} KP</span>
+                    <span className="text-amber-600 ml-1 font-black group-hover:text-amber-400 transition-colors">+</span>
                 </div>
+                
+                {/* User Profile */}
                 <button 
                   onClick={() => navigate("/profile")}
                   className="flex items-center gap-3 p-1 pr-4 bg-amber-950/40 border border-amber-500/30 rounded-full hover:bg-amber-900/50 transition-all active:scale-95 group"
@@ -190,12 +244,14 @@ export default function ExplorePage() {
           </motion.div>
         </header>
 
+        {/* --- SEARCH AND FILTER WIDGET --- */}
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           className="flex flex-col md:flex-row gap-4 mb-12 items-center justify-between bg-[#150f0a]/60 p-4 rounded-2xl border border-amber-900/40 shadow-lg backdrop-blur-md"
         >
+          {/* Text Search */}
           <div className="relative w-full md:w-1/2">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-700" />
             <input
@@ -207,6 +263,7 @@ export default function ExplorePage() {
             />
           </div>
 
+          {/* Category Dropdowns */}
           <div className="flex w-full md:w-auto gap-4">
             <div className="relative w-full md:w-48 group">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-700 group-focus-within:text-amber-400 transition-colors" />
@@ -236,6 +293,7 @@ export default function ExplorePage() {
           </div>
         </motion.div>
 
+        {/* --- DYNAMIC RENDER AREA --- */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
@@ -268,7 +326,8 @@ export default function ExplorePage() {
               
               // Check if locked
               const isLocked = lesson.isPremium && !unlockedLessons.includes(lessonSlug);
-
+              
+              // Calculate a dynamic background position to "break apart" the map across cards
               const bgPosX = (index % 3) * 50;
               const bgPosY = Math.floor(index / 3) * 50;
 
@@ -283,6 +342,7 @@ export default function ExplorePage() {
                   onClick={() => setSelectedLesson({ ...lesson, slug: lessonSlug, medal: stats.medal, progress: calculatedProgress, isLocked })}
                   className={`group cursor-pointer relative bg-[#1a130e]/80 border ${isLocked ? 'border-zinc-800' : 'border-amber-900/40 hover:border-amber-500/50'} rounded-2xl overflow-hidden transition-all duration-300 shadow-xl flex flex-col`}
                 >
+                  {/* Map Background Fragment */}
                   <div 
                     className={`absolute inset-0 z-0 opacity-30 mix-blend-screen pointer-events-none transition-opacity duration-500 group-hover:opacity-60 ${isLocked ? 'grayscale opacity-10' : ''}`}
                     style={{
@@ -300,6 +360,7 @@ export default function ExplorePage() {
                         {lesson.era ? lesson.era.replace(/era/i, '').trim() : 'MESOZOIC'}
                       </span>
                       
+                      {/* Region Tag */}
                       {lesson.region && lesson.region !== 'Global' && (
                         <span className={`text-[9px] uppercase tracking-[0.2em] font-bold border px-2 py-1 rounded flex items-center gap-1 ${isLocked ? 'text-zinc-600 border-zinc-800 bg-black/40' : 'text-amber-200/50 border-amber-900/30 bg-black/40'}`}>
                           <Globe size={10} /> {lesson.region}
@@ -330,6 +391,7 @@ export default function ExplorePage() {
                     </div>
                   </div>
                   
+                  {/* FOOTER */}
                   <div className={`px-8 py-4 bg-[#110b08]/80 border-t flex items-center justify-between relative z-10 ${isLocked ? 'border-zinc-900' : 'border-amber-900/30 group-hover:bg-amber-900/20'} transition-colors`}>
                     <div className="flex flex-col gap-1.5">
                       <div className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider ${isLocked ? 'text-zinc-600' : 'text-amber-200/50'}`}>
@@ -385,6 +447,7 @@ export default function ExplorePage() {
   );
 }
 
+// NavLink Component matching HomePage styling
 function NavLink({ icon, label, onClick, isActive }) {
   return (
     <button 
