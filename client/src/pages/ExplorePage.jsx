@@ -501,6 +501,7 @@ export default function ExplorePage() {
           <LessonPopup 
             lesson={selectedLesson}
             userKP={knowledgePoints}
+            isLoggedIn={isLoggedIn}
             onUnlockSuccess={handleUnlockSuccess}
             onClose={() => setSelectedLesson(null)}
             onPlay={() => {

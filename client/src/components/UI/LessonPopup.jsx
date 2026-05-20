@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { X, Play, Award, Clock, BookOpen, Lock, Unlock, Zap } from 'lucide-react';
 
-export default function LessonPopup({ lesson, userKP, onUnlockSuccess, onClose, onPlay }) {
+export default function LessonPopup({ lesson, userKP, isLoggedIn, onUnlockSuccess, onClose, onPlay }) {
   const navigate = useNavigate();
   const [unlocking, setUnlocking] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -117,7 +117,7 @@ export default function LessonPopup({ lesson, userKP, onUnlockSuccess, onClose, 
               ) : (
                 <div className="py-2">
                   <p className="text-[10px] text-amber-200/40 uppercase tracking-widest leading-relaxed">
-                    No medal acquired yet. Play to earn.
+                    {isLoggedIn ? "No medal acquired yet. Play to earn." : "Log in to get completion achievements."}
                   </p>
                 </div>
               )}
