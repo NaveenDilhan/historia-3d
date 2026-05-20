@@ -27,7 +27,6 @@ const MeteorTrailMaterial = shaderMaterial(
 );
 extend({ MeteorTrailMaterial });
 
-
 const _meteorCoreGeo = new THREE.SphereGeometry(2, 12, 12);
 const _meteorCoreMat = new THREE.MeshBasicMaterial({ color: "#ffffff" });
 const _meteorGlowGeo = new THREE.SphereGeometry(4, 12, 12);
@@ -37,13 +36,10 @@ const _meteorTailMat = new MeteorTrailMaterial({ transparent: true, blending: TH
 const _hitboxGeo = new THREE.SphereGeometry(1, 8, 8);
 const _hitboxMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
 
-
-
 const Meteor = ({ startPos, targetPos, delay, speed, scale, isHero, hasAudio }) => {
     const ref = useRef();
     const [visible, setVisible] = useState(false);
     const progress = useRef(0);
-
 
     const meteorSoundRef = useRef();
     const explosionSoundRef = useRef();
@@ -56,7 +52,6 @@ const Meteor = ({ startPos, targetPos, delay, speed, scale, isHero, hasAudio }) 
         if (state.clock.elapsedTime > delay && progress.current < 1) {
             if (!visible) setVisible(true);
             
-
             if (hasAudio && !hasStartedSound.current && meteorSoundRef.current && meteorSoundRef.current.buffer) {
                 meteorSoundRef.current.setVolume(isHero ? 2.5 : 0.15);
                 meteorSoundRef.current.setRefDistance(isHero ? 300 : 50);
@@ -64,13 +59,11 @@ const Meteor = ({ startPos, targetPos, delay, speed, scale, isHero, hasAudio }) 
                 hasStartedSound.current = true;
             }
 
-
             progress.current += (delta * speed) / startPos.distanceTo(targetPos);
             
             if (progress.current >= 1) {
                 if (visible) setVisible(false); 
                 
-
                 if (hasAudio && !hasExploded.current && explosionSoundRef.current && explosionSoundRef.current.buffer) {
                     if (meteorSoundRef.current?.isPlaying) meteorSoundRef.current.stop();
                     explosionSoundRef.current.setVolume(isHero ? 4.0 : 0.3);
@@ -103,13 +96,15 @@ const Meteor = ({ startPos, targetPos, delay, speed, scale, isHero, hasAudio }) 
     };
 
     return (
-        <group ref={ref} scale={scale}>
+        // Set initial position to startPos to keep it out of reach before falling
+        <group ref={ref} scale={scale} position={startPos}>
             <group visible={visible}>
                 <mesh geometry={_meteorCoreGeo} material={_meteorCoreMat} />
                 <mesh geometry={_meteorGlowGeo} material={_meteorGlowMat} />
                 <mesh position={[0, 0, -30]} rotation={[-Math.PI / 2, 0, 0]} geometry={_meteorTailGeo} material={_meteorTailMat} />
                 
-                {isHero && (
+                {/* Only render the raycast hitbox when the meteorite is actively visible and falling */}
+                {isHero && visible && (
                     <mesh
                         scale={[20, 20, 20]}
                         geometry={_hitboxGeo}
