@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function DialogueBox({ currentBiome }) {
   const { narration, loading, getNarration } = useAI();
   const [visible, setVisible] = useState(false);
-  
   const [ambientActive, setAmbientActive] = useState(true);
   
   const masterTimerRef = useRef(null);
@@ -16,19 +15,26 @@ export default function DialogueBox({ currentBiome }) {
       setAmbientActive(false); 
       if (ambientTimerRef.current) clearTimeout(ambientTimerRef.current);
     };
-    
     window.addEventListener('geothermal-modal-closed', handleGeothermalClosed);
     return () => window.removeEventListener('geothermal-modal-closed', handleGeothermalClosed);
   }, []);
 
+  // Sync subtitle closure perfectly with audio completion
   useEffect(() => {
+    const handleAudioEnded = () => {
+      setVisible(false);
+      if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
+      window.dispatchEvent(new CustomEvent('narration-ended'));
+    };
+    
+    window.addEventListener('audio-playback-ended', handleAudioEnded);
     return () => {
+      window.removeEventListener('audio-playback-ended', handleAudioEnded);
       if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
       if (ambientTimerRef.current) clearTimeout(ambientTimerRef.current);
     };
   }, []);
 
-  // KEEP YOUR UPDATE: The 10-second idle ambient narrator
   useEffect(() => {
     if (!ambientActive || visible || loading) {
       if (ambientTimerRef.current) clearTimeout(ambientTimerRef.current);
@@ -36,7 +42,6 @@ export default function DialogueBox({ currentBiome }) {
     }
 
     const delay = 10000; 
-    
     ambientTimerRef.current = setTimeout(() => {
       if (!window.__isAILoading && !window.__isSpeaking) {
         getNarration(
@@ -50,7 +55,6 @@ export default function DialogueBox({ currentBiome }) {
     return () => clearTimeout(ambientTimerRef.current);
   }, [visible, loading, getNarration, currentBiome, ambientActive]);
 
-  // CUTOFF PREVENTION & TIMING ENGINE
   useEffect(() => {
     if (loading) {
       setVisible(false);
@@ -66,9 +70,9 @@ export default function DialogueBox({ currentBiome }) {
     if (narration) {
       setVisible(true);
       
-      // KEEP YOUR UPDATE: The original fallback timer math
+      // Much shorter fallback timer just in case audio fails to load
       const wordCount = narration.split(' ').length;
-      const displayTime = Math.max(8000, (wordCount * 800) + 5000);
+      const displayTime = Math.max(3000, (wordCount * 330) + 1500);
 
       if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
 

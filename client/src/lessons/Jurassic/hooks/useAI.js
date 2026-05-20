@@ -4,7 +4,6 @@ export default function useAI() {
   const [narration, setNarration] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Track the audio object so we can interrupt it
   const audioRef = useRef(null);
 
   useEffect(() => {
@@ -21,13 +20,11 @@ export default function useAI() {
     if (window.__isAILoading && !forceInterrupt) return;
     if (window.__isSpeaking && !forceInterrupt) return;
 
-    // Handle force interrupt for ElevenLabs audio
     if (forceInterrupt) {
         if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current.currentTime = 0;
         }
-        // Fallback cleanup in case old TTS is somehow running
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
         }
@@ -64,19 +61,17 @@ export default function useAI() {
 
       const data = await res.json();
       const newText = data.narration || '';
-      const audioData = data.audioData; // Extract audio data from the backend
+      const audioData = data.audioData; 
       
       window.dispatchEvent(new CustomEvent('ai-narration-update', {
           detail: { narration: newText, loading: false }
         }));
 
-      // Prevent overlapping audio clips
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
 
-      // Play the ElevenLabs audio if it exists
       if (audioData) {
         const audioSrc = `data:audio/mpeg;base64,${audioData}`;
         const audio = new Audio(audioSrc);
@@ -84,14 +79,16 @@ export default function useAI() {
         
         window.__isSpeaking = true;
         
-        // Reset speaking state when audio finishes naturally
+        // Broadcast exactly when the audio finishes to clear subtitles perfectly
         audio.onended = () => {
             window.__isSpeaking = false;
+            window.dispatchEvent(new CustomEvent('audio-playback-ended'));
         };
 
         audio.play().catch(e => {
             console.error("Audio playback prevented by browser:", e);
             window.__isSpeaking = false;
+            window.dispatchEvent(new CustomEvent('audio-playback-ended'));
         });
       }
 

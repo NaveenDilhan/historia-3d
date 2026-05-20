@@ -5,7 +5,7 @@ export default function useEarthAI() {
   const [loading, setLoading] = useState(false);
   
   const abortControllerRef = useRef(null);
-  const audioRef = useRef(null); // Track the ElevenLabs audio object
+  const audioRef = useRef(null); 
 
   useEffect(() => {
     const handleAIUpdate = (e) => {
@@ -21,18 +21,13 @@ export default function useEarthAI() {
     if (window.__isAILoading && !forceInterrupt) return;
 
     if (forceInterrupt) {
-        // Abort the fetch request
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
-        
-        // Interrupt the ElevenLabs audio stream
         if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current.currentTime = 0;
         }
-
-        // Fallback cleanup
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
         }
@@ -75,19 +70,17 @@ export default function useEarthAI() {
 
       const data = await res.json();
       const newText = data.narration || '';
-      const audioData = data.audioData; // Extract audio data
+      const audioData = data.audioData; 
       
       window.dispatchEvent(new CustomEvent('ai-narration-update', {
           detail: { narration: newText, loading: false }
         }));
 
-      // Prevent overlapping audio
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
 
-      // Play the ElevenLabs audio if it exists
       if (audioData) {
         const audioSrc = `data:audio/mpeg;base64,${audioData}`;
         const audio = new Audio(audioSrc);
@@ -95,14 +88,16 @@ export default function useEarthAI() {
         
         window.__isSpeaking = true;
         
-        // Reset speaking state when finished
+        // Exact audio closure
         audio.onended = () => {
             window.__isSpeaking = false;
+            window.dispatchEvent(new CustomEvent('audio-playback-ended'));
         };
 
         audio.play().catch(e => {
             console.error("Audio playback prevented by browser:", e);
             window.__isSpeaking = false;
+            window.dispatchEvent(new CustomEvent('audio-playback-ended'));
         });
       }
 

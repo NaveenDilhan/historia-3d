@@ -79,12 +79,13 @@ export default function EarthUI({ hasStarted }) {
                if (isCinematicActive.current) {
                    setShowEnterPrompt(true);
                }
-            }, 3000);
+            }, 1000); // reduced from 3000
         }
         return;
       }
 
       if (narrationContext.current === 'era-intro') {
+          // FIX: drastically reduced announcement gap
           nextAnnouncementTimeout.current = setTimeout(() => {
               narrationContext.current = 'anomaly-announcement';
               
@@ -94,17 +95,13 @@ export default function EarthUI({ hasStarted }) {
               
               hasTaughtScanRef.current = true;
 
-              getNarration(
-                  "An anomaly appeared.",
-                  promptText,
-                  true
-              );
-          }, 3000);
+              getNarration("An anomaly appeared.", promptText, true);
+          }, 800);
 
       } else if (narrationContext.current === 'anomaly-announcement') {
           setTimeout(() => {
               window.dispatchEvent(new CustomEvent('reveal-anomaly'));
-          }, 500);
+          }, 300);
 
       } else if (narrationContext.current === 'anomaly-fact') {
           if (pendingQuizReadyRef.current) {
@@ -113,19 +110,12 @@ export default function EarthUI({ hasStarted }) {
           } else {
               nextAnnouncementTimeout.current = setTimeout(() => {
                   narrationContext.current = 'anomaly-announcement';
-                  
                   const promptText = hasTaughtScanRef.current
                       ? "Write exactly one simple sentence saying: 'Wow, a new anomaly is here!' Do not add anything else."
                       : "Write exactly one simple sentence saying: 'Wow, another anomaly has appeared! Press and hold the spacebar to scan it.' Do not add anything else.";
                   
-                  hasTaughtScanRef.current = true;
-
-                  getNarration(
-                      "Another anomaly appeared.",
-                      promptText,
-                      true
-                  );
-              }, 4000);
+                  getNarration("Another anomaly appeared.", promptText, true);
+              }, 800); // reduced from 4000
           }
       }
     };
@@ -162,6 +152,7 @@ export default function EarthUI({ hasStarted }) {
               if ('speechSynthesis' in window) window.speechSynthesis.cancel();
               window.__isSpeaking = false;
 
+              // Reduced from 400 to 100 for instant start
               setTimeout(() => {
                   narrationContext.current = 'era-intro';
                   getNarration(
@@ -169,7 +160,7 @@ export default function EarthUI({ hasStarted }) {
                       "Introduce the Cosmic Void era. Explain the concept that Earth doesn't exist yet and is just floating space dust waiting to form. Do not describe the screen or UI. Explain it in a fun, simple narrative way for a younger audience. Keep it to exactly 2 short sentences. Do not add any instructions.",
                       true
                   );
-              }, 400);
+              }, 100);
           }
           
           if (e.code === 'KeyE' && quizReadyConfig && !mcqConfig && !showCinematic) {
@@ -191,13 +182,14 @@ export default function EarthUI({ hasStarted }) {
       window.dispatchEvent(new CustomEvent('freeze-timeline', { detail: { frozen: true } }));
       if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
       
+      // FIX: Reduced artificial start delay from 1500ms to 300ms
       setTimeout(() => {
         getNarration(
           "Welcome the user to the journey of the universe.",
           "CRITICAL: Do NOT teach any specific scientific facts or mention specific events like nebulas or planets here. Write a purely creative, emotional intro (about 4 sentences). Welcome the user and talk about how incredibly amazing it is that life exists at all, and how breathtaking the journey of a living world forming in the cosmos is. Make it a magical and awe-inspiring storybook opening.",
           true
         );
-      }, 1500); 
+      }, 300); 
     }
   }, [hasStarted, getNarration]);
 

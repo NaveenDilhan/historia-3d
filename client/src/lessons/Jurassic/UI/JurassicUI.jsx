@@ -12,7 +12,6 @@ export default function JurassicUI({ hasStarted }) {
   const [currentBiome, setCurrentBiome] = useState('dense forest');
   const [showLessonComplete, setShowLessonComplete] = useState(false);
   
-  // --- ACHIEVEMENT TRACKING ---
   const [discoveredEvents, setDiscoveredEvents] = useState(new Set());
   const [earnedMedal, setEarnedMedal] = useState(null);
   const totalEvents = 8; 
@@ -29,15 +28,11 @@ export default function JurassicUI({ hasStarted }) {
       setActiveModal(null);
       
       if (closedType === 'geothermal') {
-
           isApocalypseRef.current = true;
           window.dispatchEvent(new CustomEvent('geothermal-modal-closed'));
       } else if (closedType === 'meteor') {
-          
           setTimeout(() => {
               hasTriggeredCongratsRef.current = true;
-
-              // CALCULATE MEDAL
               const score = discoveredEvents.size;
               let medal = null;
               if (score === totalEvents) medal = 'gold';
@@ -46,7 +41,6 @@ export default function JurassicUI({ hasStarted }) {
               
               setEarnedMedal(medal);
 
-              // UPDATE DATABASE
               fetch("http://localhost:5000/api/users/achievements", {
                   method: "POST",
                   credentials: "include",
@@ -71,7 +65,6 @@ export default function JurassicUI({ hasStarted }) {
   useEffect(() => {
     const handleHover = (e) => setHoveredDino(e.detail.isHovering);
     
-    // Normal interaction clicks
     const handleClick = (e) => {
         if (!showLessonComplete) {
             setActiveModal(prev => prev ? prev : e.detail.type);
@@ -130,6 +123,7 @@ export default function JurassicUI({ hasStarted }) {
     };
   }, [getNarration, showLessonComplete]);
 
+  // FIX: Reduced artificial start delay dramatically
   useEffect(() => {
     if (hasStarted) {
       const timer = setTimeout(() => {
@@ -139,13 +133,12 @@ export default function JurassicUI({ hasStarted }) {
               "STRICT RULES: NO greetings. NO pleasantries. NO introductory words. ONLY state: Use the W, A, S, and D keys to move, the mouse to look around, and Left Click to interact with artifacts.",
               true
           );
-      }, 2000);
+      }, 300);
       return () => clearTimeout(timer);
     }
   }, [hasStarted, getNarration]);
 
   useEffect(() => {
-      // TRACK EVENTS FOR ACHIEVEMENTS
       if (activeModal && activeModal !== 'tutorial') {
           setDiscoveredEvents(prev => {
               const newSet = new Set(prev);
@@ -181,8 +174,6 @@ export default function JurassicUI({ hasStarted }) {
 
   return (
     <div className="absolute inset-0 z-20 pointer-events-none">
-      
-      {/* HUD Tracker Component */}
       <HUD 
         current={discoveredEvents.size} 
         total={totalEvents} 

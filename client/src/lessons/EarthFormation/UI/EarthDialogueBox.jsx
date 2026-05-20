@@ -9,8 +9,18 @@ export default function EarthDialogueBox({ currentEra }) {
   
   const masterTimerRef = useRef(null);
 
+  // Sync subtitle closure perfectly with audio completion
   useEffect(() => {
+    const handleAudioEnded = () => {
+      setVisible(false);
+      setCurrentSubtitle('');
+      if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
+      window.dispatchEvent(new CustomEvent('narration-ended'));
+    };
+    
+    window.addEventListener('audio-playback-ended', handleAudioEnded);
     return () => {
+      window.removeEventListener('audio-playback-ended', handleAudioEnded);
       if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
     };
   }, []);
@@ -32,13 +42,11 @@ export default function EarthDialogueBox({ currentEra }) {
       
       if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
 
-      // KEEP YOUR UPDATE: Split the narration into clean sentences
       const rawSentences = narration.match(/.*?[.!?](?:\s|$)|.+/g) || [narration];
       const cleanSentences = rawSentences.map(s => s.replace(/["“”*]/g, '').trim()).filter(Boolean);
       
       if (cleanSentences.length === 0) return;
 
-      // REPLACED WEB SYNTHESIS WITH SMART TIMERS
       const playSentence = (index) => {
           if (index >= cleanSentences.length) {
               setVisible(false);
@@ -47,21 +55,18 @@ export default function EarthDialogueBox({ currentEra }) {
               return;
           }
 
-          // Show the current sentence
           const text = cleanSentences[index];
           setCurrentSubtitle(text);
 
-          // Calculate time on screen (roughly 350ms per word + a small pause, matches ElevenLabs speed)
+          // Made per-sentence math tighter to match AI pacing
           const wordCount = text.split(' ').length;
-          const sentenceTime = Math.max(2500, (wordCount * 350) + 400);
+          const sentenceTime = Math.max(2000, (wordCount * 330) + 300);
 
-          // Move to the next sentence when this one finishes
           masterTimerRef.current = setTimeout(() => {
               playSentence(index + 1);
           }, sentenceTime);
       };
 
-      // Start the sentence loop
       playSentence(0);
     }
   }, [narration, loading]);
