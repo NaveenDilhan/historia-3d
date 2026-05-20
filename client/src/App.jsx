@@ -11,6 +11,9 @@ import PublicProfilePage from './pages/PublicProfilePage';
 import CommunityPage from './pages/CommunityPage';
 import CreditsPage from './pages/CreditsPage';
 import StorePage from './pages/StorePage';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
+import CookiePage from './pages/CookiePage';
 
 export default function App() {
   return (
@@ -21,6 +24,9 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/scene/:lessonId" element={<ScenePage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/cookies" element={<CookiePage />} />
           
           {/* Authentication Routes */}
           <Route path="/login" element={<LoginPage />} />

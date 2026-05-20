@@ -5,7 +5,7 @@ import {
   Compass, Search, LogIn, MessageSquare, 
   Share2, Flame, Trophy, Users, BookOpen,
   ArrowBigUp, ArrowBigDown, X, Clock, TrendingUp, Send, Loader2, Image as ImageIcon,
-  AlertCircle, CheckCircle
+  AlertCircle, CheckCircle, Heart, Twitter, Github, Mail, ChevronRight
 } from 'lucide-react';
 
 export default function CommunityPage() {
@@ -674,6 +674,81 @@ export default function CommunityPage() {
         </div>
       </main>
 
+      {/* UPDATED VISUAL FOOTER */}
+      <footer className="bg-gradient-to-b from-[#120c08] to-black text-amber-200/60 py-16 border-t border-amber-900/50 relative z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-screen pointer-events-none"></div>
+        
+        <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-12 gap-12 relative z-10">
+          
+          {/* Brand & Description */}
+          <div className="col-span-1 md:col-span-4 space-y-6">
+              <div className="flex items-center gap-3 text-amber-100 group cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
+                <img src="/assets/scroll.png" alt="Scroll Icon" className="w-10 h-10 object-contain opacity-90 rounded-lg group-hover:rotate-6 transition-transform" />
+                <span className="font-heading font-bold text-2xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500">HISTORIA</span>
+              </div>
+              <p className="text-sm leading-relaxed max-w-sm">
+                Preserving the past for the future. An open-source initiative blending WebGL and AI to digitize human history into immersive, interactive experiences.
+              </p>
+              <div className="flex items-center gap-4 pt-2">
+                <SocialIcon icon={<Twitter size={18} />} />
+                <SocialIcon icon={<Github size={18} />} />
+                <SocialIcon icon={<Mail size={18} />} />
+              </div>
+          </div>
+
+          {/* Quick Links */}
+          <div className="col-span-1 md:col-span-2">
+              <h4 className="text-amber-500 font-bold mb-6 uppercase text-xs tracking-widest flex items-center gap-2">Platform</h4>
+              <ul className="space-y-4 text-sm font-medium">
+                 <FooterLink label="Explore Eras" />
+                 <FooterLink label="Community Forum" />
+                 <FooterLink label="Artifact Store" />
+              </ul>
+          </div>
+
+          {/* Resources */}
+          <div className="col-span-1 md:col-span-2">
+              <h4 className="text-amber-500 font-bold mb-6 uppercase text-xs tracking-widest flex items-center gap-2">Resources</h4>
+              <ul className="space-y-4 text-sm font-medium">
+                 <FooterLink label="Credits & Team" />
+                 <FooterLink label="My Profile" />
+                 <li className="hover:text-amber-200 cursor-default transition-colors flex items-center gap-2 group opacity-60">
+                   <span className="w-1.5 h-1.5 rounded-full bg-amber-700 transition-colors"></span>
+                   Educators API <span className="text-[9px] bg-amber-900/50 text-amber-400 px-1.5 py-0.5 rounded ml-1 border border-amber-700/50">SOON</span>
+                 </li>
+              </ul>
+          </div>
+
+          {/* Newsletter / Keep In Touch */}
+          <div className="col-span-1 md:col-span-4 bg-[#1a120b]/50 p-6 rounded-2xl border border-amber-900/30 shadow-inner">
+              <h4 className="text-amber-400 font-bold mb-3 uppercase text-xs tracking-widest">Join the Expedition</h4>
+              <p className="text-xs mb-4 text-amber-200/50 leading-relaxed">Get monthly dispatches on new historical eras, community events, and 3D artifact drops directly to your inbox.</p>
+              <div className="flex gap-2">
+                <input 
+                  type="email" 
+                  placeholder="Enter your parchment..." 
+                  className="bg-[#0f0a06] border border-amber-900/50 rounded-lg px-4 py-2 text-sm w-full text-amber-100 placeholder:text-amber-700/50 focus:outline-none focus:border-amber-500 transition-colors"
+                />
+                <button className="bg-gradient-to-br from-amber-700 to-amber-900 hover:from-amber-600 hover:to-amber-800 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center border border-amber-500/30">
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="max-w-7xl mx-auto px-8 mt-16 pt-8 border-t border-amber-900/30 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium">
+          <p className="flex items-center gap-1 text-amber-200/40">
+            © {new Date().getFullYear()} Historia Project. Built with <Heart size={12} className="text-red-900 mx-1 fill-red-900" /> for history.
+          </p>
+          <div className="flex gap-6 text-amber-200/40">
+            <span className="hover:text-amber-300 transition-colors cursor-pointer">Privacy Doctrine</span>
+            <span className="hover:text-amber-300 transition-colors cursor-pointer">Terms of Service</span>
+            <span className="hover:text-amber-300 transition-colors cursor-pointer">Cookie Manifesto</span>
+          </div>
+        </div>
+      </footer>
+
       {/* ---------------- POST CREATION MODAL ---------------- */}
       <AnimatePresence>
         {isComposing && (
@@ -789,6 +864,26 @@ function NavLink({ icon, label, onClick, isActive }) {
       <span className="group-hover:-translate-y-0.5 transition-transform duration-300">{icon}</span>
       <span>{label}</span>
       <span className={`absolute -bottom-1 left-0 h-[1px] transition-all duration-300 ${isActive ? 'w-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'w-0 bg-amber-400 group-hover:w-full'}`}></span>
+    </button>
+  );
+}
+
+// Static Footer Helper Components
+function FooterLink({ label }) {
+  return (
+    <li>
+      <span className="cursor-pointer hover:text-amber-200 transition-all flex items-center gap-2 group text-amber-200/60">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-700 group-hover:bg-amber-400 transition-colors group-hover:scale-125"></span>
+        <span className="group-hover:translate-x-1 transition-transform">{label}</span>
+      </span>
+    </li>
+  );
+}
+
+function SocialIcon({ icon }) {
+  return (
+    <button className="w-9 h-9 rounded-full bg-amber-950/40 border border-amber-900/50 flex items-center justify-center hover:bg-amber-900 hover:border-amber-600 hover:text-amber-100 transition-all hover:-translate-y-1 hover:shadow-[0_0_15px_rgba(217,119,6,0.2)]">
+      {icon}
     </button>
   );
 }

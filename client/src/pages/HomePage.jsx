@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Lottie from "lottie-react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Compass, Users, User, Globe, BookOpen, ChevronRight, Star, Map, LogIn } from "lucide-react";
+import { 
+  Compass, Users, User, Globe, BookOpen, ChevronRight, 
+  Star, Map, LogIn, Twitter, Github, Mail, Heart 
+} from "lucide-react";
 
 import humanWalk from "../assets/animations/Ancient_Man.json";
 import dinoRoar from "../assets/animations/T-Rex.json";
@@ -94,7 +97,6 @@ export default function HomePage() {
             <div className="group-hover:rotate-6 transition-transform flex items-center justify-center">
               <img src="assets/scroll.png" alt="Scroll Icon" className="w-9 h-9 object-contain drop-shadow-md rounded-lg" />
             </div>
-            {/* Replaced Text with Navbar Banner */}
             <img 
                src="/assets/dark_brown.png" 
                alt="Historia Banner" 
@@ -149,7 +151,6 @@ export default function HomePage() {
             className="relative z-20 max-w-5xl mx-auto flex flex-col items-center"
           >
             <div className="relative mb-6 group">
-              {/* Added playful animation on Main Hero Banner */}
               <motion.img
                 src="/assets/dark_brown.png" 
                 alt="Historia Banner Logo"
@@ -268,32 +269,80 @@ export default function HomePage() {
 
       </main>
 
-      {/* FOOTER */}
-      <footer className="bg-[#120c08] text-amber-200/40 py-16 border-t border-amber-900/30 relative z-10">
-        <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-4 gap-12">
-          <div className="col-span-1 md:col-span-2 space-y-4">
-              <div className="flex items-center gap-3 text-amber-100">
-                <img src="assets/scroll.png" alt="Scroll Icon" className="w-8 h-8 object-contain opacity-90 rounded-lg" />
-                <span className="font-heading font-bold text-lg tracking-wide">HISTORIA</span>
+      {/* UPDATED FOOTER */}
+      <footer className="bg-gradient-to-b from-[#120c08] to-black text-amber-200/60 py-16 border-t border-amber-900/50 relative z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-screen pointer-events-none"></div>
+        
+        <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-12 gap-12 relative z-10">
+          
+          {/* Brand & Description */}
+          <div className="col-span-1 md:col-span-4 space-y-6">
+              <div 
+                className="flex items-center gap-3 text-amber-100 group cursor-pointer" 
+                onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}
+              >
+                <img src="assets/scroll.png" alt="Scroll Icon" className="w-10 h-10 object-contain opacity-90 rounded-lg group-hover:rotate-6 transition-transform" />
+                <span className="font-heading font-bold text-2xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500">HISTORIA</span>
               </div>
-              <p className="text-sm max-w-xs leading-relaxed">
-                Preserving the past for the future. An open-source initiative to digitize human history.
+              <p className="text-sm leading-relaxed max-w-sm">
+                Preserving the past for the future. An open-source initiative blending WebGL and AI to digitize human history into immersive, interactive experiences.
               </p>
+              <div className="flex items-center gap-4 pt-2">
+                <SocialIcon icon={<Twitter size={18} />} />
+                <SocialIcon icon={<Github size={18} />} />
+                <SocialIcon icon={<Mail size={18} />} />
+              </div>
           </div>
-          <div>
-              <h4 className="text-amber-500 font-bold mb-6 uppercase text-xs tracking-widest">Platform</h4>
-              <ul className="space-y-3 text-sm">
-                 <li className="hover:text-amber-200 cursor-pointer transition-colors">Explore</li>
-                 <li className="hover:text-amber-200 cursor-pointer transition-colors">Community</li>
-                 <li className="hover:text-amber-200 cursor-pointer transition-colors">Teachers</li>
+
+          {/* Quick Links */}
+          <div className="col-span-1 md:col-span-2">
+              <h4 className="text-amber-500 font-bold mb-6 uppercase text-xs tracking-widest flex items-center gap-2">Platform</h4>
+              <ul className="space-y-4 text-sm font-medium">
+                 <FooterLink to="/explore" label="Explore Eras" />
+                 <FooterLink to="/community" label="Community Forum" />
+                 <FooterLink to="/store" label="Artifact Store" />
               </ul>
           </div>
-          <div>
-              <h4 className="text-amber-500 font-bold mb-6 uppercase text-xs tracking-widest">Legal</h4>
-              <ul className="space-y-3 text-sm">
-                 <li className="hover:text-amber-200 cursor-pointer transition-colors">Privacy Policy</li>
-                 <li className="hover:text-amber-200 cursor-pointer transition-colors">Terms of Service</li>
+
+          {/* Resources */}
+          <div className="col-span-1 md:col-span-2">
+              <h4 className="text-amber-500 font-bold mb-6 uppercase text-xs tracking-widest flex items-center gap-2">Resources</h4>
+              <ul className="space-y-4 text-sm font-medium">
+                 <FooterLink to="/credits" label="Credits & Team" />
+                 <FooterLink to={isLoggedIn ? "/profile" : "/login"} label={isLoggedIn ? "My Profile" : "Login"} />
+                 <li className="hover:text-amber-200 cursor-default transition-colors flex items-center gap-2 group opacity-60">
+                   <span className="w-1.5 h-1.5 rounded-full bg-amber-700 transition-colors"></span>
+                   Educators API <span className="text-[9px] bg-amber-900/50 text-amber-400 px-1.5 py-0.5 rounded ml-1 border border-amber-700/50">SOON</span>
+                 </li>
               </ul>
+          </div>
+
+          {/* Newsletter / Keep In Touch */}
+          <div className="col-span-1 md:col-span-4 bg-[#1a120b]/50 p-6 rounded-2xl border border-amber-900/30 shadow-inner">
+              <h4 className="text-amber-400 font-bold mb-3 uppercase text-xs tracking-widest">Join the Expedition</h4>
+              <p className="text-xs mb-4 text-amber-200/50 leading-relaxed">Get monthly dispatches on new historical eras, community events, and 3D artifact drops directly to your inbox.</p>
+              <div className="flex gap-2">
+                <input 
+                  type="email" 
+                  placeholder="Enter your parchment..." 
+                  className="bg-[#0f0a06] border border-amber-900/50 rounded-lg px-4 py-2 text-sm w-full text-amber-100 placeholder:text-amber-700/50 focus:outline-none focus:border-amber-500 transition-colors"
+                />
+                <button className="bg-gradient-to-br from-amber-700 to-amber-900 hover:from-amber-600 hover:to-amber-800 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center border border-amber-500/30">
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="max-w-7xl mx-auto px-8 mt-16 pt-8 border-t border-amber-900/30 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium">
+          <p className="flex items-center gap-1 text-amber-200/40">
+            © {new Date().getFullYear()} Historia Project. Built with <Heart size={12} className="text-red-900 mx-1 fill-red-900" /> for history.
+          </p>
+          <div className="flex gap-6 text-amber-200/40">
+            <Link to="/privacy" className="hover:text-amber-300 transition-colors cursor-pointer">Privacy Doctrine</Link>
+            <Link to="/terms" className="hover:text-amber-300 transition-colors cursor-pointer">Terms of Service</Link>
+            <Link to="/cookies" className="hover:text-amber-300 transition-colors cursor-pointer">Cookie Policy</Link>
           </div>
         </div>
       </footer>
@@ -302,6 +351,7 @@ export default function HomePage() {
   );
 }
 
+// Helper Components
 function NavLink({ icon, label, onClick }) {
   return (
     <button 
@@ -347,5 +397,25 @@ function FeatureCard({ icon, title, desc }) {
         {desc}
       </p>
     </motion.div>
+  );
+}
+
+// New Footer Helper Components
+function FooterLink({ to, label }) {
+  return (
+    <li>
+      <Link to={to} className="hover:text-amber-200 transition-all flex items-center gap-2 group text-amber-200/60">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-700 group-hover:bg-amber-400 transition-colors group-hover:scale-125"></span>
+        <span className="group-hover:translate-x-1 transition-transform">{label}</span>
+      </Link>
+    </li>
+  );
+}
+
+function SocialIcon({ icon }) {
+  return (
+    <button className="w-9 h-9 rounded-full bg-amber-950/40 border border-amber-900/50 flex items-center justify-center hover:bg-amber-900 hover:border-amber-600 hover:text-amber-100 transition-all hover:-translate-y-1 hover:shadow-[0_0_15px_rgba(217,119,6,0.2)]">
+      {icon}
+    </button>
   );
 }
