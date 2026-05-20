@@ -152,3 +152,34 @@ export const purchaseKP = async (req, res) => {
         res.status(500).json({ message: 'Failed to process transaction.', error: error.message });
     }
 };
+
+// @desc   Get public user profile by ID
+// @route  GET /api/users/:id
+// @access Public
+export const getPublicUserProfile = async (req, res) => {
+  try {
+    // Note: select('-password -email') ensures sensitive info isn't sent to other users
+    const user = await User.findById(req.params.id).select('-password -email');
+    
+    if (user) {
+      res.json({
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        avatarSeed: user.avatarSeed,
+        avatarOptions: user.avatarOptions,
+        title: user.title,
+        bio: user.bio,
+        experienceLevel: user.experienceLevel,
+        historicalInterests: user.historicalInterests,
+        stats: user.stats,
+        achievements: user.achievements
+      });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching user profile', error: error.message });
+  }
+};

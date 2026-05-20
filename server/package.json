@@ -21,6 +21,7 @@
     "historia-3d": "file:..",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.5",
+    "multer": "^2.1.1",
     "openai": "^4.0.0"
   },
   "devDependencies": {

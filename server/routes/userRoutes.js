@@ -4,7 +4,8 @@ import {
   updateUserProfile, 
   updateAchievements,
   unlockLesson,
-  purchaseKP
+  purchaseKP,
+  getPublicUserProfile // <-- Newly imported
 } from '../controllers/userController.js';
 import protect from '../middleware/authMiddleware.js';
 
@@ -22,5 +23,7 @@ router.route('/unlock-lesson')
 
 router.route('/purchase-kp')
   .post(protect, purchaseKP);
+
+router.route('/:id').get(getPublicUserProfile);
 
 export default router;

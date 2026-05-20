@@ -7,6 +7,7 @@ import ScenePage from './pages/ScenePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
+import PublicProfilePage from './pages/PublicProfilePage';
 import CommunityPage from './pages/CommunityPage';
 import CreditsPage from './pages/CreditsPage';
 import StorePage from './pages/StorePage';
@@ -27,6 +28,7 @@ export default function App() {
           
           {/* User Routes */}
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/:id" element={<PublicProfilePage />} />
           
           {/* Community Route */}
           <Route path="/community" element={<CommunityPage />} />
