@@ -47,11 +47,8 @@ export default function ScenePage() {
 
   const [isPaused, setIsPaused] = useState(false);
   
-  // States for audio and subtitles
   const [soundMuted, setSoundMuted] = useState(window.__soundMuted || false);
   const [subsMuted, setSubsMuted] = useState(window.__subtitlesMuted || false);
-  
-  // CHANGED DEFAULT TO 'small'
   const [subSize, setSubSize] = useState(window.__subSize || 'small');
   
   const overlayRef = useRef(null);
@@ -60,17 +57,26 @@ export default function ScenePage() {
 
   useEffect(() => {
     if (hasLoaded) return;
-    if (!active) {
-      if (progress === 100 && total > 0) {
-        const timer = setTimeout(() => setHasLoaded(true), 1500);
+    
+    // Normal Success Condition: Assets have finished downloading and are greater than 0
+    if (progress === 100 && total > 0 && !active) {
+      const timer = setTimeout(() => setHasLoaded(true), 1500);
+      return () => clearTimeout(timer);
+    }
+    
+    // Fallback Condition: Prevents the premature load if total === 0 while the React lazy chunk is still fetching.
+    // It will wait significantly longer (4 seconds) before assuming there are genuinely 0 assets to load.
+    if (!active && progress === 100 && total === 0) {
+        const timer = setTimeout(() => {
+            if (!active) setHasLoaded(true);
+        }, 4000);
         return () => clearTimeout(timer);
-      } else if (total === 0) {
-        const timer = setTimeout(() => setHasLoaded(true), 1500);
-        return () => clearTimeout(timer);
-      } else if (errors.length > 0) {
-        const timer = setTimeout(() => setHasLoaded(true), 3000);
-        return () => clearTimeout(timer);
-      }
+    }
+
+    // Error Handling Fallback
+    if (errors.length > 0 && !active) {
+      const timer = setTimeout(() => setHasLoaded(true), 3000);
+      return () => clearTimeout(timer);
     }
   }, [active, progress, total, errors.length, hasLoaded]);
 

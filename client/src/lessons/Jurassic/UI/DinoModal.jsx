@@ -7,35 +7,35 @@ const archiveData = {
     },
     trex: {
         title: "TYRANNOSAURUS REX",
-        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+        images: ["/images/Jurrasic/TR1.webp", "/images/Jurrasic/TR2.webp", "/images/Jurrasic/TR3.webp"]
     },
     apatosaurus: {
         title: "ALAMOSAURUS",
-        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+        images: ["/images/Jurrasic/A1.webp", "/images/Jurrasic/A2.webp", "/images/Jurrasic/A3.webp"]
     },
     triceratops: {
         title: "TRICERATOPS",
-        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+        images: ["/images/Jurrasic/T1.webp", "/images/Jurrasic/T2.webp", "/images/Jurrasic/T3.webp"]
     },
     angiosperm: {
         title: "EARLY ANGIOSPERMS",
-        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+        images: ["/images/Jurrasic/EA1.webp", "/images/Jurrasic/EA2.webp", "/images/Jurrasic/EA3.webp"]
     },
     ammonite: { 
         title: "AMMONITE FOSSILS",
-        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+        images: ["/images/Jurrasic/AM1.webp", "/images/Jurrasic/AM2.webp", "/images/Jurrasic/AM3.webp"]
     },
     largebone: {
         title: "LARGE BONE FOSSIL",
-        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+        images: ["/images/Jurrasic/LB1.webp", "/images/Jurrasic/LB2.webp", "/images/Jurrasic/LB3.webp"]
     },
     geothermal: {
         title: "GEOTHERMAL VENT",
-        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+        images: ["/images/Jurrasic/GT1.webp", "/images/Jurrasic/GT2.webp", "/images/Jurrasic/GT3.webp"]
     },
     meteor: {
         title: "CHICXULUB METEORITE",
-        images: ["/assets/scroll.png", "/assets/scroll.png", "/assets/scroll.png"]
+        images: ["/images/Jurrasic/M1.webp", "/images/Jurrasic/M2.webp", "/images/Jurrasic/M3.webp"]
     }
 };
 
@@ -211,19 +211,19 @@ export default function DinoModal({ type, onClose }) {
                                 {/* Panel 1: Slanted Left */}
                                 <div className="w-full md:w-1/3 aspect-[4/5] max-w-[220px] bg-black border-2 border-amber-900/40 rounded-2xl overflow-hidden shadow-2xl transform -rotate-6 hover:rotate-0 hover:scale-105 transition-all duration-500 relative group cursor-pointer animate-item">
                                     <div className="absolute inset-0 bg-amber-900/20 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
-                                    <img src={data.images[0]} alt="Archive 1" className="w-full h-full object-contain p-6 opacity-80 group-hover:opacity-100 transition-opacity" />
+                                    <img src={data.images[0]} alt="Archive 1" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                                 </div>
                                 
                                 {/* Panel 2: Popped forward, slightly Slanted Right */}
                                 <div className="w-full md:w-1/3 aspect-[4/5] max-w-[220px] bg-black border-2 border-amber-500/50 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(245,158,11,0.2)] transform rotate-3 scale-110 hover:rotate-0 hover:scale-115 transition-all duration-500 relative z-10 group cursor-pointer animate-item">
                                     <div className="absolute inset-0 bg-amber-600/10 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
-                                    <img src={data.images[1]} alt="Archive 2" className="w-full h-full object-contain p-6 opacity-100" />
+                                    <img src={data.images[1]} alt="Archive 2" className="w-full h-full object-cover opacity-100" />
                                 </div>
                                 
                                 {/* Panel 3: Slanted Left */}
                                 <div className="w-full md:w-1/3 aspect-[4/5] max-w-[220px] bg-black border-2 border-amber-900/40 rounded-2xl overflow-hidden shadow-2xl transform -rotate-3 hover:rotate-0 hover:scale-105 transition-all duration-500 relative group cursor-pointer animate-item">
                                     <div className="absolute inset-0 bg-amber-900/20 mix-blend-overlay group-hover:opacity-0 transition-opacity z-10"></div>
-                                    <img src={data.images[2]} alt="Archive 3" className="w-full h-full object-contain p-6 opacity-80 group-hover:opacity-100 transition-opacity" />
+                                    <img src={data.images[2]} alt="Archive 3" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                                 </div>
                             </div>
                         </div>

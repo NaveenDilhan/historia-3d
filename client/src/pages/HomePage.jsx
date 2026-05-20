@@ -4,7 +4,7 @@ import Lottie from "lottie-react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { 
   Compass, Users, User, Globe, BookOpen, ChevronRight, 
-  Star, Map, LogIn, Twitter, Github, Mail, Heart 
+  Star, LogIn, Twitter, Github, Mail, Heart 
 } from "lucide-react";
 
 import humanWalk from "../assets/animations/Ancient_Man.json";
@@ -258,11 +258,15 @@ export default function HomePage() {
                  </button>
              </div>
              
-             <div className="w-full md:w-1/2 h-64 bg-black/40 rounded-2xl flex items-center justify-center border border-amber-800/30 shadow-inner">
-                 <div className="text-center">
-                    <Map className="w-12 h-12 text-amber-800 mx-auto mb-2 opacity-50" />
-                    <span className="text-amber-800/50 font-mono text-xs tracking-widest">[ ARTIFACT PREVIEW ]</span>
-                 </div>
+             <div className="w-full md:w-1/2 h-64 bg-black/40 rounded-2xl flex items-center justify-center border border-amber-800/30 shadow-inner overflow-hidden">
+                 <video 
+                   src="/videos/Homepage.webm" 
+                   autoPlay 
+                   loop 
+                   muted 
+                   playsInline 
+                   className="w-full h-full object-cover"
+                 />
              </div>
            </div>
         </section>
