@@ -6,12 +6,10 @@ export default function DialogueBox({ currentBiome }) {
   const { narration, loading, getNarration } = useAI();
   const [visible, setVisible] = useState(false);
   
-
   const [ambientActive, setAmbientActive] = useState(true);
   
   const masterTimerRef = useRef(null);
   const ambientTimerRef = useRef(null);
-
 
   useEffect(() => {
     const handleGeothermalClosed = () => {
@@ -25,18 +23,13 @@ export default function DialogueBox({ currentBiome }) {
 
   useEffect(() => {
     return () => {
-      window.__isSpeaking = false;
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
       if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
       if (ambientTimerRef.current) clearTimeout(ambientTimerRef.current);
     };
   }, []);
 
-
+  // KEEP YOUR UPDATE: The 10-second idle ambient narrator
   useEffect(() => {
-
     if (!ambientActive || visible || loading) {
       if (ambientTimerRef.current) clearTimeout(ambientTimerRef.current);
       return;
@@ -57,12 +50,10 @@ export default function DialogueBox({ currentBiome }) {
     return () => clearTimeout(ambientTimerRef.current);
   }, [visible, loading, getNarration, currentBiome, ambientActive]);
 
-  // CUTOFF PREVENTION & AUDIO ENGINE
+  // CUTOFF PREVENTION & TIMING ENGINE
   useEffect(() => {
     if (loading) {
       setVisible(false);
-      window.__isSpeaking = false;
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
       return;
     }
@@ -74,72 +65,17 @@ export default function DialogueBox({ currentBiome }) {
 
     if (narration) {
       setVisible(true);
-      window.__isSpeaking = true;
       
+      // KEEP YOUR UPDATE: The original fallback timer math
       const wordCount = narration.split(' ').length;
-      const fallbackTime = Math.max(8000, (wordCount * 800) + 5000);
+      const displayTime = Math.max(8000, (wordCount * 800) + 5000);
 
       if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
 
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        
-        const sentences = narration.match(/[^.!?]+[.!?]*/g) || [narration];
-
-        const validSentences = sentences.map(s => s.replace(/["“”]/g, '').trim()).filter(Boolean);
-        
-        if (validSentences.length === 0) return;
-
-        window.__speechUtterances = []; 
-
-        const voices = window.speechSynthesis.getVoices();
-        const scholarVoice = voices.find(v => 
-             v.name.includes('UK') || 
-             v.name.includes('Great Britain') || 
-             v.name.includes('Google UK') ||
-            v.name.includes('English (United Kingdom)')
-        );
-
-        validSentences.forEach((text, index) => {
-          const utterance = new SpeechSynthesisUtterance(text);
-          utterance.rate = 0.95;
-          utterance.pitch = 0.8;
-          if (scholarVoice) utterance.voice = scholarVoice;
-
-          if (index === validSentences.length - 1) {
-            utterance.onend = () => {
-              setVisible(false);
-              window.__isSpeaking = false;
-              if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
-              window.dispatchEvent(new CustomEvent('narration-ended'));
-            };
-            utterance.onerror = () => {
-              setVisible(false);
-              window.__isSpeaking = false;
-              if (masterTimerRef.current) clearTimeout(masterTimerRef.current);
-              window.dispatchEvent(new CustomEvent('narration-ended'));
-            };
-          }
-
-          window.__speechUtterances.push(utterance);
-          window.speechSynthesis.speak(utterance);
-        });
-
-        masterTimerRef.current = setTimeout(() => {
-          setVisible(false);
-          window.__isSpeaking = false;
-          window.speechSynthesis.cancel();
-          window.dispatchEvent(new CustomEvent('narration-ended'));
-        }, fallbackTime);
-
-      } else {
-        const readTime = Math.max(4000, wordCount * 300);
-        masterTimerRef.current = setTimeout(() => {
-          setVisible(false);
-          window.__isSpeaking = false;
-          window.dispatchEvent(new CustomEvent('narration-ended'));
-        }, readTime);
-      }
+      masterTimerRef.current = setTimeout(() => {
+        setVisible(false);
+        window.dispatchEvent(new CustomEvent('narration-ended'));
+      }, displayTime);
     }
   }, [narration, loading]);
 

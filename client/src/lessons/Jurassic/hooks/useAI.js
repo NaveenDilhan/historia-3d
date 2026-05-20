@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export default function useAI() {
   const [narration, setNarration] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Track the audio object so we can interrupt it
+  const audioRef = useRef(null);
 
   useEffect(() => {
     const handleAIUpdate = (e) => {
@@ -18,8 +21,16 @@ export default function useAI() {
     if (window.__isAILoading && !forceInterrupt) return;
     if (window.__isSpeaking && !forceInterrupt) return;
 
-    if (forceInterrupt && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
+    // Handle force interrupt for ElevenLabs audio
+    if (forceInterrupt) {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
+        // Fallback cleanup in case old TTS is somehow running
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
         window.__isSpeaking = false;
     }
 
@@ -53,10 +64,36 @@ export default function useAI() {
 
       const data = await res.json();
       const newText = data.narration || '';
+      const audioData = data.audioData; // Extract audio data from the backend
       
       window.dispatchEvent(new CustomEvent('ai-narration-update', {
           detail: { narration: newText, loading: false }
         }));
+
+      // Prevent overlapping audio clips
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+
+      // Play the ElevenLabs audio if it exists
+      if (audioData) {
+        const audioSrc = `data:audio/mpeg;base64,${audioData}`;
+        const audio = new Audio(audioSrc);
+        audioRef.current = audio;
+        
+        window.__isSpeaking = true;
+        
+        // Reset speaking state when audio finishes naturally
+        audio.onended = () => {
+            window.__isSpeaking = false;
+        };
+
+        audio.play().catch(e => {
+            console.error("Audio playback prevented by browser:", e);
+            window.__isSpeaking = false;
+        });
+      }
 
     } catch (err) {
       console.error('AI call failed', err);

@@ -5,6 +5,7 @@ export default function useEarthAI() {
   const [loading, setLoading] = useState(false);
   
   const abortControllerRef = useRef(null);
+  const audioRef = useRef(null); // Track the ElevenLabs audio object
 
   useEffect(() => {
     const handleAIUpdate = (e) => {
@@ -20,13 +21,22 @@ export default function useEarthAI() {
     if (window.__isAILoading && !forceInterrupt) return;
 
     if (forceInterrupt) {
+        // Abort the fetch request
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
+        
+        // Interrupt the ElevenLabs audio stream
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
+
+        // Fallback cleanup
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
-            window.__isSpeaking = false;
         }
+        window.__isSpeaking = false;
     }
 
     abortControllerRef.current = new AbortController();
@@ -65,10 +75,36 @@ export default function useEarthAI() {
 
       const data = await res.json();
       const newText = data.narration || '';
+      const audioData = data.audioData; // Extract audio data
       
       window.dispatchEvent(new CustomEvent('ai-narration-update', {
           detail: { narration: newText, loading: false }
         }));
+
+      // Prevent overlapping audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+
+      // Play the ElevenLabs audio if it exists
+      if (audioData) {
+        const audioSrc = `data:audio/mpeg;base64,${audioData}`;
+        const audio = new Audio(audioSrc);
+        audioRef.current = audio;
+        
+        window.__isSpeaking = true;
+        
+        // Reset speaking state when finished
+        audio.onended = () => {
+            window.__isSpeaking = false;
+        };
+
+        audio.play().catch(e => {
+            console.error("Audio playback prevented by browser:", e);
+            window.__isSpeaking = false;
+        });
+      }
 
     } catch (err) {
       if (err.name === 'AbortError') {
