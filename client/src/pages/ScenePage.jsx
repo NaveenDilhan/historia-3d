@@ -8,7 +8,6 @@ import { useProgress } from '@react-three/drei';
 import gsap from 'gsap';
 import * as THREE from 'three';
 
-// Lazy load isolated scenes to chunk JS bundles
 const SceneMap = {
   'earth-formation': lazy(() => import('../lessons/EarthFormation/Scene')),
   'jurassic': lazy(() => import('../lessons/Jurassic/Scene')),
@@ -47,8 +46,13 @@ export default function ScenePage() {
   const [isRevealing, setIsRevealing] = useState(false);
 
   const [isPaused, setIsPaused] = useState(false);
+  
+  // States for audio and subtitles
   const [soundMuted, setSoundMuted] = useState(window.__soundMuted || false);
   const [subsMuted, setSubsMuted] = useState(window.__subtitlesMuted || false);
+  
+  // CHANGED DEFAULT TO 'small'
+  const [subSize, setSubSize] = useState(window.__subSize || 'small');
   
   const overlayRef = useRef(null);
   const canvasWrapperRef = useRef(null);
@@ -76,7 +80,7 @@ export default function ScenePage() {
 
   useEffect(() => {
     window.history.pushState(null, '', window.location.pathname);
-    const handlePopState = (event) => {
+    const handlePopState = () => {
       window.history.pushState(null, '', window.location.pathname);
       if (hasStartedRef.current) { 
         document.exitPointerLock(); 
@@ -103,9 +107,11 @@ export default function ScenePage() {
     if (isPaused) {
       if (ctx.state === 'running') ctx.suspend();
       if ('speechSynthesis' in window) window.speechSynthesis.pause(); 
+      window.dispatchEvent(new CustomEvent('narration-pause', { detail: true }));
     } else {
       if (!soundMuted && ctx.state === 'suspended') ctx.resume();
       if (!soundMuted && 'speechSynthesis' in window) window.speechSynthesis.resume();
+      window.dispatchEvent(new CustomEvent('narration-pause', { detail: false }));
     }
     
     if (soundMuted && 'speechSynthesis' in window) {
@@ -114,9 +120,14 @@ export default function ScenePage() {
   }, [isPaused, soundMuted]);
 
   const handleStart = () => {
-
     const canvas = document.querySelector('canvas');
     if (canvas) canvas.requestPointerLock();
+    
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.warn(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    }
     
     setIsRevealing(true);
     const tl = gsap.timeline({
@@ -148,6 +159,8 @@ export default function ScenePage() {
     const newMuted = !soundMuted;
     setSoundMuted(newMuted);
     window.__soundMuted = newMuted;
+    window.dispatchEvent(new CustomEvent('sound-mute-toggled', { detail: newMuted }));
+    
     if (newMuted && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
@@ -157,7 +170,15 @@ export default function ScenePage() {
     const newSubs = !subsMuted;
     setSubsMuted(newSubs);
     window.__subtitlesMuted = newSubs;
-    window.dispatchEvent(new Event('subtitles-toggled'));
+    window.dispatchEvent(new CustomEvent('subtitles-toggled', { detail: newSubs }));
+  };
+
+  const cycleSubSize = () => {
+    const sizes = ['small', 'medium', 'large'];
+    const nextSize = sizes[(sizes.indexOf(subSize) + 1) % sizes.length];
+    setSubSize(nextSize);
+    window.__subSize = nextSize;
+    window.dispatchEvent(new CustomEvent('subtitle-size-changed', { detail: nextSize }));
   };
 
   const handleQuit = () => {
@@ -165,7 +186,15 @@ export default function ScenePage() {
     if (ctx.state === 'suspended') ctx.resume(); 
     window.__isSpeaking = false;
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    
+    window.dispatchEvent(new CustomEvent('narration-stop'));
+    
     document.exitPointerLock();
+    
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(err => console.warn(err));
+    }
+
     navigate('/explore', { replace: true });
   };
 
@@ -194,6 +223,8 @@ export default function ScenePage() {
         toggleSound={toggleSound}
         subsMuted={subsMuted}
         toggleSubs={toggleSubs}
+        subSize={subSize}
+        cycleSubSize={cycleSubSize}
         handleQuit={handleQuit}
       />
     </div>

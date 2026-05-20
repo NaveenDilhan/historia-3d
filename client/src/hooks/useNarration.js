@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import axios from 'axios'
 
 export default function useNarration() {
@@ -6,41 +6,76 @@ export default function useNarration() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   
-  // Use a ref to keep track of the currently playing audio instance
   const audioRef = useRef(null)
+
+  useEffect(() => {
+    const handlePauseToggle = (e) => {
+      const shouldPause = e.detail;
+      if (audioRef.current) {
+        if (shouldPause) {
+          audioRef.current.pause();
+        } else {
+          if (audioRef.current.currentTime > 0 && !audioRef.current.ended) {
+            audioRef.current.play().catch(err => console.error(err));
+          }
+        }
+      }
+    };
+
+    const handleStop = () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    };
+
+    // Ensure mute happens instantly
+    const handleMuteToggle = (e) => {
+      const isMuted = e.detail;
+      if (audioRef.current) {
+        audioRef.current.muted = isMuted;
+      }
+    };
+
+    window.addEventListener('narration-pause', handlePauseToggle);
+    window.addEventListener('narration-stop', handleStop);
+    window.addEventListener('sound-mute-toggled', handleMuteToggle);
+
+    return () => {
+      window.removeEventListener('narration-pause', handlePauseToggle);
+      window.removeEventListener('narration-stop', handleStop);
+      window.removeEventListener('sound-mute-toggled', handleMuteToggle);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    };
+  }, []);
 
   const getNarration = async ({ userAction, context, era }) => {
     try {
       setLoading(true)
       setError(null)
 
-      const response = await axios.post('/api/narration', {
-        userAction,
-        context,
-        era
-      })
-
-      // Extract text and our new audio data
+      const response = await axios.post('/api/narration', { userAction, context, era })
       const { narration: textContent, audioData } = response.data;
-      
       setNarration(textContent || '')
 
-      // If there is audio currently playing, stop it so voices don't overlap
       if (audioRef.current) {
         audioRef.current.pause()
         audioRef.current.currentTime = 0
       }
 
-      // If we received ElevenLabs audio, play it
       if (audioData) {
-        // Construct a data URI for the audio
         const audioSrc = `data:audio/mpeg;base64,${audioData}`
         const audio = new Audio(audioSrc)
+        
+        // Grab current global mute state immediately
+        audio.muted = !!window.__soundMuted;
         
         audioRef.current = audio
         audio.play().catch(e => console.error("Audio playback prevented by browser:", e))
       }
-
     } catch (err) {
       console.error('Failed to fetch narration:', err)
       setError('Failed to fetch narration.')

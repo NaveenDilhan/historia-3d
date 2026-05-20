@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Volume2, VolumeX, MessageSquare, LogOut, Maximize, Minimize } from 'lucide-react';
+import { Play, Volume2, VolumeX, MessageSquare, LogOut, Maximize, Minimize, Type } from 'lucide-react';
 
 function MenuButton({ icon, label, onClick, highlight, isDanger }) {
   return (
@@ -29,6 +29,8 @@ export default function PauseMenu({
   toggleSound, 
   subsMuted, 
   toggleSubs, 
+  subSize,
+  cycleSubSize,
   handleQuit 
 }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -99,6 +101,14 @@ export default function PauseMenu({
                 label={`Subtitles: ${subsMuted ? 'OFF' : 'ON'}`} 
                 onClick={toggleSubs} 
               />
+              {/* CHANGED DEFAULT FALLBACK TO SMALL */}
+              {!subsMuted && (
+                <MenuButton 
+                  icon={<Type size={18} />} 
+                  label={`Sub Size: ${subSize || 'SMALL'}`} 
+                  onClick={cycleSubSize} 
+                />
+              )}
               
               <div className="h-px w-full bg-amber-900/30 my-2"></div>
               
