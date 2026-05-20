@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
   avatarSeed: { type: String, default: 'Scholar' },
   avatarOptions: {
     skinColor: { type: String, default: 'f8d25c' },
-    top: { type: String, default: 'shortHair' },
+    top: { type: String, default: 'shortFlat' }, // Fixed default value
     accessories: { type: String, default: 'none' }
   },
   title: { type: String, default: 'Novice Chronicler' },

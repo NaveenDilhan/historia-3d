@@ -27,7 +27,7 @@ export default function ProfilePage() {
     email: "",
     bio: "",
     avatarSeed: "",
-    avatarOptions: { skinColor: "f8d25c", top: "shortHair", accessories: "none" },
+    avatarOptions: { skinColor: "f8d25c", top: "shortFlat", accessories: "none" },
     title: "",
     age: "",
     experienceLevel: "Beginner",
@@ -43,7 +43,7 @@ export default function ProfilePage() {
     email: "",
     bio: "",
     avatarSeed: "",
-    avatarOptions: { skinColor: "f8d25c", top: "shortHair", accessories: "none" },
+    avatarOptions: { skinColor: "f8d25c", top: "shortFlat", accessories: "none" },
     age: "",
     experienceLevel: "",
     historicalInterests: []
@@ -57,9 +57,20 @@ export default function ProfilePage() {
 
   const buildAvatarUrl = (seed, options) => {
     let url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed || 'Scholar'}`;
+    
+    // Map old/invalid database entries to valid DiceBear 7.x options
+    const topMapper = {
+      'shortHair': 'shortFlat',
+      'longHair': 'straight01',
+      'eyepatch': 'noHair'
+    };
+
     if (options) {
         if (options.skinColor) url += `&skinColor=${options.skinColor}`;
-        if (options.top) url += `&top=${options.top}`;
+        if (options.top) {
+            const mappedTop = topMapper[options.top] || options.top;
+            url += `&top=${mappedTop}`;
+        }
         if (options.accessories && options.accessories !== "none") url += `&accessories=${options.accessories}`;
     }
     return url;
@@ -79,7 +90,7 @@ export default function ProfilePage() {
         const data = await res.json();
         
         // Ensure options exist
-        const safeOptions = data.avatarOptions || { skinColor: "f8d25c", top: "shortHair", accessories: "none" };
+        const safeOptions = data.avatarOptions || { skinColor: "f8d25c", top: "shortFlat", accessories: "none" };
         
         setProfile({
             ...data,
@@ -311,8 +322,8 @@ export default function ProfilePage() {
                       onChange={e => setFormData({...formData, avatarOptions: {...formData.avatarOptions, top: e.target.value}})} 
                       className="w-full bg-black/40 border border-amber-900/50 rounded-lg p-2 text-amber-50 text-xs outline-none"
                     >
-                        <option value="shortHair">Short Hair</option>
-                        <option value="longHair">Long Hair</option>
+                        <option value="shortFlat">Short Hair</option>
+                        <option value="straight01">Long Hair</option>
                         <option value="bob">Bob Cut</option>
                         <option value="bun">Bun</option>
                         <option value="curly">Curly</option>
@@ -323,7 +334,7 @@ export default function ProfilePage() {
                         <option value="hijab">Hijab</option>
                         <option value="hat">Hat</option>
                         <option value="winterHat1">Winter Hat</option>
-                        <option value="eyepatch">Eyepatch</option>
+                        <option value="noHair">Bald / No Hair</option>
                     </select>
                   </div>
 
